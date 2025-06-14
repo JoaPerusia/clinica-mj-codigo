@@ -8,6 +8,14 @@ class Turno extends Model
 {
     protected $table = 'Turnos';
 
+    protected $fillable = [
+        'fecha',
+        'hora',
+        'estado',
+        'id_paciente',
+        'id_medico',
+    ];
+
     public function paciente()
     {
         return $this->belongsTo(Paciente::class, 'id_paciente');
@@ -18,3 +26,4 @@ class Turno extends Model
         return $this->belongsTo(Medico::class, 'id_medico');
     }
 }
+

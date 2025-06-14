@@ -1,11 +1,19 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PacienteController;
+use App\Http\Controllers\TurnoController;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-use App\Http\Controllers\PacienteController;
+// Proteger rutas con middleware de autenticación
+Route::middleware(['auth'])->group(function () {
+    Route::resource('pacientes', PacienteController::class);
+});
 
-Route::resource('pacientes', PacienteController::class);
+//ruta protegida Turno
+Route::middleware(['auth'])->group(function () {
+    Route::resource('turnos', TurnoController::class);
+});
