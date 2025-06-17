@@ -22,13 +22,21 @@
             <td>{{ $turno->hora }}</td>
             <td>{{ $turno->estado }}</td>
             <td>
-                @if(auth()->user()->id_rol == 1 || 
-                    (auth()->user()->id_rol == 3 && $turno->paciente->id_usuario == auth()->user()->id))
-                    <form action="{{ route('turnos.destroy', $turno->id) }}" method="POST" onsubmit="return confirm('¿Estás seguro?');">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit">Cancelar</button>
-                    </form>
+                @if(auth()->check())
+                    @if(auth()->user()->id_rol == 1)
+                        <a href="{{ route('turnos.edit', $turno->id) }}">Editar</a>
+                        <form action="{{ route('turnos.destroy', $turno->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('¿Estás seguro?');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit">Cancelar</button>
+                        </form>
+                    @elseif(auth()->user()->id_rol == 3 && $turno->paciente->id_usuario == auth()->user()->id)
+                        <form action="{{ route('turnos.destroy', $turno->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('¿Estás seguro?');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit">Cancelar</button>
+                        </form>
+                    @endif
                 @endif
             </td>
         </tr>
