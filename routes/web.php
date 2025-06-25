@@ -20,16 +20,24 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// --- NUEVAS RUTAS PARA LOS PANELES POR ROL ---
+// --- RUTAS PROTEGIDAS POR ROL (AÑADIDAS/MODIFICADAS AQUÍ) ---
 
-    // Ruta para el Panel de Administración
-    Route::get('/admin/dashboard', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
+    // Rutas para Administrador (solo si id_rol es 1)
+    Route::middleware(['role:1'])->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+        // Aquí irán las demás rutas específicas del administrador
+    });
 
-    // Ruta para el Panel de Médico
-    Route::get('/medico/dashboard', [MedicoDashboardController::class, 'index'])->name('medico.dashboard');
+    // Rutas para Médico (solo si id_rol es 2)
+    Route::middleware(['role:2'])->prefix('medico')->name('medico.')->group(function () {
+        Route::get('/dashboard', [MedicoDashboardController::class, 'index'])->name('dashboard');
+        // Aquí irán las demás rutas específicas del médico
+    });
 
-    // Ruta para el Panel de Paciente
-    Route::get('/paciente/dashboard', [PacienteDashboardController::class, 'index'])->name('paciente.dashboard');
-
+    // Rutas para Paciente (solo si id_rol es 3)
+    Route::middleware(['role:3'])->prefix('paciente')->name('paciente.')->group(function () {
+        Route::get('/dashboard', [PacienteDashboardController::class, 'index'])->name('dashboard');
+        // Aquí irán las demás rutas específicas del paciente
+    });
 
 require __DIR__.'/auth.php';
