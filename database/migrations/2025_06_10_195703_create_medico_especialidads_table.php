@@ -11,8 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('medico_especialidads', function (Blueprint $table) {
-            $table->id();
+        Schema::create('medico_especialidad', function (Blueprint $table) {
+            // Las claves foráneas de las tablas que se relacionan
+            $table->unsignedBigInteger('id_medico');
+            $table->unsignedBigInteger('id_especialidad');
+
+            // Definir las claves foráneas
+            $table->foreign('id_medico')->references('id_medico')->on('medicos')->onDelete('cascade');
+            $table->foreign('id_especialidad')->references('id_especialidad')->on('especialidades')->onDelete('cascade');
+
+            // Definir la clave primaria compuesta
+            $table->primary(['id_medico', 'id_especialidad']);
+
             $table->timestamps();
         });
     }
@@ -22,6 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('medico_especialidads');
+        Schema::dropIfExists('medico_especialidad');
     }
 };

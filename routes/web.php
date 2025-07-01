@@ -20,7 +20,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// --- RUTAS PROTEGIDAS POR ROL (AÑADIDAS/MODIFICADAS AQUÍ) ---
+// --- RUTAS PROTEGIDAS POR ROL (MODIFICADAS AQUÍ) ---
 
     // Rutas para Administrador (solo si id_rol es 1)
     Route::middleware(['role:1'])->prefix('admin')->name('admin.')->group(function () {

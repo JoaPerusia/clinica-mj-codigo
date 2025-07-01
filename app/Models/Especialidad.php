@@ -2,14 +2,25 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Especialidad extends Model
 {
-    protected $table = 'Especialidades';
+    use HasFactory;
 
+    protected $table = 'especialidades'; 
+    protected $primaryKey = 'id_especialidad'; 
+
+    protected $fillable = [
+        'nombre_especialidad',
+    ];
+
+    /**
+     * Relación N:N con Medicos a través de Medico_especialidad
+     */
     public function medicos()
     {
-        return $this->hasMany(Medico::class, 'id_especialidad');
+        return $this->belongsToMany(Medico::class, 'medico_especialidad', 'id_especialidad', 'id_medico');
     }
 }
