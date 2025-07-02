@@ -12,7 +12,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('turnos', function (Blueprint $table) {
-            $table->id();
+            $table->bigIncrements('id_turno'); 
+            $table->date('fecha');
+            $table->time('hora');
+            $table->string('estado')->default('pendiente'); // 'pendiente', 'confirmado', 'cancelado', 'atendido'
+
+            // Claves foráneas
+            $table->unsignedBigInteger('id_paciente');
+            $table->foreign('id_paciente')->references('id_paciente')->on('pacientes')->onDelete('cascade'); // Asegúrate que 'pacientes' es el nombre de la tabla de pacientes
+
+            $table->unsignedBigInteger('id_medico');
+            $table->foreign('id_medico')->references('id_medico')->on('medicos')->onDelete('cascade');
+
             $table->timestamps();
         });
     }

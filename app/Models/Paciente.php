@@ -3,9 +3,16 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Paciente extends Model
 {
+    use HasFactory;
+    
+    protected $table = 'pacientes';
+
+    protected $primaryKey = 'id_paciente';
+
     protected $fillable = [
     'nombre',
     'apellido',
@@ -15,11 +22,9 @@ class Paciente extends Model
     'id_usuario',
     ];
 
-    protected $table = 'Pacientes';
-
     public function usuario()
     {
-        return $this->belongsTo(Usuario::class, 'id_usuario');
+        return $this->belongsTo(User::class, 'id_usuario', 'id_usuario');
     }
 
     public function turnos()

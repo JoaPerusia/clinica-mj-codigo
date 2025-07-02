@@ -12,7 +12,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('pacientes', function (Blueprint $table) {
-            $table->id();
+            $table->bigIncrements('id_paciente'); 
+            $table->string('nombre');
+            $table->string('apellido');
+            $table->string('dni')->unique(); 
+            $table->date('fecha_nacimiento')->nullable();
+            $table->string('obra_social')->nullable(); 
+
+            // Clave foránea a la tabla de usuarios
+            $table->unsignedBigInteger('id_usuario'); // Un paciente está asociado a UN usuario, y un usuario puede "contener" varios pacientes
+            $table->foreign('id_usuario')->references('id_usuario')->on('usuarios')->onDelete('cascade');
+
             $table->timestamps();
         });
     }

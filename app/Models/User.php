@@ -11,7 +11,7 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
-    protected $table = 'Usuarios';
+    protected $table = 'usuarios';
 
     protected $primaryKey = 'id_usuario';
 
@@ -36,7 +36,7 @@ class User extends Authenticatable
         ];
     }
     
-    // 👇 importante: Laravel usa esta propiedad para el login
+    // importante: Laravel usa esta propiedad para el login
     public function getAuthPassword()
     {
         return $this->password;
@@ -44,12 +44,12 @@ class User extends Authenticatable
 
     public function rol()
     {
-        return $this->belongsTo(Rol::class, 'id_rol');
+        return $this->belongsTo(Rol::class, 'id_rol', 'id_rol'); 
     }
-
+    
     public function pacientes()
     {
-        return $this->hasMany(Paciente::class, 'id_usuario');
+        return $this->hasMany(Paciente::class, 'id_usuario', 'id_usuario');
     }
 
     public function medico()

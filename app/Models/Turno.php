@@ -3,10 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory; 
 
 class Turno extends Model
 {
-    protected $table = 'Turnos';
+    use HasFactory; /
+
+    protected $table = 'turnos'; 
+    
+    protected $primaryKey = 'id_turno'; 
 
     protected $fillable = [
         'fecha',
@@ -18,12 +23,11 @@ class Turno extends Model
 
     public function paciente()
     {
-        return $this->belongsTo(Paciente::class, 'id_paciente');
+        return $this->belongsTo(Paciente::class, 'id_paciente', 'id_paciente'); 
     }
 
     public function medico()
     {
-        return $this->belongsTo(Medico::class, 'id_medico');
+        return $this->belongsTo(Medico::class, 'id_medico', 'id_medico'); 
     }
 }
-

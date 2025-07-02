@@ -26,12 +26,6 @@ class Medico extends Model
         return $this->belongsTo(User::class, 'id_usuario', 'id_usuario');
     }
 
-    // Tus otras relaciones que ya tenías y que son correctas:
-    public function especialidad()
-    {
-        return $this->belongsTo(Especialidad::class, 'id_especialidad');
-    }
-
     public function turnos()
     {
         return $this->hasMany(Turno::class, 'id_medico');

@@ -12,7 +12,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('bloqueos', function (Blueprint $table) {
-            $table->id();
+            $table->bigIncrements('id_bloqueo'); 
+            $table->date('fecha');
+            $table->string('motivo')->nullable(); // 'vacaciones', 'congreso', 'permiso'
+
+            // Clave foránea
+            $table->unsignedBigInteger('id_medico');
+            $table->foreign('id_medico')->references('id_medico')->on('medicos')->onDelete('cascade');
+
             $table->timestamps();
         });
     }
