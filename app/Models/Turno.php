@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Turno extends Model
 {
-    use HasFactory; /
+    use HasFactory; 
 
     protected $table = 'turnos'; 
     

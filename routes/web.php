@@ -6,7 +6,7 @@ use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\MedicoDashboardController;
 use App\Http\Controllers\PacienteDashboardController;
 use App\Http\Controllers\EspecialidadController;
-use App\Http\Controllers\TurnoController; 
+use App\Http\Controllers\TurnoController; // ¡Importa este controlador!
 
 
 Route::get('/', function () {
@@ -30,13 +30,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
         Route::resource('especialidades', EspecialidadController::class)->names([
-            'index' => 'admin.especialidades.index',
-            'create' => 'admin.especialidades.create',
-            'store' => 'admin.especialidades.store',
-            'show' => 'admin.especialidades.show',
-            'edit' => 'admin.especialidades.edit',
-            'update' => 'admin.especialidades.update',
-            'destroy' => 'admin.especialidades.destroy',
+            'index' => 'especialidades.index',
+            'create' => 'especialidades.create',
+            'store' => 'especialidades.store',
+            'show' => 'especialidades.show',
+            'edit' => 'especialidades.edit',
+            'update' => 'especialidades.update',
+            'destroy' => 'especialidades.destroy',
         ]);
     });
 
@@ -44,17 +44,16 @@ Route::middleware('auth')->group(function () {
     // Rutas para Médico (solo si id_rol es 2)
     Route::middleware(['role:2'])->prefix('medico')->name('medico.')->group(function () {
         Route::get('/dashboard', [MedicoDashboardController::class, 'index'])->name('dashboard');
-        
         Route::resource('turnos', TurnoController::class)->names([
-            'index' => 'medico.turnos.index',
-            'create' => 'medico.turnos.create', // Un médico podría crear un turno directamente para un paciente
-            'store' => 'medico.turnos.store',
-            'show' => 'medico.turnos.show',
-            'edit' => 'medico.turnos.edit',
-            'update' => 'medico.turnos.update',
-            'destroy' => 'medico.turnos.destroy',
+            // CAMBIO AQUÍ: Quitar 'medico.' de los nombres individuales, el grupo ya lo aplica
+            'index' => 'turnos.index',
+            'create' => 'turnos.create',
+            'store' => 'turnos.store',
+            'show' => 'turnos.show',
+            'edit' => 'turnos.edit',
+            'update' => 'turnos.update',
+            'destroy' => 'turnos.destroy',
         ]);
-
         Route::get('/mis-turnos', [TurnoController::class, 'misTurnosMedico'])->name('mis_turnos');
     });
 
@@ -62,20 +61,18 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['role:3'])->prefix('paciente')->name('paciente.')->group(function () {
         Route::get('/dashboard', [PacienteDashboardController::class, 'index'])->name('dashboard');
 
-        // ¡NUEVAS RUTAS PARA LA GESTIÓN DE TURNOS DEL PACIENTE!
         Route::resource('turnos', TurnoController::class)->names([
-            'index' => 'paciente.turnos.index',
-            'create' => 'paciente.turnos.create',
-            'store' => 'paciente.turnos.store',
-            'show' => 'paciente.turnos.show',
-            'edit' => 'paciente.turnos.edit', 
-            'update' => 'paciente.turnos.update',
-            'destroy' => 'paciente.turnos.destroy', 
+            'index' => 'turnos.index',
+            'create' => 'turnos.create',
+            'store' => 'turnos.store',
+            'show' => 'turnos.show',
+            'edit' => 'turnos.edit',
+            'update' => 'turnos.update',
+            'destroy' => 'turnos.destroy',
         ]);
 
         Route::get('/mis-turnos', [TurnoController::class, 'misTurnos'])->name('mis_turnos');
 
-        // ruta para obtener horarios disponibles!
         Route::get('/turnos/disponibles', [TurnoController::class, 'getHorariosDisponibles'])->name('turnos.disponibles');
     });
 

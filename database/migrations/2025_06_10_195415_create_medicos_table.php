@@ -18,7 +18,8 @@ return new class extends Migration
             $table->string('nombre');
             $table->string('apellido');
             $table->string('horario_disponible')->nullable(); 
-
+            $table->unsignedBigInteger('id_usuario')->nullable(); // Podría ser nullable si un médico no siempre tiene un usuario al principio
+            $table->foreign('id_usuario')->references('id_usuario')->on('usuarios')->onDelete('set null');
             
             $table->timestamps();
         });

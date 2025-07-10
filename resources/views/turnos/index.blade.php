@@ -1,6 +1,6 @@
 <h1>Turnos</h1>
 
-<a href="{{ route('turnos.create') }}">Reservar nuevo turno</a>
+<a href="{{ route('paciente.turnos.create') }}">Crear Nuevo Turno</a>
 
 <table border="1">
     <thead>
