@@ -7,7 +7,7 @@ use App\Models\Turno;
 use App\Models\Paciente;
 use App\Models\Medico;
 use App\Models\Bloqueo;
-use App\Models\Especialidad; // Necesitamos importar el modelo de Especialidad
+use App\Models\Especialidad; 
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon; // Para trabajar con fechas y horas
 

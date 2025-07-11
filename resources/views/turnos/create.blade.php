@@ -48,7 +48,7 @@
     </select>
     <br>
 
-    <button type="Guardar">Confirmar turno</button>
+    <button type="submit">Confirmar turno</button>
 </form>
 
 {{-- Incluye el archivo JavaScript --}}

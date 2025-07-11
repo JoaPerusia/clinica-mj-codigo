@@ -6,7 +6,7 @@ use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\MedicoDashboardController;
 use App\Http\Controllers\PacienteDashboardController;
 use App\Http\Controllers\EspecialidadController;
-use App\Http\Controllers\TurnoController; // ¡Importa este controlador!
+use App\Http\Controllers\TurnoController; 
 
 
 Route::get('/', function () {
@@ -45,7 +45,6 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['role:2'])->prefix('medico')->name('medico.')->group(function () {
         Route::get('/dashboard', [MedicoDashboardController::class, 'index'])->name('dashboard');
         Route::resource('turnos', TurnoController::class)->names([
-            // CAMBIO AQUÍ: Quitar 'medico.' de los nombres individuales, el grupo ya lo aplica
             'index' => 'turnos.index',
             'create' => 'turnos.create',
             'store' => 'turnos.store',

@@ -14,8 +14,11 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            RolSeeder::class, // Primero, siembra los roles
-            UserSeeder::class, // Luego, siembra los usuarios
+            RolSeeder::class, // siembra los roles
+            UserSeeder::class, // siembra los usuarios
+            EspecialidadSeeder::class, // siembra las especialidades
+            MedicoSeeder::class, // siembra los médicos
+            PacienteSeeder::class, // siembra los pacientes
         ]);
     }
 }
