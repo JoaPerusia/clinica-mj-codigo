@@ -29,6 +29,18 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['role:1'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
+        Route::resource('turnos', TurnoController::class)->names([
+            'index' => 'turnos.index',
+            'create' => 'turnos.create',
+            'store' => 'turnos.store',
+            'show' => 'turnos.show',
+            'edit' => 'turnos.edit',
+            'update' => 'turnos.update',
+            'destroy' => 'turnos.destroy',
+        ]);
+        
+        Route::get('/turnos/disponibles', [TurnoController::class, 'getHorariosDisponibles'])->name('turnos.disponibles');
+
         Route::resource('especialidades', EspecialidadController::class)->names([
             'index' => 'especialidades.index',
             'create' => 'especialidades.create',

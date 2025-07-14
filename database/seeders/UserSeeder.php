@@ -21,10 +21,10 @@ class UserSeeder extends Seeder
         $adminRol = Rol::where('rol', 'Administrador')->first();
 
         if ($adminRol) {
-            DB::table('usuarios')->insert([ // Asegúrate que el nombre de la tabla sea exacto 'Usuarios'
+            DB::table('usuarios')->insert([ 
                 'nombre' => 'Admin Test',
                 'email' => 'admin@example.com',
-                'password' => Hash::make('password'), // Una contraseña segura (ej: 'password')
+                'password' => Hash::make('password'), 
                 'telefono' => '1234567890',
                 'id_rol' => $adminRol->id_rol, // Asignar el ID del rol Administrador
                 'created_at' => now(),

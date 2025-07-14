@@ -196,41 +196,116 @@ class TurnoController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, Turno $turno)
     {
-        $usuario = Auth::user();
+        $usuario = auth()->user();
 
-        $request->validate([
-            'id_paciente' => 'required|exists:pacientes,id_paciente',
-            'id_medico' => 'required|exists:medicos,id_medico',
-            'fecha' => 'required|date|after_or_equal:today',
-            'hora' => 'required|date_format:H:i',
-            'estado' => 'required|in:pendiente,realizado,cancelado',
-        ]);
+        
+        if (
+            ($usuario->id_rol == 1) || // Administrador
+            ($usuario->id_rol == 2 && $turno->id_medico == $usuario->medico->id_medico) || // Médico
+            ($usuario->id_rol == 3 && $turno->id_paciente == $usuario->paciente->id_paciente) // Paciente
+        ) {
+            $rules = [
+                'estado' => 'required|in:pendiente,realizado,cancelado,ausente', // Añadido 'ausente'
+            ];
 
-        $turno = Turno::findOrFail($id);
+            // Reglas adicionales para Administrador y Paciente
+            if ($usuario->id_rol == 1 || $usuario->id_rol == 3) {
+                $rules['id_paciente'] = 'required|exists:pacientes,id_paciente';
+                $rules['id_medico'] = 'required|exists:medicos,id_medico';
+                $rules['fecha'] = 'required|date|after_or_equal:today';
+                $rules['hora'] = 'required|date_format:H:i';
+            }
 
-        // Control de acceso para actualizar
-        if ($usuario->id_rol == 1 ||
-            ($usuario->id_rol == 3 && $turno->paciente && $turno->paciente->id_usuario == $usuario->id_usuario) ||
-            ($usuario->id_rol == 2 && $turno->medico && $turno->medico->id_usuario == $usuario->id_usuario)) {
+            $request->validate($rules);
 
-            // Aquí podrías añadir verificaciones de disponibilidad similares a 'store' si se cambia la fecha/hora/médico
-            // Si el estado es 'cancelado', no se necesitan más validaciones de disponibilidad.
+            // Lógica de actualización basada en el rol
+            if ($usuario->id_rol == 2) { // Médico: solo puede cambiar el estado
+                $turno->update([
+                    'estado' => $request->estado,
+                ]);
+                return redirect()->route('medico.turnos.index')->with('success', 'El estado de tu turno ha sido actualizado con éxito.');
+            } else { // Administrador o Paciente: pueden cambiar todos los campos validados
 
-            $turno->update([
-                'fecha' => $request->fecha,
-                'hora' => $request->hora,
-                'estado' => $request->estado,
-                'id_paciente' => $request->id_paciente,
-                'id_medico' => $request->id_medico,
-            ]);
+                $fecha = Carbon::parse($request->fecha)->format('Y-m-d');
+                $hora = Carbon::parse($request->hora)->format('H:i:s');
 
-            return redirect()->route('paciente.turnos.index')->with('success', 'Turno actualizado con éxito.');
+                // Verificar disponibilidad del médico para la nueva fecha y hora (solo si se cambian)
+                if (
+                    $turno->fecha != $fecha ||
+                    $turno->hora != $hora ||
+                    $turno->id_medico != $request->id_medico
+                ) {
+                    $medico = Medico::find($request->id_medico);
+                    if (!$medico) {
+                        return back()->withErrors(['id_medico' => 'Médico no encontrado.'])->withInput();
+                    }
+
+                    // Verificar si el médico trabaja en ese horario
+                    $diaSemana = Carbon::parse($fecha)->dayOfWeek; // 0 (Domingo) a 6 (Sábado)
+                    $horariosTrabajo = $medico->horariosTrabajo->where('dia_semana', $diaSemana);
+
+                    $trabajaEnHorario = false;
+                    foreach ($horariosTrabajo as $horario) {
+                        if ($hora >= $horario->hora_inicio && $hora < $horario->hora_fin) { // Importante: < hora_fin para que el último turno no se solape
+                            $trabajaEnHorario = true;
+                            break;
+                        }
+                    }
+
+                    if (!$trabajaEnHorario) {
+                        return back()->withErrors(['hora' => 'El médico no trabaja en el horario seleccionado para esta fecha.'])->withInput();
+                    }
+
+                    // Verificar bloqueos del médico para la nueva fecha y hora
+                    $bloqueoExistente = Bloqueo::where('id_medico', $request->id_medico)
+                        ->where('fecha', $fecha)
+                        ->where(function ($query) use ($hora) {
+                            $query->where('hora_inicio', '<=', $hora)
+                                  ->where('hora_fin', '>', $hora); // Si el bloqueo es hasta las 10:00, un turno a las 10:00 es válido
+                        })
+                        ->first();
+
+                    if ($bloqueoExistente) {
+                        return back()->withErrors(['hora' => 'El médico tiene un bloqueo en el horario seleccionado.'])->withInput();
+                    }
+
+                    // Verificar si ya existe un turno ocupado en la nueva fecha y hora para el médico (excluyendo el turno actual que se está editando)
+                    $turnoOcupado = Turno::where('id_medico', $request->id_medico)
+                        ->where('fecha', $fecha)
+                        ->where('hora', $hora)
+                        ->where('id_turno', '!=', $turno->id_turno) // Excluir el turno actual
+                        ->whereIn('estado', ['pendiente', 'realizado']) // Considerar solo turnos activos
+                        ->first();
+
+                    if ($turnoOcupado) {
+                        return back()->withErrors(['hora' => 'El horario seleccionado ya está ocupado para este médico.'])->withInput();
+                    }
+                }
+
+
+                // Actualizar todos los campos para Admin y Paciente
+                $turno->update([
+                    'fecha' => $fecha,
+                    'hora' => $hora,
+                    'estado' => $request->estado,
+                    'id_paciente' => $request->id_paciente,
+                    'id_medico' => $request->id_medico,
+                ]);
+
+                // Redireccionamiento dinámico basado en el rol del usuario
+                if ($usuario->id_rol == 1) { // Administrador
+                    return redirect()->route('admin.turnos.index')->with('success', 'Turno actualizado con éxito por el administrador.');
+                } else { // Paciente (id_rol == 3)
+                    return redirect()->route('paciente.turnos.index')->with('success', 'Turno actualizado con éxito.');
+                }
+            }
         }
 
         abort(403, 'Acceso no autorizado para actualizar este turno.');
     }
+
 
 
     /**
@@ -316,93 +391,98 @@ class TurnoController extends Controller
     {
         $request->validate([
             'id_medico' => 'required|exists:medicos,id_medico',
-            'fecha' => 'required|date_format:Y-m-d|after_or_equal:today',
-            'except_turno_id' => 'nullable|exists:turnos,id', // ¡NUEVO: Para excluir el turno que se está editando!
+            'fecha' => 'required|date_format:Y-m-d',
+            'except_turno_id' => 'nullable|exists:turnos,id_turno', // Para excluir el turno actual en edición
         ]);
 
-        $id_medico = $request->id_medico;
-        $fecha = Carbon::parse($request->fecha);
-        $except_turno_id = $request->except_turno_id; // Obtener el ID del turno a excluir
+        $idMedico = $request->input('id_medico');
+        $fecha = Carbon::parse($request->input('fecha'));
+        $exceptTurnoId = $request->input('except_turno_id');
 
-        $medico = Medico::find($id_medico);
-
-        if (!$medico || !$medico->horario_disponible) {
-            return response()->json(['message' => 'Horario de médico no definido o médico no encontrado.'], 404);
+        $medico = Medico::find($idMedico);
+        if (!$medico) {
+            return response()->json(['message' => 'Médico no encontrado.'], 404);
         }
 
-        list($hora_inicio_str, $hora_fin_str) = explode('-', $medico->horario_disponible);
+        $diaSemana = $fecha->dayOfWeek; // 0 (Domingo) a 6 (Sábado)
+        $horariosTrabajo = $medico->horariosTrabajo->where('dia_semana', $diaSemana);
 
-        $intervalo_minutos = 30; // Intervalo de turnos, puedes ajustarlo
-        $horarios_disponibles = [];
-
-        $current_time = Carbon::parse($hora_inicio_str);
-        $end_time = Carbon::parse($hora_fin_str);
-
-        // Generar todos los posibles horarios en el rango del médico
-        while ($current_time->lt($end_time)) { // Reajustado para que el último turno quepa completamente
-            $horarios_disponibles[] = $current_time->format('H:i');
-            $current_time->addMinutes($intervalo_minutos);
+        if ($horariosTrabajo->isEmpty()) {
+            return response()->json([]); // El médico no trabaja ese día
         }
 
-        // Obtener turnos ya agendados para ese médico en esa fecha (pendientes y realizados)
-        $turnosOcupadosQuery = Turno::where('id_medico', $id_medico)
-            ->where('fecha', $fecha->toDateString())
-            ->whereIn('estado', ['pendiente', 'realizado']);
+        $horariosGenerados = [];
+        $intervalo_minutos = 30; // Define el intervalo de los turnos, ej. 30 minutos
 
-        // Si se está editando un turno, excluirlo de la comprobación de ocupados
-        if ($except_turno_id) {
-            $turnosOcupadosQuery->where('id', '!=', $except_turno_id);
+        foreach ($horariosTrabajo as $horario) {
+            $inicio = Carbon::parse($horario->hora_inicio);
+            $fin = Carbon::parse($horario->hora_fin);
+
+            while ($inicio->lt($fin)) {
+                $horariosGenerados[] = $inicio->format('H:i');
+                $inicio->addMinutes($intervalo_minutos);
+            }
         }
 
-        $turnosOcupados = $turnosOcupadosQuery->pluck('hora')->toArray();
+        // Obtener turnos ocupados para este médico y fecha (excluyendo el turno actual si se está editando)
+        $turnosOcupados = Turno::where('id_medico', $idMedico)
+            ->where('fecha', $fecha->format('Y-m-d'))
+            ->whereIn('estado', ['pendiente', 'realizado'])
+            ->when($exceptTurnoId, function ($query) use ($exceptTurnoId) {
+                return $query->where('id_turno', '!=', $exceptTurnoId);
+            })
+            ->pluck('hora')
+            ->toArray();
 
-
-        // Obtener bloqueos para ese médico en esa fecha
-        $bloqueos = Bloqueo::where('id_medico', $id_medico)
-            ->where('fecha_inicio', '<=', $fecha->toDateString())
-            ->where('fecha_fin', '>=', $fecha->toDateString())
+        // Obtener bloqueos del médico para este día
+        $bloqueos = Bloqueo::where('id_medico', $idMedico)
+            ->where('fecha', $fecha->format('Y-m-d'))
             ->get();
 
-        // Filtrar horarios: Quitar los ocupados por turnos o por bloqueos
-        $horarios_filtrados = array_filter($horarios_disponibles, function ($hora) use ($turnosOcupados, $bloqueos, $fecha, $intervalo_minutos) {
-            // Si el horario ya está ocupado por un turno existente
+        // Filtrar horarios
+        $horarios_filtrados = array_filter($horariosGenerados, function ($hora) use ($turnosOcupados, $bloqueos, $fecha, $intervalo_minutos) {
+            // 1. Filtrar turnos ocupados
             if (in_array($hora, $turnosOcupados)) {
                 return false;
             }
 
-            // Verificar si el horario cae dentro de un bloqueo
+            // 2. Filtrar bloqueos
             $hora_carbon = Carbon::parse($hora);
             foreach ($bloqueos as $bloqueo) {
-                $bloqueo_fecha_inicio_carbon = Carbon::parse($bloqueo->fecha_inicio);
-                $bloqueo_fecha_fin_carbon = Carbon::parse($bloqueo->fecha_fin);
+                // Parsear las horas de inicio y fin del bloqueo
                 $bloqueo_hora_inicio_carbon = $bloqueo->hora_inicio ? Carbon::parse($bloqueo->hora_inicio) : null;
                 $bloqueo_hora_fin_carbon = $bloqueo->hora_fin ? Carbon::parse($bloqueo->hora_fin) : null;
 
-                // Si el bloqueo cubre todo el día o el turno cae dentro del rango de horas del bloqueo
-                if ($fecha->between($bloqueo_fecha_inicio_carbon, $bloqueo_fecha_fin_carbon)) {
-                    if (!$bloqueo_hora_inicio_carbon || !$bloqueo_hora_fin_carbon) { // Bloqueo de día completo
-                        return false;
-                    }
-                    // Bloqueo por horas
-                    $turno_fin_carbon = clone $hora_carbon;
-                    $turno_fin_carbon->addMinutes($intervalo_minutos);
+                // Si el bloqueo es de día completo (no tiene horas específicas) o el turno cae dentro del rango de horas del bloqueo
+                if (!$bloqueo_hora_inicio_carbon || !$bloqueo_hora_fin_carbon) { // Bloqueo de día completo
+                    return false;
+                }
+                // Bloqueo por horas
+                $turno_fin_carbon = clone $hora_carbon;
+                $turno_fin_carbon->addMinutes($intervalo_minutos);
 
-                    if ($hora_carbon->lt($bloqueo_hora_fin_carbon) && $turno_fin_carbon->gt($bloqueo_hora_inicio_carbon)) {
-                         return false; // Hay superposición con un bloqueo
-                    }
+                // Comprobar si el inicio del turno está dentro del bloqueo O el fin del turno está dentro del bloqueo O el bloqueo está completamente dentro del turno
+                if (
+                    ($hora_carbon->gte($bloqueo_hora_inicio_carbon) && $hora_carbon->lt($bloqueo_hora_fin_carbon)) || // Inicio del turno dentro del bloqueo
+                    ($turno_fin_carbon->gt($bloqueo_hora_inicio_carbon) && $turno_fin_carbon->lte($bloqueo_hora_fin_carbon)) || // Fin del turno dentro del bloqueo
+                    ($bloqueo_hora_inicio_carbon->gte($hora_carbon) && $bloqueo_hora_fin_carbon->lte($turno_fin_carbon)) // Bloqueo completamente dentro del turno
+                ) {
+                    return false; // Hay superposición con un bloqueo
                 }
             }
 
-            return true; // Si no está ocupado ni bloqueado
+            // 3. Asegurarse de que el horario no sea anterior a la hora actual para turnos de hoy
+            if ($fecha->isToday()) {
+                // Un pequeño buffer de tiempo, digamos 15 minutos para evitar turnos casi inmediatos
+                if ($hora_carbon->lt(Carbon::now()->addMinutes(15))) {
+                    return false;
+                }
+            }
+
+            return true; // Si no está ocupado ni bloqueado y es a futuro
         });
 
-        // Asegurarse de que el horario no sea anterior a la hora actual para turnos de hoy
-        if ($fecha->isToday()) {
-            $horarios_filtrados = array_filter($horarios_filtrados, function ($hora) {
-                return Carbon::parse($hora)->gt(Carbon::now()->addMinutes(15)); // Un pequeño buffer de tiempo
-            });
-        }
-
-        return response()->json(array_values($horarios_filtrados)); // Devolver los horarios disponibles
+        // Devolver los horarios disponibles
+        return response()->json(array_values($horarios_filtrados));
     }
 }

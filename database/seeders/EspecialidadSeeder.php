@@ -14,16 +14,16 @@ class EspecialidadSeeder extends Seeder
     public function run(): void
     {
         DB::table('especialidades')->insert([
-            ['nombre' => 'Cardiología', 'created_at' => now(), 'updated_at' => now()],
-            ['nombre' => 'Pediatría', 'created_at' => now(), 'updated_at' => now()],
-            ['nombre' => 'Dermatología', 'created_at' => now(), 'updated_at' => now()],
-            ['nombre' => 'Neurología', 'created_at' => now(), 'updated_at' => now()],
-            ['nombre' => 'Oftalmología', 'created_at' => now(), 'updated_at' => now()],
-            ['nombre' => 'Ginecología', 'created_at' => now(), 'updated_at' => now()],
-            ['nombre' => 'Traumatología', 'created_at' => now(), 'updated_at' => now()],
-            ['nombre' => 'Psicología', 'created_at' => now(), 'updated_at' => now()],
-            ['nombre' => 'Urología', 'created_at' => now(), 'updated_at' => now()],
-            ['nombre' => 'Medicina General', 'created_at' => now(), 'updated_at' => now()],
+            ['nombre_especialidad' => 'Cardiología', 'created_at' => now(), 'updated_at' => now()],
+            ['nombre_especialidad' => 'Pediatría', 'created_at' => now(), 'updated_at' => now()],
+            ['nombre_especialidad' => 'Dermatología', 'created_at' => now(), 'updated_at' => now()],
+            ['nombre_especialidad' => 'Neurología', 'created_at' => now(), 'updated_at' => now()],
+            ['nombre_especialidad' => 'Oftalmología', 'created_at' => now(), 'updated_at' => now()],
+            ['nombre_especialidad' => 'Ginecología', 'created_at' => now(), 'updated_at' => now()],
+            ['nombre_especialidad' => 'Traumatología', 'created_at' => now(), 'updated_at' => now()],
+            ['nombre_especialidad' => 'Psicología', 'created_at' => now(), 'updated_at' => now()],
+            ['nombre_especialidad' => 'Urología', 'created_at' => now(), 'updated_at' => now()],
+            ['nombre_especialidad' => 'Medicina General', 'created_at' => now(), 'updated_at' => now()],
         ]);
     }
 }

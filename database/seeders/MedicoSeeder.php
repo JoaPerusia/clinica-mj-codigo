@@ -85,7 +85,7 @@ class MedicoSeeder extends Seeder
             );
 
             // 3. Adjuntar especialidades al médico
-            $especialidadesIds = Especialidad::whereIn('nombre', $data['especialidades'])->pluck('id_especialidad');
+            $especialidadesIds = Especialidad::whereIn('nombre_especialidad', $data['especialidades'])->pluck('id_especialidad');
             $medico->especialidades()->syncWithoutDetaching($especialidadesIds); // Usa syncWithoutDetaching para añadir si no existen
         }
     }
