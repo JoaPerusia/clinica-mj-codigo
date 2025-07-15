@@ -54,4 +54,4 @@
 <script>
     const apiUrlBase = @json(Auth::check() ? (Auth::user()->id_rol == 1 ? '/admin/turnos' : (Auth::user()->id_rol == 2 ? '/medico/turnos' : '/paciente/turnos')) : '/paciente/turnos');
 </script>
-<script src="{{ asset('public/build/turnos.js') }}"></script>
+<script src="{{ asset('build/turnos.js') }}"></script>

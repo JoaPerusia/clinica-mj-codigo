@@ -28,6 +28,7 @@ Route::middleware('auth')->group(function () {
     // Rutas para Administrador (solo si id_rol es 1)
     Route::middleware(['role:1'])->prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/turnos/disponibles', [TurnoController::class, 'getHorariosDisponibles'])->name('turnos.disponibles');
 
         Route::resource('turnos', TurnoController::class)->names([
             'index' => 'turnos.index',
@@ -39,7 +40,6 @@ Route::middleware('auth')->group(function () {
             'destroy' => 'turnos.destroy',
         ]);
         
-        Route::get('/turnos/disponibles', [TurnoController::class, 'getHorariosDisponibles'])->name('turnos.disponibles');
 
         Route::resource('especialidades', EspecialidadController::class)->names([
             'index' => 'especialidades.index',
@@ -71,6 +71,7 @@ Route::middleware('auth')->group(function () {
     // Rutas para Paciente (solo si id_rol es 3)
     Route::middleware(['role:3'])->prefix('paciente')->name('paciente.')->group(function () {
         Route::get('/dashboard', [PacienteDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/turnos/disponibles', [TurnoController::class, 'getHorariosDisponibles'])->name('turnos.disponibles');
 
         Route::resource('turnos', TurnoController::class)->names([
             'index' => 'turnos.index',
@@ -83,8 +84,6 @@ Route::middleware('auth')->group(function () {
         ]);
 
         Route::get('/mis-turnos', [TurnoController::class, 'misTurnos'])->name('mis_turnos');
-
-        Route::get('/turnos/disponibles', [TurnoController::class, 'getHorariosDisponibles'])->name('turnos.disponibles');
     });
 
 

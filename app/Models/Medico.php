@@ -31,7 +31,6 @@ class Medico extends Model
         return $this->hasMany(Turno::class, 'id_medico');
     }
 
-    // Esta relación ya la tenías bien definida en tu archivo original
     public function especialidades()
     {
         return $this->belongsToMany(Especialidad::class, 'medico_especialidad', 'id_medico', 'id_especialidad');
@@ -40,5 +39,10 @@ class Medico extends Model
     public function bloqueos()
     {
         return $this->hasMany(Bloqueo::class, 'id_medico');
+    }
+
+    public function horariosTrabajo()
+    {
+        return $this->hasMany(HorarioMedico::class, 'id_medico', 'id_medico');
     }
 }
