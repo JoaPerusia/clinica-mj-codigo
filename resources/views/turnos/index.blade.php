@@ -29,8 +29,9 @@
                 @if(auth()->check())
                     {{-- Acciones para Administrador --}}
                     @if(auth()->user()->id_rol == 1)
-                        <a href="{{ route('admin.turnos.edit', $turno->id) }}">Editar</a>
-                        <form action="{{ route('admin.turnos.destroy', $turno->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');">
+                        {{-- CAMBIO CLAVE AQUÍ: Usar $turno->id_turno --}}
+                        <a href="{{ route('admin.turnos.edit', $turno->id_turno) }}">Editar</a>
+                        <form action="{{ route('admin.turnos.destroy', $turno->id_turno) }}" method="POST" style="display:inline;" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');">
                             @csrf
                             @method('DELETE')
                             <button type="submit">Cancelar</button>
@@ -39,7 +40,7 @@
                     @elseif(auth()->user()->id_rol == 3 && $turno->paciente && $turno->paciente->id_usuario == auth()->user()->id_usuario)
                         {{-- Un paciente solo puede cancelar sus propios turnos pendientes --}}
                         @if($turno->estado == 'pendiente')
-                            <form action="{{ route('paciente.turnos.destroy', $turno->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');">
+                            <form action="{{ route('paciente.turnos.destroy', $turno->id_turno) }}" method="POST" style="display:inline;" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit">Cancelar</button>
@@ -50,7 +51,8 @@
                     {{-- Acciones para Médico --}}
                     @elseif(auth()->user()->id_rol == 2 && $turno->medico && $turno->medico->id_usuario == auth()->user()->id_usuario)
                         {{-- Un médico solo puede editar (cambiar estado a realizado/ausente) sus turnos --}}
-                        <a href="{{ route('medico.turnos.edit', $turno->id) }}">Editar</a>
+                        {{-- CAMBIO CLAVE AQUÍ: Usar $turno->id_turno --}}
+                        <a href="{{ route('medico.turnos.edit', $turno->id_turno) }}">Editar</a>
                         {{-- Se elimina la opción de cancelar para el médico --}}
                     @endif
                 @endif

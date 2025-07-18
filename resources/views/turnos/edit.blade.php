@@ -15,7 +15,8 @@
     $isMedico = (auth()->user()->id_rol == 2);
 @endphp
 
-<form method="POST" action="{{ route($routeName, $turno->id) }}">
+{{-- CAMBIO CLAVE AQUÍ: Usar $turno->id_turno para la ruta --}}
+<form method="POST" action="{{ route($routeName, $turno->id_turno) }}">
     @csrf
     @method('PUT')
 
@@ -79,7 +80,7 @@
         <option value="pendiente" {{ $turno->estado == 'pendiente' ? 'selected' : '' }}>Pendiente</option>
         <option value="realizado" {{ $turno->estado == 'realizado' ? 'selected' : '' }}>Realizado</option>
         <option value="cancelado" {{ $turno->estado == 'cancelado' ? 'selected' : '' }}>Cancelado</option>
-        <option value="ausente" {{ $turno->estado == 'ausente' ? 'selected' : '' }}>Ausente</option> {{-- Añadido estado "ausente" --}}
+        <option value="ausente" {{ $turno->estado == 'ausente' ? 'selected' : '' }}>Ausente</option>
     </select>
     <br>
 
@@ -88,7 +89,8 @@
 
 {{-- Incluye el archivo JavaScript, pasando el ID del turno actual y su hora --}}
 <script>
-    const currentTurnoId = {{ $turno->id ?? 'null' }};
+    // Asegúrate de que $turno->id_turno esté disponible en la vista
+    const currentTurnoId = {{ $turno->id_turno ?? 'null' }}; // CAMBIO AQUÍ: Usar id_turno
     const currentTurnoHora = "{{ $turno->hora ?? '' }}";
     const apiUrlBase = @json(Auth::check() ? (Auth::user()->id_rol == 1 ? '/admin/turnos' : (Auth::user()->id_rol == 2 ? '/medico/turnos' : '/paciente/turnos')) : '/paciente/turnos');
 </script>
