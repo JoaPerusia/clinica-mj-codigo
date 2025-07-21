@@ -1,5 +1,26 @@
 <h1>Reservar un turno</h1>
 
+{{-- Botón de Inicio (dinámico por rol) --}}
+@if(auth()->check())
+    <div class="mb-4">
+        @php
+            $dashboardRoute = '';
+            if (auth()->user()->id_rol == 1) {
+                $dashboardRoute = route('admin.dashboard');
+            } elseif (auth()->user()->id_rol == 3) {
+                $dashboardRoute = route('paciente.dashboard');
+            }
+            // Los médicos (rol 2) no crean turnos desde aquí, así que no necesitan un botón de "Inicio" en esta vista
+        @endphp
+
+        @if($dashboardRoute)
+            <a href="{{ $dashboardRoute }}" class="inline-flex items-center px-4 py-2 bg-gray-200 border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-25 transition ease-in-out duration-150">
+                ← Inicio
+            </a>
+        @endif
+    </div>
+@endif
+
 {{-- Determinar la ruta de almacenamiento dinámicamente según el rol --}}
 <form method="POST" action="
     @if(auth()->check() && auth()->user()->id_rol == 1)

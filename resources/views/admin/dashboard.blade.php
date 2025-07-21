@@ -18,6 +18,9 @@
                         <a href="{{ route('admin.especialidades.index') }}" class="inline-flex items-center px-6 py-3 bg-blue-600 border border-transparent rounded-md font-semibold text-base text-white tracking-widest hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus:border-blue-900 focus:ring ring-blue-300 disabled:opacity-25 transition ease-in-out duration-150 mb-4 mr-4">
                             Gestionar Especialidades
                         </a>
+                        <a href="{{ route('admin.pacientes.create') }}" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-semibold rounded-md shadow-lg text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition ease-in-out duration-150">
+                            Crear Nuevo Paciente
+                        </a>
                     </div>
                 </div>
             </div>
