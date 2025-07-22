@@ -5,19 +5,19 @@
         </h2>
     </x-slot>
 
+    @section('content')
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 bg-white border-b border-gray-200">
-                    Bienvenido, Dr./Dra. {{ Auth::user()->medico->nombre }}!
+            <div class="content-wrapper"> 
+                <h1 class="page-title">Bienvenido, Dr./Dra. {{ Auth::user()->medico->nombre }}!</h1> 
 
-                    <div class="mt-4">
-                        <a href="{{ route('medico.turnos.index') }}" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 active:bg-green-800 focus:outline-none focus:border-green-900 focus:ring ring-green-300 disabled:opacity-25 transition ease-in-out duration-150">
-                            Ver Mis Turnos
-                        </a>
-                    </div>
+                <div class="action-buttons-container"> 
+                    <a href="{{ route('medico.turnos.index') }}" class="btn-primary">
+                        Ver Mis Turnos
+                    </a>
                 </div>
             </div>
         </div>
     </div>
+    @endsection
 </x-app-layout>

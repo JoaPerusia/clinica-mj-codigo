@@ -5,25 +5,25 @@
         </h2>
     </x-slot>
 
+    @section('content')
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 bg-white border-b border-gray-200">
-                    Bienvenido, Administrador!
+            <div class="content-wrapper"> 
+                <h1 class="page-title">Bienvenido, Administrador!</h1> 
 
-                    <div class="mt-4">
-                        <a href="{{ route('admin.turnos.index') }}" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-semibold rounded-md shadow-lg text-white bg-blue-700 hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition ease-in-out duration-150 mb-4 mr-4">
-                            Gestionar Turnos
-                        </a>
-                        <a href="{{ route('admin.especialidades.index') }}" class="inline-flex items-center px-6 py-3 bg-blue-600 border border-transparent rounded-md font-semibold text-base text-white tracking-widest hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus:border-blue-900 focus:ring ring-blue-300 disabled:opacity-25 transition ease-in-out duration-150 mb-4 mr-4">
-                            Gestionar Especialidades
-                        </a>
-                        <a href="{{ route('admin.pacientes.create') }}" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-semibold rounded-md shadow-lg text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition ease-in-out duration-150">
-                            Crear Nuevo Paciente
-                        </a>
-                    </div>
+                <div class="action-buttons-container"> 
+                    <a href="{{ route('admin.turnos.index') }}" class="btn-primary">
+                        Gestionar Turnos
+                    </a>
+                    <a href="{{ route('admin.especialidades.index') }}" class="btn-primary">
+                        Gestionar Especialidades
+                    </a>
+                    <a href="{{ route('admin.pacientes.index') }}" class="btn-primary">
+                        Gestionar Pacientes
+                    </a>
                 </div>
             </div>
         </div>
     </div>
+    @endsection
 </x-app-layout>

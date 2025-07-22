@@ -1,76 +1,96 @@
-<h1>Editar Paciente</h1>
+@extends('layouts.app')
 
-{{-- Botón de Inicio (dinámico por rol) --}}
-@if(auth()->check())
-    <div class="mb-4">
-        @php
-            $dashboardRoute = '';
-            if (auth()->user()->id_rol == 1) {
-                $dashboardRoute = route('admin.dashboard');
-            } elseif (auth()->user()->id_rol == 3) {
-                $dashboardRoute = route('paciente.dashboard');
-            }
-        @endphp
+@section('content')
+    <div class="py-12">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="content-wrapper"> 
+                <h1 class="page-title">Editar Paciente</h1> 
 
-        @if($dashboardRoute)
-            <a href="{{ $dashboardRoute }}" class="inline-flex items-center px-4 py-2 bg-gray-200 border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-25 transition ease-in-out duration-150">
-                ← Inicio
-            </a>
-        @endif
-    </div>
-@endif
+                {{-- Botón de Inicio (dinámico por rol) --}}
+                @if(auth()->check())
+                    <div class="action-buttons-container"> 
+                        @php
+                            $dashboardRoute = '';
+                            if (auth()->user()->id_rol == 1) {
+                                $dashboardRoute = route('admin.dashboard');
+                            } elseif (auth()->user()->id_rol == 3) {
+                                $dashboardRoute = route('paciente.dashboard');
+                            }
+                        @endphp
 
-{{-- Determinar la ruta de actualización dinámicamente según el rol --}}
-<form method="POST" action="
-    @if(auth()->check() && auth()->user()->id_rol == 1)
-        {{ route('admin.pacientes.update', $paciente->id_paciente) }} {{-- CAMBIO: Usar id_paciente y ruta admin --}}
-    @elseif(auth()->check() && auth()->user()->id_rol == 3)
-        {{ route('paciente.pacientes.update', $paciente->id_paciente) }} {{-- CAMBIO: Usar id_paciente y ruta paciente --}}
-    @else
-        {{-- Fallback o manejo de error si el rol no está cubierto --}}
-        {{ route('dashboard') }}
-    @endif
-">
-    @csrf
-    @method('PUT')
+                        @if($dashboardRoute)
+                            <a href="{{ $dashboardRoute }}" class="btn-secondary">
+                                ← Inicio
+                            </a>
+                        @endif
+                    </div>
+                @endif
 
-    @if ($errors->any())
-        <div class="alert alert-danger">
-            <ul>
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
+                @if ($errors->any())
+                    <div class="alert-danger"> 
+                        <ul>
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
+                {{-- Determinar la ruta de actualización dinámicamente según el rol --}}
+                <form method="POST" action="
+                    @if(auth()->check() && auth()->user()->id_rol == 1)
+                        {{ route('admin.pacientes.update', $paciente->id_paciente) }}
+                    @elseif(auth()->check() && auth()->user()->id_rol == 3)
+                        {{ route('paciente.pacientes.update', $paciente->id_paciente) }}
+                    @else
+                        {{-- Fallback o manejo de error si el rol no está cubierto --}}
+                        {{ route('dashboard') }}
+                    @endif
+                ">
+                    @csrf
+                    @method('PUT')
+
+                    <div class="form-group"> 
+                        <label for="nombre" class="form-label">Nombre:</label> 
+                        <input type="text" name="nombre" id="nombre" value="{{ old('nombre', $paciente->nombre) }}" required class="form-input"> 
+                    </div>
+
+                    <div class="form-group">
+                        <label for="apellido" class="form-label">Apellido:</label>
+                        <input type="text" name="apellido" id="apellido" value="{{ old('apellido', $paciente->apellido) }}" required class="form-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dni" class="form-label">DNI:</label>
+                        <input type="text" name="dni" id="dni" value="{{ old('dni', $paciente->dni) }}" required class="form-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fecha_nacimiento" class="form-label">Fecha de Nacimiento:</label>
+                        <input type="date" name="fecha_nacimiento" id="fecha_nacimiento" value="{{ old('fecha_nacimiento', $paciente->fecha_nacimiento) }}" required class="form-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="telefono" class="form-label">Teléfono:</label>
+                        <input type="text" name="telefono" id="telefono" value="{{ old('telefono', $paciente->telefono) }}" class="form-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="obra_social" class="form-label">Obra Social:</label>
+                        <input type="text" name="obra_social" id="obra_social" value="{{ old('obra_social', $paciente->obra_social) }}" required class="form-input">
+                    </div>
+
+                    {{-- Campo para id_usuario (solo visible para admin, oculto para paciente) --}}
+                    @if(auth()->check() && auth()->user()->id_rol == 1)
+                        <div class="form-group">
+                            <label for="id_usuario" class="form-label">Usuario Asociado (ID):</label>
+                            <input type="number" name="id_usuario" id="id_usuario" value="{{ old('id_usuario', $paciente->id_usuario) }}" required class="form-input">
+                        </div>
+                    @endif
+
+                    <button type="submit" class="btn-primary mt-4">Guardar cambios</button>
+                </form>
+            </div>
         </div>
-    @endif
-
-    <label for="nombre">Nombre:</label>
-    <input type="text" name="nombre" id="nombre" value="{{ old('nombre', $paciente->nombre) }}" required><br>
-
-    <label for="apellido">Apellido:</label>
-    <input type="text" name="apellido" id="apellido" value="{{ old('apellido', $paciente->apellido) }}" required><br>
-
-    <label for="dni">DNI:</label>
-    <input type="text" name="dni" id="dni" value="{{ old('dni', $paciente->dni) }}" required><br>
-
-    <label for="fecha_nacimiento">Fecha de Nacimiento:</label>
-    <input type="date" name="fecha_nacimiento" id="fecha_nacimiento" value="{{ old('fecha_nacimiento', $paciente->fecha_nacimiento) }}" required><br>
-
-    <label for="telefono">Teléfono:</label>
-    <input type="text" name="telefono" id="telefono" value="{{ old('telefono', $paciente->telefono) }}"><br>
-
-    <label for="obra_social">Obra Social:</label>
-    <input type="text" name="obra_social" id="obra_social" value="{{ old('obra_social', $paciente->obra_social) }}" required><br>
-
-    {{-- Campo para id_usuario (solo visible para admin, oculto para paciente) --}}
-    @if(auth()->check() && auth()->user()->id_rol == 1)
-        <label for="id_usuario">Usuario Asociado (ID):</label>
-        <input type="number" name="id_usuario" id="id_usuario" value="{{ old('id_usuario', $paciente->id_usuario) }}" required>
-        <br>
-    @else
-        {{-- Para pacientes, el id_usuario se asigna automáticamente en el controlador --}}
-        {{-- No es necesario un campo oculto aquí si el controlador lo maneja --}}
-    @endif
-
-    <button type="submit">Guardar cambios</button>
-</form>
+    </div>
+@endsection

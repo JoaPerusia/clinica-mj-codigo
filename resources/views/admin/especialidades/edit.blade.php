@@ -1,36 +1,41 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editar Especialidad</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-    <div class="container mt-4">
-        <h1 class="mb-4">Editar Especialidad</h1>
+@extends('layouts.app')
 
-        @if ($errors->any())
-            <div class="alert alert-danger">
-                <ul>
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
+@section('content')
+    <div class="py-12">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="content-wrapper"> 
+                <h1 class="page-title">Editar Especialidad</h1> 
 
-        <form action="{{ route('admin.especialidades.update', $especialidade->id_especialidad) }}" method="POST">
-            @csrf
-            @method('PUT') {{-- Importante para las actualizaciones --}}
-            <div class="mb-3">
-                <label for="nombre_especialidad" class="form-label">Nombre de la Especialidad</label>
-                <input type="text" class="form-control" id="nombre_especialidad" name="nombre_especialidad" value="{{ old('nombre_especialidad', $especialidade->nombre_especialidad) }}" required>
+                {{-- Botón de Inicio para Admin --}}
+                @if(auth()->check() && auth()->user()->id_rol == 1)
+                    <div class="action-buttons-container">
+                        <a href="{{ route('admin.dashboard') }}" class="btn-secondary">
+                            ← Inicio
+                        </a>
+                    </div>
+                @endif
+
+                @if ($errors->any())
+                    <div class="alert-danger"> 
+                        <ul>
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
+                <form action="{{ route('admin.especialidades.update', $especialidade->id_especialidad) }}" method="POST">
+                    @csrf
+                    @method('PUT')
+                    <div class="form-group"> 
+                        <label for="nombre_especialidad" class="form-label">Nombre de la Especialidad</label> 
+                        <input type="text" class="form-input" id="nombre_especialidad" name="nombre_especialidad" value="{{ old('nombre_especialidad', $especialidade->nombre_especialidad) }}" required> 
+                    </div>
+                    <button type="submit" class="btn-primary">Actualizar Especialidad</button>
+                    <a href="{{ route('admin.especialidades.index') }}" class="btn-secondary ml-2">Cancelar</a> {{-- Añadido ml-2 para separar el botón --}}
+                </form>
             </div>
-            <button type="submit" class="btn btn-primary">Actualizar Especialidad</button>
-            <a href="{{ route('admin.especialidades.index') }}" class="btn btn-secondary">Cancelar</a>
-        </form>
+        </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+@endsection
