@@ -3,12 +3,12 @@
 @section('content')
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="content-wrapper"> 
-                <h1 class="page-title">Lista de Pacientes</h1> 
+            <div class="content-wrapper"> {{-- Usando la nueva clase --}}
+                <h1 class="page-title">Lista de Pacientes</h1> {{-- Usando la nueva clase --}}
 
                 {{-- Botón de Inicio (dinámico por rol) --}}
                 @if(auth()->check())
-                    <div class="action-buttons-container"> 
+                    <div class="action-buttons-container"> {{-- Usando la nueva clase --}}
                         @php
                             $dashboardRoute = '';
                             if (auth()->user()->id_rol == 1) {
@@ -47,13 +47,13 @@
                 @endif
 
                 @if (session('success'))
-                    <div class="alert-success"> 
+                    <div class="alert-success"> {{-- Usando la nueva clase --}}
                         {{ session('success') }}
                     </div>
                 @endif
 
                 @if (session('error'))
-                    <div class="alert-danger"> 
+                    <div class="alert-danger"> {{-- Usando la nueva clase --}}
                         {{ session('error') }}
                     </div>
                 @endif
@@ -61,16 +61,16 @@
                 @if ($pacientes->isEmpty())
                     <p class="text-gray-700 dark:text-gray-300">No hay pacientes registrados.</p>
                 @else
-                    <div class="table-responsive"> 
-                        <table class="custom-table"> 
+                    <div class="table-responsive"> {{-- Usando la nueva clase --}}
+                        <table class="custom-table"> {{-- Usando la nueva clase --}}
                             <thead class="bg-gray-50 dark:bg-gray-700">
                                 <tr>
-                                    <th scope="col" class="table-header">ID Paciente</th> 
+                                    <th scope="col" class="table-header">ID Paciente</th> {{-- Usando la nueva clase --}}
                                     <th scope="col" class="table-header">Nombre</th>
                                     <th scope="col" class="table-header">Apellido</th>
                                     <th scope="col" class="table-header">DNI</th>
                                     <th scope="col" class="table-header">Fecha Nacimiento</th>
-                                    <th scope="col" class="table-header">Teléfono</th>
+                                    <th scope="col" class="table-header">Teléfono</th> {{-- AÑADIDO: Encabezado para Teléfono --}}
                                     <th scope="col" class="table-header">Usuario Asociado</th>
                                     <th scope="col" class="table-header">Acciones</th>
                                 </tr>
@@ -82,8 +82,8 @@
                                     <td class="table-data">{{ $paciente->nombre }}</td>
                                     <td class="table-data">{{ $paciente->apellido }}</td>
                                     <td class="table-data">{{ $paciente->dni }}</td>
-                                    <td class="table-data">{{ $paciente->fecha_nacimiento }}</td>
-                                    <td class="table-data">{{ $paciente->telefono }}</td>
+                                    <td class="table-data">{{ \Carbon\Carbon::parse($paciente->fecha_nacimiento)->format('d/m/Y') }}</td> 
+                                    <td class="table-data">{{ $paciente->telefono }}</td> 
                                     <td class="table-data">{{ $paciente->usuario ? $paciente->usuario->nombre . ' (' . $paciente->usuario->id_usuario . ')' : 'N/A' }}</td>
                                     <td class="table-actions"> 
                                         @if(auth()->check())

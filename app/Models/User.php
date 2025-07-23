@@ -2,51 +2,46 @@
 
 namespace App\Models;
 
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
-
-    protected $table = 'usuarios';
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $primaryKey = 'id_usuario';
+    protected $table = 'usuarios'; 
 
     protected $fillable = [
-        'nombre', 'email', 'password', 'telefono', 'id_rol'
+        'nombre', 
+        'apellido',
+        'dni',
+        'fecha_nacimiento',
+        'obra_social',
+        'email',
+        'password',
+        'telefono',
+        'id_rol',
     ];
 
     protected $hidden = [
-        'password', 'remember_token',
+        'password',
+        'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
-    
-    // importante: Laravel usa esta propiedad para el login
-    public function getAuthPassword()
-    {
-        return $this->password;
-    }
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+    ];
 
     public function rol()
     {
-        return $this->belongsTo(Rol::class, 'id_rol', 'id_rol'); 
+        return $this->belongsTo(Rol::class, 'id_rol', 'id_rol');
     }
-    
+
     public function pacientes()
     {
         return $this->hasMany(Paciente::class, 'id_usuario', 'id_usuario');

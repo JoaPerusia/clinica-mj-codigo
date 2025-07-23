@@ -88,6 +88,17 @@
                     @endif
 
                     <button type="submit" class="btn-primary mt-4">Guardar Paciente</button>
+                    @php
+                        $cancelRoute = '';
+                        if (auth()->check() && auth()->user()->id_rol == 1) {
+                            $cancelRoute = route('admin.pacientes.index');
+                        } elseif (auth()->check() && auth()->user()->id_rol == 3) {
+                            $cancelRoute = route('paciente.pacientes.index');
+                        }
+                    @endphp
+                    @if($cancelRoute)
+                        <a href="{{ $cancelRoute }}" class="btn-secondary ml-2">Cancelar</a>
+                    @endif
                 </form>
             </div>
         </div>

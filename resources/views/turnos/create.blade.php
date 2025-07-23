@@ -89,6 +89,17 @@
                     </div>
 
                     <button type="submit" class="btn-primary mt-4">Confirmar turno</button>
+                    @php
+                        $cancelRoute = '';
+                        if (auth()->check() && auth()->user()->id_rol == 1) {
+                            $cancelRoute = route('admin.turnos.index');
+                        } elseif (auth()->check() && auth()->user()->id_rol == 3) {
+                            $cancelRoute = route('paciente.turnos.index');
+                        }
+                    @endphp
+                    @if($cancelRoute)
+                        <a href="{{ $cancelRoute }}" class="btn-secondary ml-2">Cancelar</a>
+                    @endif
                 </form>
 
                 {{-- Incluye el script de JavaScript para cargar horarios --}}

@@ -18,6 +18,7 @@ class Paciente extends Model
     'apellido',
     'dni',
     'fecha_nacimiento',
+    'telefono',
     'obra_social',
     'id_usuario',
     ];

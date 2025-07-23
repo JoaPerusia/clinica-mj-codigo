@@ -10,7 +10,8 @@ use App\Models\Rol;
 use App\Models\User;
 use App\Models\Medico;
 use App\Models\Especialidad;
-use App\Models\HorarioMedico; 
+use App\Models\HorarioMedico;
+use Carbon\Carbon;
 
 class MedicoSeeder extends Seeder
 {
@@ -19,15 +20,13 @@ class MedicoSeeder extends Seeder
      */
     public function run(): void
     {
-        // Obtener el ID del rol "Medico"
-        $medicoRol = Rol::where('rol', 'Medico')->first();
+        $medicoRol = Rol::where('rol', 'medico')->first();
 
         if (!$medicoRol) {
-            $this->command->info('El rol "Medico" no fue encontrado. Asegúrate de que RolSeeder se ejecute primero.');
+            $this->command->info('El rol "medico" no fue encontrado. Asegúrate de que RolSeeder se ejecute primero.');
             return;
         }
 
-        // Obtener algunas especialidades para asignar
         $especialidades = Especialidad::all();
 
         if ($especialidades->isEmpty()) {
@@ -35,14 +34,15 @@ class MedicoSeeder extends Seeder
             return;
         }
 
-        // Datos de médicos de ejemplo con sus especialidades y AHORA SUS HORARIOS
         $medicosData = [
             [
                 'nombre' => 'Dr. Juan',
                 'apellido' => 'Perez',
                 'email' => 'juan.perez@example.com',
-                'telefono' => '1122334455',
-                'horario_disponible' => 'Lunes a Viernes 9-17h', // Esta columna ya no se usará para la lógica
+                'dni' => '11223344',
+                'fecha_nacimiento' => '1975-01-01',
+                'obra_social' => 'SaludMed',
+                'telefono' => '1122334455', 
                 'especialidades' => ['Cardiología', 'Medicina General'],
                 'horarios_trabajo' => [
                     ['dia_semana' => 'Lunes', 'hora_inicio' => '09:00:00', 'hora_fin' => '13:00:00'],
@@ -57,8 +57,10 @@ class MedicoSeeder extends Seeder
                 'nombre' => 'Dra. Ana',
                 'apellido' => 'Gomez',
                 'email' => 'ana.gomez@example.com',
+                'dni' => '22334455',
+                'fecha_nacimiento' => '1982-03-15',
+                'obra_social' => 'MedicaPlus',
                 'telefono' => '9988776655',
-                'horario_disponible' => 'Martes y Jueves 10-18h',
                 'especialidades' => ['Pediatría', 'Neurología'],
                 'horarios_trabajo' => [
                     ['dia_semana' => 'Martes', 'hora_inicio' => '10:00:00', 'hora_fin' => '18:00:00'],
@@ -69,8 +71,10 @@ class MedicoSeeder extends Seeder
                 'nombre' => 'Dr. Luis',
                 'apellido' => 'Fernandez',
                 'email' => 'luis.fernandez@example.com',
+                'dni' => '33445566',
+                'fecha_nacimiento' => '1970-07-20',
+                'obra_social' => 'SaludIntegral',
                 'telefono' => '5544332211',
-                'horario_disponible' => 'Miércoles y Viernes 8-16h',
                 'especialidades' => ['Dermatología', 'Psicología'],
                 'horarios_trabajo' => [
                     ['dia_semana' => 'Miércoles', 'hora_inicio' => '08:00:00', 'hora_fin' => '16:00:00'],
@@ -79,37 +83,33 @@ class MedicoSeeder extends Seeder
             ],
         ];
 
-        // Mapeo de nombres de día a números de día de semana (0=Domingo, 1=Lunes, ..., 6=Sábado)
         $diasSemanaMap = [
-            'Domingo' => 0,
-            'Lunes' => 1,
-            'Martes' => 2,
-            'Miércoles' => 3,
-            'Jueves' => 4,
-            'Viernes' => 5,
-            'Sábado' => 6,
+            'Domingo' => 0, 'Lunes' => 1, 'Martes' => 2, 'Miércoles' => 3,
+            'Jueves' => 4, 'Viernes' => 5, 'Sábado' => 6,
         ];
 
-
         foreach ($medicosData as $data) {
-            // 1. Crear el usuario para el médico
+            // 1. Crear el usuario para el médico con todos los campos (incluido telefono en 'usuarios')
             $user = User::firstOrCreate(
                 ['email' => $data['email']],
                 [
-                    'nombre' => $data['nombre'] . ' ' . $data['apellido'],
+                    'nombre' => $data['nombre'],
+                    'apellido' => $data['apellido'],
+                    'dni' => $data['dni'],
+                    'fecha_nacimiento' => $data['fecha_nacimiento'],
+                    'obra_social' => $data['obra_social'],
+                    'telefono' => $data['telefono'], 
                     'password' => Hash::make('password'),
-                    'telefono' => $data['telefono'],
                     'id_rol' => $medicoRol->id_rol,
                 ]
             );
 
-            // 2. Crear el perfil de médico asociado al usuario
+            // 2. Crear el perfil de médico asociado al usuario (en la tabla 'medicos')
             $medico = Medico::firstOrCreate(
                 ['id_usuario' => $user->id_usuario],
                 [
                     'nombre' => $data['nombre'],
                     'apellido' => $data['apellido'],
-                    'horario_disponible' => $data['horario_disponible'], // Mantener por si acaso, pero ya no se usa
                 ]
             );
 
@@ -117,15 +117,13 @@ class MedicoSeeder extends Seeder
             $especialidadesIds = Especialidad::whereIn('nombre_especialidad', $data['especialidades'])->pluck('id_especialidad');
             $medico->especialidades()->syncWithoutDetaching($especialidadesIds);
 
-            // 4. **NUEVO: Añadir horarios de trabajo al médico**
+            // 4. Añadir horarios de trabajo al médico
             foreach ($data['horarios_trabajo'] as $horario) {
-                // Convertir el nombre del día a número de día de la semana
                 $diaNumero = $diasSemanaMap[$horario['dia_semana']];
-
                 HorarioMedico::firstOrCreate(
                     [
                         'id_medico' => $medico->id_medico,
-                        'dia_semana' => $diaNumero, // Guardar como número
+                        'dia_semana' => $diaNumero,
                         'hora_inicio' => $horario['hora_inicio'],
                         'hora_fin' => $horario['hora_fin'],
                     ]

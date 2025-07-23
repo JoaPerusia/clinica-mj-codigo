@@ -28,9 +28,6 @@
                     <a href="{{ route('paciente.pacientes.index') }}" class="btn-primary">
                         Mis Pacientes
                     </a>
-                    <a href="{{ route('paciente.pacientes.create') }}" class="btn-success">
-                        Añadir Familiar/Otro Paciente
-                    </a>
                 </div>
             </div>
         </div>

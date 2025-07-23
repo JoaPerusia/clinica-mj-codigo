@@ -32,7 +32,7 @@
                         <input type="text" class="form-input" id="nombre_especialidad" name="nombre_especialidad" value="{{ old('nombre_especialidad') }}" required> 
                     </div>
                     <button type="submit" class="btn-primary">Guardar Especialidad</button>
-                    <a href="{{ route('admin.especialidades.index') }}" class="btn-secondary ml-2">Cancelar</a> {{-- Añadido ml-2 para separar el botón --}}
+                    <a href="{{ route('admin.especialidades.index') }}" class="btn-secondary ml-2">Cancelar</a> 
                 </form>
             </div>
         </div>

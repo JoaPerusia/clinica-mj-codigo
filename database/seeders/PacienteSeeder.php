@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\Rol;
 use App\Models\User;
 use App\Models\Paciente;
-use Carbon\Carbon; // Para manejar las fechas de nacimiento
+use Carbon\Carbon;
 
 class PacienteSeeder extends Seeder
 {
@@ -18,11 +18,10 @@ class PacienteSeeder extends Seeder
      */
     public function run(): void
     {
-        // Obtener el ID del rol "Paciente" dinámicamente
-        $pacienteRol = Rol::where('rol', 'Paciente')->first();
+        $pacienteRol = Rol::where('rol', 'paciente')->first();
 
         if (!$pacienteRol) {
-            $this->command->info('El rol "Paciente" no fue encontrado. Asegúrate de que RolSeeder se ejecute primero.');
+            $this->command->info('El rol "paciente" no fue encontrado. Asegúrate de que RolSeeder se ejecute primero.');
             return;
         }
 
@@ -34,7 +33,7 @@ class PacienteSeeder extends Seeder
                 'fecha_nacimiento' => '1990-05-15',
                 'obra_social' => 'Osde',
                 'email' => 'maria.gonzalez@example.com',
-                'telefono' => '1133445566',
+                'telefono' => '1133445566', 
             ],
             [
                 'nombre' => 'Carlos',
@@ -57,12 +56,16 @@ class PacienteSeeder extends Seeder
         ];
 
         foreach ($pacientesData as $data) {
-            // Crear el usuario asociado al paciente
+            // Crear el usuario asociado al paciente con todos los campos (incluido telefono en 'usuarios')
             $user = User::create([
-                'nombre' => $data['nombre'] . ' ' . $data['apellido'],
+                'nombre' => $data['nombre'],
+                'apellido' => $data['apellido'],
+                'dni' => $data['dni'],
+                'fecha_nacimiento' => $data['fecha_nacimiento'],
+                'obra_social' => $data['obra_social'],
                 'email' => $data['email'],
-                'password' => Hash::make('password'), // Contraseña por defecto
-                'telefono' => $data['telefono'],
+                'telefono' => $data['telefono'], 
+                'password' => Hash::make('password'),
                 'id_rol' => $pacienteRol->id_rol,
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -75,7 +78,8 @@ class PacienteSeeder extends Seeder
                 'dni' => $data['dni'],
                 'fecha_nacimiento' => Carbon::parse($data['fecha_nacimiento']),
                 'obra_social' => $data['obra_social'],
-                'id_usuario' => $user->id_usuario, // Usar id_usuario del usuario recién creado
+                'telefono' => $data['telefono'], 
+                'id_usuario' => $user->id_usuario,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
