@@ -3,12 +3,12 @@
 @section('content')
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="content-wrapper"> 
-                <h1 class="page-title">Reservar un turno</h1> 
+            <div class="content-wrapper">
+                <h1 class="page-title">Reservar un turno</h1>
 
                 {{-- Botón de Inicio (dinámico por rol) --}}
                 @if(auth()->check())
-                    <div class="action-buttons-container"> 
+                    <div class="action-buttons-container">
                         @php
                             $dashboardRoute = '';
                             if (auth()->user()->id_rol == 1) {
@@ -40,7 +40,7 @@
                     @csrf
 
                     @if ($errors->any())
-                        <div class="alert-danger"> 
+                        <div class="alert-danger">
                             <ul>
                                 @foreach ($errors->all() as $error)
                                     <li>{{ $error }}</li>
@@ -49,9 +49,9 @@
                         </div>
                     @endif
 
-                    <div class="form-group"> 
-                        <label for="id_paciente" class="form-label">Paciente:</label> 
-                        <select name="id_paciente" id="id_paciente" required class="form-input"> 
+                    <div class="form-group">
+                        <label for="id_paciente" class="form-label">Paciente:</label>
+                        <select name="id_paciente" id="id_paciente" required class="form-input">
                             <option value="">Selecciona un paciente</option>
                             @foreach($pacientes as $paciente)
                                 <option value="{{ $paciente->id_paciente }}">
@@ -61,9 +61,9 @@
                         </select>
                     </div>
 
-                    <div class="form-group"> 
-                        <label for="id_medico" class="form-label">Médico:</label> 
-                        <select name="id_medico" id="id_medico" required class="form-input"> 
+                    <div class="form-group">
+                        <label for="id_medico" class="form-label">Médico:</label>
+                        <select name="id_medico" id="id_medico" required class="form-input">
                             <option value="">Selecciona un médico</option>
                             @foreach($medicos as $medico)
                                 <option value="{{ $medico->id_medico }}">
@@ -76,14 +76,14 @@
                         </select>
                     </div>
 
-                    <div class="form-group"> 
-                        <label for="fecha" class="form-label">Fecha:</label> 
-                        <input type="date" name="fecha" id="fecha" required min="{{ \Carbon\Carbon::today()->toDateString() }}" class="form-input"> 
+                    <div class="form-group">
+                        <label for="fecha" class="form-label">Fecha:</label>
+                        <input type="date" name="fecha" id="fecha" required min="{{ \Carbon\Carbon::today()->toDateString() }}" class="form-input">
                     </div>
 
-                    <div class="form-group"> 
-                        <label for="hora" class="form-label">Hora:</label> 
-                        <select name="hora" id="hora" required disabled class="form-input"> 
+                    <div class="form-group">
+                        <label for="hora" class="form-label">Hora:</label>
+                        <select name="hora" id="hora" required disabled class="form-input">
                             <option value="">Selecciona primero médico y fecha</option>
                         </select>
                     </div>
@@ -104,13 +104,12 @@
 
                 {{-- Incluye el script de JavaScript para cargar horarios --}}
                 <script>
-                    // Determinar la base de la URL API según el rol del usuario autenticado
+                    // Definimos estas variables para que sean accesibles desde el script externo
                     const apiUrlBase = @json(Auth::check() ? (Auth::user()->id_rol == 1 ? '/admin/turnos' : (Auth::user()->id_rol == 2 ? '/medico/turnos' : '/paciente/turnos')) : '/paciente/turnos');
-                    // Para la vista de creación, estas variables no son relevantes pero las definimos como null/vacío
                     const currentTurnoId = null;
                     const currentTurnoHora = '';
                 </script>
-                <script src="{{ asset('build/turnos.js') }}"></script>
+                @vite('resources/js/turnos.js')
             </div>
         </div>
     </div>
