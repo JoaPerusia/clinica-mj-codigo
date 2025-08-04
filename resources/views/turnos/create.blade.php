@@ -49,32 +49,46 @@
                         </div>
                     @endif
 
+                    {{-- seleccionar paciente --}}
                     <div class="form-group">
                         <label for="id_paciente" class="form-label">Paciente:</label>
                         <select name="id_paciente" id="id_paciente" required class="form-input">
                             <option value="">Selecciona un paciente</option>
                             @foreach($pacientes as $paciente)
                                 <option value="{{ $paciente->id_paciente }}">
-                                    {{ $paciente->nombre }} {{ $paciente->apellido }} (DNI: {{ $paciente->dni }})
+                                    {{ $paciente->nombre }} {{ $paciente->apellido }} (DNI: {{ $paciente->dni }}) 
                                 </option>
                             @endforeach
                         </select>
                     </div>
 
+                    {{-- seleccionar especialidad --}}
+                    <div class="form-group">
+                        <label for="id_especialidad" class="form-label">Especialidad</label>
+                        <select name="id_especialidad" id="id_especialidad" class="form-input">
+                            <option value="">Selecciona una especialidad</option>
+                            @foreach($especialidades as $especialidad)
+                                <option value="{{ $especialidad->id_especialidad }}">{{ $especialidad->nombre_especialidad }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    {{-- seleccionar médico --}}
                     <div class="form-group">
                         <label for="id_medico" class="form-label">Médico:</label>
-                        <select name="id_medico" id="id_medico" required class="form-input">
-                            <option value="">Selecciona un médico</option>
-                            @foreach($medicos as $medico)
+                        <select name="id_medico" id="id_medico" required class="form-input" disabled>
+                            <option value="">Selecciona una especialidad primero</option>
+                           <!-- @foreach($medicos as $medico)
                                 <option value="{{ $medico->id_medico }}">
                                     {{ $medico->nombre }} {{ $medico->apellido }}
                                     @if($medico->especialidades->isNotEmpty())
                                         ({{ $medico->especialidades->pluck('nombre')->join(', ') }})
                                     @endif
                                 </option>
-                            @endforeach
-                        </select>
+                            @endforeach {{-- el foreach no sé si va --}} -->
+                        </select> 
                     </div>
+                    
 
                     <div class="form-group">
                         <label for="fecha" class="form-label">Fecha:</label>
@@ -106,6 +120,8 @@
                 <script>
                     // Definimos estas variables para que sean accesibles desde el script externo
                     const apiUrlBase = @json(Auth::check() ? (Auth::user()->id_rol == 1 ? '/admin/turnos' : (Auth::user()->id_rol == 2 ? '/medico/turnos' : '/paciente/turnos')) : '/paciente/turnos');
+                    const apiUrlMedicosBase = '{{ route('api.medicos.by-especialidad') }}';
+                    const apiUrlHorariosDisponibles = '{{ route('api.turnos.disponibles') }}'; 
                     const currentTurnoId = null;
                     const currentTurnoHora = '';
                 </script>
