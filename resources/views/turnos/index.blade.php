@@ -45,15 +45,31 @@
                 
                 {{-- Mensajes de estado --}}
                 @if (session('success'))
-                    <div class="alert alert-success">{{ session('success') }}</div>
+                    <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4 rounded-lg shadow" role="alert">
+                        <p>{{ session('success') }}</p>
+                    </div>
                 @endif
                 
                 @if (session('error'))
-                    <div class="alert alert-danger">{{ session('error') }}</div>
+                    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 rounded-lg shadow" role="alert">
+                        <p>{{ session('error') }}</p>
+                    </div>
                 @endif
 
+                {{-- Filtro de estado de turnos --}}
+                <div class="mb-4 flex items-center space-x-2">
+                    <label for="estado_filtro" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Filtrar por estado:</label>
+                    <select id="estado_filtro" class="mt-1 block w-auto pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <option value="pendiente" {{ $estado_filtro == 'pendiente' ? 'selected' : '' }}>Pendientes</option>
+                        <option value="todos" {{ $estado_filtro == 'todos' ? 'selected' : '' }}>Todos</option>
+                        <option value="cancelado" {{ $estado_filtro == 'cancelado' ? 'selected' : '' }}>Cancelados</option>
+                        <option value="realizado_atendido" {{ $estado_filtro == 'realizado_atendido' ? 'selected' : '' }}>Realizados/Atendidos</option>
+                        <option value="ausente" {{ $estado_filtro == 'ausente' ? 'selected' : '' }}>Ausentes</option>
+                    </select>
+                </div>
+
                 @if($turnos->isEmpty())
-                    <p>No tienes turnos registrados.</p>
+                    <p class="text-white">No tienes turnos registrados para el filtro seleccionado.</p>
                 @else
                     <div class="overflow-x-auto bg-white dark:bg-gray-800 shadow-md sm:rounded-lg">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -109,12 +125,14 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         @if(auth()->check())
+                                            {{-- Lógica de botones de acción --}}
                                             @if(auth()->user()->id_rol == 1)
                                                 <a href="{{ route('admin.turnos.edit', $turno->id_turno) }}" class="btn-info mr-2">Editar</a>
-                                                <form action="{{ route('admin.turnos.destroy', $turno->id_turno) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de eliminar este turno?');">
+                                                {{-- El botón de eliminar ahora solo cambia el estado a 'cancelado' --}}
+                                                <form action="{{ route('admin.turnos.destroy', $turno->id_turno) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn-danger">Eliminar</button>
+                                                    <button type="submit" class="btn-danger">Cancelar</button>
                                                 </form>
                                             @elseif(auth()->user()->id_rol == 3 && $turno->estado == 'pendiente')
                                                 <form action="{{ route('paciente.turnos.destroy', $turno->id_turno) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');">
@@ -134,8 +152,37 @@
                             </tbody>
                         </table>
                     </div>
+
+                    {{-- Enlaces de paginación --}}
+                    <div class="mt-4">
+                        {{ $turnos->links() }}
+                    </div>
                 @endif
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const estadoFiltroSelect = document.getElementById('estado_filtro');
+
+            estadoFiltroSelect.addEventListener('change', function () {
+                const selectedEstado = this.value;
+                const currentUrl = new URL(window.location.href);
+                
+                // Actualizar el parámetro 'estado_filtro' en la URL
+                if (selectedEstado === 'todos') {
+                    currentUrl.searchParams.set('estado_filtro', selectedEstado); // Eliminar el parámetro si es 'todos'
+                } else {
+                    currentUrl.searchParams.set('estado_filtro', selectedEstado);
+                }
+                
+                // Asegurarse de que el parámetro de página se resetee a 1 cuando se cambia el filtro de estado
+                currentUrl.searchParams.set('page', 1);
+
+                // Redirigir a la nueva URL
+                window.location.href = currentUrl.toString();
+            });
+        });
+    </script>
 @endsection

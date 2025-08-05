@@ -18,39 +18,65 @@ class TurnoController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         $usuario = Auth::user();
+        $estado_filtro = $request->input('estado_filtro', 'pendiente'); // Por defecto, mostrar 'pendiente'
+        $perPage = 10; // Número de turnos por página
 
-        // Admin ve todos
+        $query = Turno::with('paciente', 'medico.especialidades'); // Cargar especialidades del médico
+
+        // Aplicar filtros según el rol y el estado_filtro
         if ($usuario->id_rol == 1) {
-            $turnos = Turno::with('paciente', 'medico')->get();
-        }
-        // Médico ve solo sus turnos
-        elseif ($usuario->id_rol == 2) {
-            $medico = $usuario->medico; // Relación: $user->medico (asegúrate de que exista en User.php)
-
+            // Admin ve todos los turnos, pero aplica el filtro de estado si está presente
+            if ($estado_filtro === 'todos') {
+                $query->whereIn('estado', ['realizado', 'atendido', 'pendiente', 'cancelado', 'ausente']);
+            } elseif ($estado_filtro === 'realizado_atendido') {
+                $query->whereIn('estado', ['realizado', 'atendido']);
+            } else {
+                $query->where('estado', $estado_filtro);
+            }
+        } elseif ($usuario->id_rol == 2) {
+            // Médico ve solo sus turnos
+            $medico = $usuario->medico;
             if (!$medico) {
-                // Si el usuario no tiene un perfil de médico, redirige o maneja el error
                 return redirect()->route('medico.dashboard')->with('error', 'Tu perfil de médico no está configurado.');
             }
+            $query->where('id_medico', $medico->id_medico);
 
-            $turnos = Turno::where('id_medico', $medico->id_medico) // Usa id_medico del objeto Medico
-                        ->with('paciente', 'medico')
-                        ->get();
-        }
-        // Paciente ve solo sus turnos
-        elseif ($usuario->id_rol == 3) {
+            if ($estado_filtro === 'todos') {
+                $query->whereIn('estado', ['realizado', 'atendido', 'pendiente', 'cancelado', 'ausente']);
+            } elseif ($estado_filtro === 'realizado_atendido') {
+                $query->whereIn('estado', ['realizado', 'atendido']);
+            } else {
+                $query->where('estado', $estado_filtro);
+            }
+        } elseif ($usuario->id_rol == 3) {
+            // Paciente ve solo sus turnos
             $pacientes_ids = $usuario->pacientes->pluck('id_paciente');
-            $turnos = Turno::whereIn('id_paciente', $pacientes_ids)
-                        ->with('paciente', 'medico')
-                        ->get();
+            $query->whereIn('id_paciente', $pacientes_ids);
+
+            if ($estado_filtro === 'todos') {
+                $query->whereIn('estado', ['realizado', 'atendido', 'pendiente', 'cancelado', 'ausente']);
+            } elseif ($estado_filtro === 'realizado_atendido') {
+                $query->whereIn('estado', ['realizado', 'atendido']);
+            } else {
+                $query->where('estado', $estado_filtro);
+            }
         } else {
             // Si el rol no está definido o es inesperado
             $turnos = collect(); // Colección vacía
+            return view('turnos.index', compact('turnos', 'estado_filtro'));
         }
 
-        return view('turnos.index', compact('turnos'));
+        // Ordenar por fecha y hora descendente para que los más recientes aparezcan primero
+        // Usar paginate() en lugar de get()
+        $turnos = $query->orderBy('fecha', 'desc')
+                        ->orderBy('hora', 'asc')
+                        ->paginate($perPage)
+                        ->withQueryString(); // Esto es crucial para mantener los parámetros de filtro en la paginación
+
+        return view('turnos.index', compact('turnos', 'estado_filtro'));
     }
 
     /**
@@ -253,136 +279,54 @@ class TurnoController extends Controller
         $usuario = auth()->user();
 
         // Validar que el usuario tiene permiso para editar este turno
-        // Administrador puede editar cualquier turno
-        // Médico solo puede editar sus propios turnos
-        // Paciente solo puede editar sus propios turnos
         if (
             ($usuario->id_rol == 1) || // Administrador
             ($usuario->id_rol == 2 && $turno->id_medico == $usuario->medico->id_medico) || // Médico
             ($usuario->id_rol == 3 && $turno->id_paciente == $usuario->paciente->id_paciente) // Paciente
         ) {
+            // Solo validamos el campo 'estado'. Otros campos no serán modificables.
             $rules = [
-                'estado' => 'required|in:pendiente,realizado,cancelado,ausente', // Añadido 'ausente'
+                'estado' => 'required|in:pendiente,realizado,cancelado,ausente',
             ];
-
-            // Reglas adicionales para Administrador y Paciente
-            if ($usuario->id_rol == 1 || $usuario->id_rol == 3) {
-                $rules['id_paciente'] = 'required|exists:pacientes,id_paciente';
-                $rules['id_medico'] = 'required|exists:medicos,id_medico';
-                $rules['fecha'] = 'required|date|after_or_equal:today';
-                $rules['hora'] = 'required|date_format:H:i';
-            }
 
             $request->validate($rules);
 
-            // Lógica de actualización basada en el rol
-            if ($usuario->id_rol == 2) { // Médico: solo puede cambiar el estado
-                $turno->update([
-                    'estado' => $request->estado,
-                ]);
-                return redirect()->route('medico.turnos.index')->with('success', 'El estado de tu turno ha sido actualizado con éxito.');
-            } else { // Administrador o Paciente: pueden cambiar todos los campos validados
+            // --- Lógica para controlar el cambio de estado ---
+            $estado_solicitado = $request->input('estado');
+            $estado_actual = $turno->estado;
 
-                $fecha = Carbon::parse($request->fecha); // Ahora es un objeto Carbon
-                $hora = $request->hora; // String HH:MM
-                $id_medico = $request->id_medico;
+            // Estados finales que no deberían ser modificables
+            $estados_finales = ['realizado', 'cancelado', 'ausente'];
 
-                // Verificar disponibilidad del médico para la nueva fecha y hora (solo si se cambian)
-                if (
-                    $turno->fecha != $fecha->toDateString() || // Comparar strings de fecha
-                    $turno->hora != $hora ||
-                    $turno->id_medico != $id_medico
-                ) {
-                    $medico = Medico::with('horariosTrabajo', 'bloqueos')->find($id_medico); // Cargar relaciones aquí
-                    if (!$medico) {
-                        return back()->withErrors(['id_medico' => 'Médico no encontrado.'])->withInput();
-                    }
+            // Si el turno ya está en un estado final y se intenta cambiar el estado,
+            // o si se intenta cambiar de un estado final a 'pendiente', se rechaza.
+            if (in_array($estado_actual, $estados_finales) && $estado_solicitado !== $estado_actual) {
+                return back()->withInput()->withErrors(['estado' => 'No se puede cambiar el estado de un turno que ya está ' . $estado_actual . '.']);
+            }
+            // Si el turno no está pendiente y se intenta cambiar a pendiente, se rechaza
+            if ($estado_actual !== 'pendiente' && $estado_solicitado === 'pendiente') {
+                return back()->withInput()->withErrors(['estado' => 'No se puede revertir un turno a "Pendiente" desde su estado actual de "' . $estado_actual . '".']);
+            }
+            // --- FIN Lógica para controlar el cambio de estado ---
 
-                    // Verificar si el médico trabaja en ese horario
-                    $diaSemanaNumero = $fecha->dayOfWeek; // 0 (Domingo) a 6 (Sábado)
-                    $horariosTrabajoDelDia = $medico->horariosTrabajo->where('dia_semana', $diaSemanaNumero);
+            // Actualizar solo el campo 'estado'
+            $turno->update([
+                'estado' => $estado_solicitado,
+            ]);
 
-                    if ($horariosTrabajoDelDia->isEmpty()) {
-                        return back()->withInput()->withErrors(['fecha' => 'El médico no trabaja en la fecha seleccionada.'])->withInput();
-                    }
-
-                    $turno_hora_carbon = Carbon::parse($hora);
-                    $trabajaEnHorario = false;
-                    foreach ($horariosTrabajoDelDia as $horario) {
-                        $horario_inicio_carbon = Carbon::parse($horario->hora_inicio);
-                        $horario_fin_carbon = Carbon::parse($horario->hora_fin);
-                        $turno_fin_carbon = (clone $turno_hora_carbon)->addMinutes(30); // Asumiendo 30 minutos de duración del turno
-
-                        if ($turno_hora_carbon->gte($horario_inicio_carbon) && $turno_fin_carbon->lte($horario_fin_carbon)) {
-                            $trabajaEnHorario = true;
-                            break;
-                        }
-                    }
-
-                    if (!$trabajaEnHorario) {
-                        return back()->withErrors(['hora' => 'La hora seleccionada está fuera del horario de disponibilidad del médico para este día.'])->withInput();
-                    }
-
-                    // Verificar bloqueos del médico para la nueva fecha y hora
-                    $bloqueosDelDia = $medico->bloqueos
-                        ->where('fecha_inicio', '<=', $fecha->format('Y-m-d'))
-                        ->where('fecha_fin', '>=', $fecha->format('Y-m-d'));
-
-                    foreach ($bloqueosDelDia as $bloqueo) {
-                        // Si el bloqueo no tiene hora de inicio/fin, es un bloqueo de día completo
-                        if (empty($bloqueo->hora_inicio) || empty($bloqueo->hora_fin)) {
-                            return back()->withInput()->withErrors(['fecha' => 'El médico tiene un bloqueo de día completo en la fecha seleccionada.'])->withInput();
-                        }
-
-                        // Bloqueo por horas: Verificar si el turno se solapa con el bloqueo
-                        $bloqueo_hora_inicio_carbon = Carbon::parse($bloqueo->hora_inicio);
-                        $bloqueo_hora_fin_carbon = Carbon::parse($bloqueo->hora_fin);
-
-                        $turno_fin_carbon = (clone $turno_hora_carbon)->addMinutes(30);
-
-                        if (
-                            ($turno_hora_carbon->gte($bloqueo_hora_inicio_carbon) && $turno_hora_carbon->lt($bloqueo_hora_fin_carbon)) ||
-                            ($turno_fin_carbon->gt($bloqueo_hora_inicio_carbon) && $turno_fin_carbon->lte($bloqueo_hora_fin_carbon)) ||
-                            ($bloqueo_hora_inicio_carbon->gte($turno_hora_carbon) && $bloqueo_hora_fin_carbon->lte($turno_fin_carbon))
-                        ) {
-                            return back()->withErrors(['hora' => 'El médico tiene un bloqueo en el horario seleccionado.'])->withInput();
-                        }
-                    }
-
-                    // Verificar si ya existe un turno ocupado en la nueva fecha y hora para el médico (excluyendo el turno actual que se está editando)
-                    $turnoOcupado = Turno::where('id_medico', $id_medico)
-                        ->where('fecha', $fecha->toDateString())
-                        ->where('hora', $hora)
-                        ->where('id_turno', '!=', $turno->id_turno) // Excluir el turno actual
-                        ->whereIn('estado', ['pendiente', 'realizado'])
-                        ->first();
-
-                    if ($turnoOcupado) {
-                        return back()->withErrors(['hora' => 'El horario seleccionado ya está ocupado para este médico.'])->withInput();
-                    }
-                }
-
-                // Actualizar todos los campos para Admin y Paciente
-                $turno->update([
-                    'fecha' => $fecha->toDateString(),
-                    'hora' => $hora,
-                    'estado' => $request->estado,
-                    'id_paciente' => $request->id_paciente,
-                    'id_medico' => $request->id_medico,
-                ]);
-
-                // Redireccionamiento dinámico basado en el rol del usuario
-                if ($usuario->id_rol == 1) { // Administrador
-                    return redirect()->route('admin.turnos.index')->with('success', 'Turno actualizado con éxito por el administrador.');
-                } else { // Paciente (id_rol == 3)
-                    return redirect()->route('paciente.turnos.index')->with('success', 'Turno actualizado con éxito.');
-                }
+            // Redireccionamiento dinámico basado en el rol del usuario
+            if ($usuario->id_rol == 1) { // Administrador
+                return redirect()->route('admin.turnos.index')->with('success', 'Estado del turno actualizado con éxito por el administrador.');
+            } elseif ($usuario->id_rol == 2) { // Médico
+                return redirect()->route('medico.turnos.index')->with('success', 'Estado de tu turno ha sido actualizado con éxito.');
+            } else { // Paciente (id_rol == 3)
+                return redirect()->route('paciente.turnos.index')->with('success', 'Estado del turno actualizado con éxito.');
             }
         }
 
         abort(403, 'Acceso no autorizado para actualizar este turno.');
     }
-
+    
     /**
      * Remove the specified resource from storage.
      */
@@ -429,19 +373,31 @@ class TurnoController extends Controller
     public function misTurnos()
     {
         $usuario = Auth::user();
+        $perPage = 10; // Número de turnos por página
+        $estado_filtro = request()->input('estado_filtro', 'pendiente'); // Obtener filtro
 
         if ($usuario->id_rol != 3) {
             abort(403, 'Acceso no autorizado. Esta sección es solo para pacientes.');
         }
 
         $pacientes_ids = $usuario->pacientes->pluck('id_paciente');
-        $turnos = Turno::whereIn('id_paciente', $pacientes_ids)
-                    ->with('paciente', 'medico')
-                    ->orderBy('fecha', 'desc')
-                    ->orderBy('hora', 'desc')
-                    ->get();
+        $query = Turno::whereIn('id_paciente', $pacientes_ids)
+                    ->with('paciente', 'medico');
 
-        return view('turnos.mis-turnos', compact('turnos'));
+        if ($estado_filtro === 'todos') {
+            // No aplicar filtro de estado
+        } elseif ($estado_filtro === 'realizado_atendido') {
+            $query->whereIn('estado', ['realizado', 'atendido']);
+        } else {
+            $query->where('estado', $estado_filtro);
+        }
+
+        $turnos = $query->orderBy('fecha', 'desc')
+                        ->orderBy('hora', 'asc') // Ordenar por fecha descendente y hora ascendente
+                        ->paginate($perPage)
+                        ->withQueryString();
+
+        return view('turnos.mis-turnos', compact('turnos', 'estado_filtro'));
     }
 
     /**
@@ -450,6 +406,8 @@ class TurnoController extends Controller
     public function misTurnosMedico()
     {
         $usuario = Auth::user();
+        $perPage = 10; // Número de turnos por página
+        $estado_filtro = request()->input('estado_filtro', 'pendiente'); // Obtener filtro
 
         if ($usuario->id_rol != 2) {
             abort(403, 'Acceso no autorizado. Esta sección es solo para médicos.');
@@ -461,13 +419,23 @@ class TurnoController extends Controller
             return redirect()->route('medico.dashboard')->with('error', 'Tu perfil de médico no está configurado.');
         }
 
-        $turnos = Turno::where('id_medico', $medico->id_medico)
-                    ->with('paciente', 'medico')
-                    ->orderBy('fecha', 'desc')
-                    ->orderBy('hora', 'desc')
-                    ->get();
+        $query = Turno::where('id_medico', $medico->id_medico)
+                    ->with('paciente', 'medico');
 
-        return view('turnos.mis-turnos-medico', compact('turnos'));
+        if ($estado_filtro === 'todos') {
+            // No aplicar filtro de estado
+        } elseif ($estado_filtro === 'realizado_atendido') {
+            $query->whereIn('estado', ['realizado', 'atendido']);
+        } else {
+            $query->where('estado', $estado_filtro);
+        }
+
+        $turnos = $query->orderBy('fecha', 'desc')
+                        ->orderBy('hora', 'asc') // Ordenar por fecha descendente y hora ascendente
+                        ->paginate($perPage)
+                        ->withQueryString();
+
+        return view('turnos.mis-turnos-medico', compact('turnos', 'estado_filtro'));
     }
 
     /**
