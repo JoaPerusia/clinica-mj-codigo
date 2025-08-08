@@ -13,8 +13,10 @@ class EspecialidadController extends Controller
      */
     public function index()
     {
-        $especialidades = Especialidad::all(); // Obtener todas las especialidades
+        $perPage = 10;
+        $especialidades = Especialidad::paginate($perPage); // Obtener todas las especialidades
         return view('admin.especialidades.index', compact('especialidades'));
+
     }
 
     /**

@@ -62,6 +62,9 @@
                         </table>
                     </div>
                 @endif
+                <div class="mt-4">
+                        {{ $especialidades->links() }}
+                </div>
             </div>
         </div>
     </div>

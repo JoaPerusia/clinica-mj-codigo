@@ -81,11 +81,9 @@
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                         Especialidad
                                     </th>
-                                    @if(auth()->user()->id_rol != 3)
                                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                             Paciente
                                         </th>
-                                    @endif
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                         Fecha
                                     </th>
@@ -109,11 +107,9 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                         {{ $turno->medico->especialidades->pluck('nombre_especialidad')->implode(', ') }}
                                     </td>
-                                    @if(auth()->user()->id_rol != 3)
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                             {{ $turno->paciente->nombre }} {{ $turno->paciente->apellido }}
                                         </td>
-                                    @endif
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                         {{ \Carbon\Carbon::parse($turno->fecha)->format('d/m/Y') }}
                                     </td>

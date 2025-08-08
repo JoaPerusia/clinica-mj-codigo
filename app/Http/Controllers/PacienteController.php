@@ -12,16 +12,25 @@ class PacienteController extends Controller
 {
     public function index()
     {
+        $perPage = 10;
         $usuario = Auth::user();
         $pacientes = collect();
 
         if ($usuario->id_rol == 1) {
+            $pacientes = Paciente::paginate($perPage);
+        } elseif ($usuario->id_rol == 3) {
+            $pacientes = Paciente::where('id_usuario', $usuario->id_usuario)->paginate($perPage);
+        } else {
+            abort(403, 'Acceso no autorizado.');
+        }
+
+        /*  if ($usuario->id_rol == 1) {
             $pacientes = Paciente::all();
         } elseif ($usuario->id_rol == 3) {
             $pacientes = Paciente::where('id_usuario', $usuario->id_usuario)->get();
         } else {
             abort(403, 'Acceso no autorizado.');
-        }
+        } */
 
         return view('pacientes.index', compact('pacientes'));
     }

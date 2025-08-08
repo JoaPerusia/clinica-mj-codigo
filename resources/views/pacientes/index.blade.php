@@ -114,6 +114,9 @@
                         </table>
                     </div>
                 @endif
+                <div class="mt-4">
+                    {{ $pacientes->links() }} {{-- Paginación --}}
+                </div>
             </div>
         </div>
     </div>

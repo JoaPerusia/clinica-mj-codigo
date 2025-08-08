@@ -71,7 +71,7 @@ class TurnoController extends Controller
 
         // Ordenar por fecha y hora descendente para que los más recientes aparezcan primero
         // Usar paginate() en lugar de get()
-        $turnos = $query->orderBy('fecha', 'desc')
+        $turnos = $query->orderBy('fecha', 'asc')
                         ->orderBy('hora', 'asc')
                         ->paginate($perPage)
                         ->withQueryString(); // Esto es crucial para mantener los parámetros de filtro en la paginación
@@ -392,8 +392,8 @@ class TurnoController extends Controller
             $query->where('estado', $estado_filtro);
         }
 
-        $turnos = $query->orderBy('fecha', 'desc')
-                        ->orderBy('hora', 'asc') // Ordenar por fecha descendente y hora ascendente
+        $turnos = $query->orderBy('fecha', 'asc')
+                        ->orderBy('hora', 'asc') // Ordenar por fecha ascendente y hora ascendente
                         ->paginate($perPage)
                         ->withQueryString();
 
@@ -430,8 +430,8 @@ class TurnoController extends Controller
             $query->where('estado', $estado_filtro);
         }
 
-        $turnos = $query->orderBy('fecha', 'desc')
-                        ->orderBy('hora', 'asc') // Ordenar por fecha descendente y hora ascendente
+        $turnos = $query->orderBy('fecha', 'asc')
+                        ->orderBy('hora', 'asc') // Ordenar por fecha ascendente y hora ascendente
                         ->paginate($perPage)
                         ->withQueryString();
 
