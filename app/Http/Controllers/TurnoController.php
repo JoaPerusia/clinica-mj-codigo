@@ -22,9 +22,11 @@ class TurnoController extends Controller
     {
         $usuario = Auth::user();
         $estado_filtro = $request->input('estado_filtro', 'pendiente'); // Por defecto, mostrar 'pendiente'
+        $dni_filtro = $request->input('dni_filtro'); // Nuevo: Obtener el valor del filtro de DNI
         $perPage = 10; // Número de turnos por página
 
-        $query = Turno::with('paciente', 'medico.especialidades'); // Cargar especialidades del médico
+        // Cargar paciente y médico, además de las especialidades del médico
+        $query = Turno::with('paciente', 'medico.especialidades');
 
         // Aplicar filtros según el rol y el estado_filtro
         if ($usuario->id_rol == 1) {
@@ -69,6 +71,13 @@ class TurnoController extends Controller
             return view('turnos.index', compact('turnos', 'estado_filtro'));
         }
 
+        // Nuevo: Aplicar filtro por DNI si se proporciona
+        if ($dni_filtro) {
+            $query->whereHas('paciente', function ($q) use ($dni_filtro) {
+                $q->where('dni', 'like', '%' . $dni_filtro . '%');
+            });
+        }
+
         // Ordenar por fecha y hora descendente para que los más recientes aparezcan primero
         // Usar paginate() en lugar de get()
         $turnos = $query->orderBy('fecha', 'asc')
@@ -76,7 +85,7 @@ class TurnoController extends Controller
                         ->paginate($perPage)
                         ->withQueryString(); // Esto es crucial para mantener los parámetros de filtro en la paginación
 
-        return view('turnos.index', compact('turnos', 'estado_filtro'));
+        return view('turnos.index', compact('turnos', 'estado_filtro', 'dni_filtro'));
     }
 
     /**

@@ -10,27 +10,30 @@ use Illuminate\Validation\ValidationException;
 
 class PacienteController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $perPage = 10;
         $usuario = Auth::user();
-        $pacientes = collect();
+        $dni_filtro = $request->input('dni_filtro');
+
+        $query = Paciente::query();
 
         if ($usuario->id_rol == 1) {
-            $pacientes = Paciente::paginate($perPage);
+            // El administrador ve todos los pacientes
         } elseif ($usuario->id_rol == 3) {
-            $pacientes = Paciente::where('id_usuario', $usuario->id_usuario)->paginate($perPage);
+            // El paciente solo ve sus propios pacientes
+            $query->where('id_usuario', $usuario->id_usuario);
         } else {
+            // Para otros roles, no se muestran pacientes
             abort(403, 'Acceso no autorizado.');
         }
 
-        /*  if ($usuario->id_rol == 1) {
-            $pacientes = Paciente::all();
-        } elseif ($usuario->id_rol == 3) {
-            $pacientes = Paciente::where('id_usuario', $usuario->id_usuario)->get();
-        } else {
-            abort(403, 'Acceso no autorizado.');
-        } */
+        // Aplicar filtro por DNI si se ha proporcionado
+        if ($dni_filtro) {
+            $query->where('dni', 'like', '%' . $dni_filtro . '%');
+        }
+
+        $pacientes = $query->paginate($perPage)->withQueryString();
 
         return view('pacientes.index', compact('pacientes'));
     }
@@ -114,54 +117,68 @@ class PacienteController extends Controller
         $paciente = Paciente::findOrFail($id);
         $usuario = Auth::user();
 
-        if ($usuario->id_rol != 1 && $paciente->id_usuario != $usuario->id_usuario) {
-            return redirect()->route('pacientes.index')->with('warning', 'No tenés permiso para realizar esta acción.');
+        // Permitir la edición si el usuario es un administrador o si es el dueño del perfil del paciente.
+        if ($usuario->id_rol == 1) {
+            // Un administrador puede editar cualquier paciente.
+            return view('pacientes.edit', compact('paciente'));
+        } elseif ($usuario->id_rol == 3 && $paciente->id_usuario == $usuario->id_usuario) {
+            // Un paciente puede editarse a sí mismo.
+            return view('pacientes.edit', compact('paciente'));
+        } else {
+            // En cualquier otro caso, denegar el acceso.
+            abort(403, 'Acceso no autorizado.');
         }
-
-        return view('pacientes.edit', compact('paciente'));
     }
-
+    
     public function update(Request $request, string $id)
     {
         $paciente = Paciente::findOrFail($id);
         $usuario = Auth::user();
 
+        // Verificación de permisos: el admin puede editar cualquier paciente, el paciente solo el suyo.
         if ($usuario->id_rol != 1 && $paciente->id_usuario != $usuario->id_usuario) {
-            return redirect()->route('pacientes.index')->with('warning', 'No tenés permiso para editar este paciente.');
+            return redirect()->route('pacientes.index')->with('warning', 'No tienes permiso para editar este paciente.');
         }
 
-        $rules = [
-            'nombre' => 'required|string|max:255',
-            'apellido' => 'required|string|max:255',
-            'dni' => 'required|string|max:20|unique:pacientes,dni,' . $id . ',id_paciente',
-            'fecha_nacimiento' => 'required|date',
-            'telefono' => 'nullable|string|max:20',
-        ];
-
+        // Reglas de validación según el rol
         if ($usuario->id_rol == 1) {
-            // *** CAMBIO CRUCIAL AQUÍ: Usar 'usuarios,id_usuario' si tu tabla de usuarios es 'usuarios' y su PK es 'id_usuario' ***
-            $rules['id_usuario'] = 'required|exists:usuarios,id_usuario';
-        }
+            // Reglas para el Administrador (puede modificar todos los campos)
+            $rules = [
+                'nombre' => 'required|string|max:255',
+                'apellido' => 'required|string|max:255',
+                'telefono' => 'nullable|string|max:20',
+                'obra_social' => 'required|string|max:255',
+                'dni' => 'required|string|max:20|unique:pacientes,dni,' . $id . ',id_paciente',
+                'fecha_nacimiento' => 'required|date',
+                'id_usuario' => 'required|exists:usuarios,id_usuario',
+            ];
 
-        $validatedData = $request->validate($rules);
+            // Validar todos los datos
+            $validatedData = $request->validate($rules);
 
-        $data = $request->only(['nombre', 'apellido', 'dni', 'fecha_nacimiento', 'telefono']);
+            // Actualizar todos los campos
+            $paciente->update($validatedData);
 
-        if ($usuario->id_rol == 1 && $request->has('id_usuario')) {
-            $data['id_usuario'] = $request->id_usuario;
-        }
-
-        $paciente->update($data);
-
-        if ($usuario->id_rol == 1) {
             return redirect()->route('admin.pacientes.index')->with('success', 'Paciente actualizado correctamente por el administrador.');
-        } elseif ($usuario->id_rol == 3) {
-            return redirect()->route('paciente.pacientes.index')->with('success', 'Paciente actualizado correctamente.');
         } else {
-            return redirect()->route('dashboard')->with('success', 'Paciente actualizado correctamente.');
+            // Reglas para el Paciente (solo puede modificar el teléfono)
+            $rules = [
+                'telefono' => 'nullable|string|max:20',
+            ];
+
+            // Validar solo los campos permitidos
+            $validatedData = $request->validate($rules);
+            
+            // Actualizar solo el campo de teléfono
+            $paciente->update([
+                'telefono' => $validatedData['telefono'],
+            ]);
+
+            return redirect()->route('paciente.pacientes.index')->with('success', 'Paciente actualizado correctamente.');
         }
     }
 
+    
     public function destroy(string $id)
     {
         $paciente = Paciente::findOrFail($id);

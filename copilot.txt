@@ -57,23 +57,15 @@
                 @endif
 
                 {{-- Filtro de estado de turnos --}}
-                <div class="mb-4 flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                    <div class="flex items-center space-x-2">
-                        <label for="estado_filtro" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Filtrar por estado:</label>
-                        <select id="estado_filtro" class="mt-1 block w-auto pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                            <option value="pendiente" {{ $estado_filtro == 'pendiente' ? 'selected' : '' }}>Pendientes</option>
-                            <option value="todos" {{ $estado_filtro == 'todos' ? 'selected' : '' }}>Todos</option>
-                            <option value="cancelado" {{ $estado_filtro == 'cancelado' ? 'selected' : '' }}>Cancelados</option>
-                            <option value="realizado_atendido" {{ $estado_filtro == 'realizado_atendido' ? 'selected' : '' }}>Realizados/Atendidos</option>
-                            <option value="ausente" {{ $estado_filtro == 'ausente' ? 'selected' : '' }}>Ausentes</option>
-                        </select>
-                    </div>
-                    {{-- Nuevo: Input para el filtro por DNI con botón de buscar --}}
-                    <div class="flex items-center space-x-2">
-                        <label for="dni_filtro" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Buscar por DNI:</label>
-                        <input type="text" id="dni_filtro" placeholder="DNI del paciente" value="{{ $dni_filtro ?? '' }}" class="mt-1 block w-auto pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                        <button id="buscar_dni_btn" class="btn-primary text-sm px-4 py-2 mt-1">Buscar</button>
-                    </div>
+                <div class="mb-4 flex items-center space-x-2">
+                    <label for="estado_filtro" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Filtrar por estado:</label>
+                    <select id="estado_filtro" class="mt-1 block w-auto pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <option value="pendiente" {{ $estado_filtro == 'pendiente' ? 'selected' : '' }}>Pendientes</option>
+                        <option value="todos" {{ $estado_filtro == 'todos' ? 'selected' : '' }}>Todos</option>
+                        <option value="cancelado" {{ $estado_filtro == 'cancelado' ? 'selected' : '' }}>Cancelados</option>
+                        <option value="realizado_atendido" {{ $estado_filtro == 'realizado_atendido' ? 'selected' : '' }}>Realizados/Atendidos</option>
+                        <option value="ausente" {{ $estado_filtro == 'ausente' ? 'selected' : '' }}>Ausentes</option>
+                    </select>
                 </div>
 
                 @if($turnos->isEmpty())
@@ -91,10 +83,6 @@
                                     </th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                         Paciente
-                                    </th>
-                                    {{-- Nuevo: Columna para el DNI --}}
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                        DNI
                                     </th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                         Fecha
@@ -122,10 +110,6 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                             {{ $turno->paciente->nombre }} {{ $turno->paciente->apellido }}
                                         </td>
-                                    {{-- Nuevo: Celda para mostrar el DNI --}}
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                        {{ $turno->paciente->dni ?? 'N/A' }}
-                                    </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                         {{ \Carbon\Carbon::parse($turno->fecha)->format('d/m/Y') }}
                                     </td>
@@ -137,23 +121,23 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         @if(auth()->check())
-                                            {{-- Lógica de botones de acción con clases ajustadas para ser más pequeños --}}
+                                            {{-- Lógica de botones de acción --}}
                                             @if(auth()->user()->id_rol == 1)
-                                                <a href="{{ route('admin.turnos.edit', $turno->id_turno) }}" class="btn-info text-sm px-4 py-2 mt-1">Editar</a>
+                                                <a href="{{ route('admin.turnos.edit', $turno->id_turno) }}" class="btn-info mr-2">Editar</a>
                                                 {{-- El botón de eliminar ahora solo cambia el estado a 'cancelado' --}}
                                                 <form action="{{ route('admin.turnos.destroy', $turno->id_turno) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn-danger text-sm px-4 py-2 mt-1">Cancelar</button>
+                                                    <button type="submit" class="btn-danger">Cancelar</button>
                                                 </form>
                                             @elseif(auth()->user()->id_rol == 3 && $turno->estado == 'pendiente')
                                                 <form action="{{ route('paciente.turnos.destroy', $turno->id_turno) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn-danger text-sm px-4 py-2 mt-1">Cancelar</button>
+                                                    <button type="submit" class="btn-danger">Cancelar</button>
                                                 </form>
                                             @elseif(auth()->user()->id_rol == 2 && $turno->medico && $turno->medico->id_usuario == auth()->user()->id_usuario)
-                                                <a href="{{ route('medico.turnos.edit', $turno->id_turno) }}" class="btn-info text-sm px-4 py-2 mt-1">Editar</a>
+                                                <a href="{{ route('medico.turnos.edit', $turno->id_turno) }}" class="btn-info">Editar</a>
                                             @else
                                                 <span class="text-gray-500 dark:text-gray-400">No disponible</span>
                                             @endif
@@ -173,47 +157,30 @@
             </div>
         </div>
     </div>
+
     
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const estadoFiltroSelect = document.getElementById('estado_filtro');
-            const dniFiltroInput = document.getElementById('dni_filtro');
-            const buscarDniBtn = document.getElementById('buscar_dni_btn');
+        const estadoFiltroSelect = document.getElementById('estado_filtro');
 
-            function updateUrlAndRedirect() {
-                const selectedEstado = estadoFiltroSelect.value;
-                const dniValue = dniFiltroInput.value.trim();
-                const currentUrl = new URL(window.location.href);
-
-                // Actualizar el parámetro 'estado_filtro'
-                if (selectedEstado === 'todos') {
-                    currentUrl.searchParams.set('estado_filtro', selectedEstado);
-                } else {
-                    currentUrl.searchParams.set('estado_filtro', selectedEstado);
-                }
-
-                // Nuevo: Actualizar el parámetro 'dni_filtro'
-                if (dniValue) {
-                    currentUrl.searchParams.set('dni_filtro', dniValue);
-                } else {
-                    currentUrl.searchParams.delete('dni_filtro');
-                }
-
-                // Asegurarse de que el parámetro de página se resetee a 1 cuando se cambia el filtro
-                currentUrl.searchParams.set('page', 1);
-
-                // Redirigir a la nueva URL
-                window.location.href = currentUrl.toString();
+        estadoFiltroSelect.addEventListener('change', function () {
+            const selectedEstado = this.value;
+            const currentUrl = new URL(window.location.href);
+                    
+            // Actualizar el parámetro 'estado_filtro' en la URL
+            if (selectedEstado === 'todos') {
+                currentUrl.searchParams.set('estado_filtro', selectedEstado); // Eliminar el parámetro si es 'todos'
+            } else {
+                currentUrl.searchParams.set('estado_filtro', selectedEstado);
             }
+                    
+            // Asegurarse de que el parámetro de página se resetee a 1 cuando se cambia el filtro de estado
+            currentUrl.searchParams.set('page', 1);
 
-            estadoFiltroSelect.addEventListener('change', updateUrlAndRedirect);
-
-            // Nuevo: Escuchar el evento 'click' en el botón de buscar
-            buscarDniBtn.addEventListener('click', function (event) {
-                event.preventDefault(); // Evitar cualquier comportamiento por defecto
-                updateUrlAndRedirect();
-            });
+            // Redirigir a la nueva URL
+            window.location.href = currentUrl.toString();
         });
+    });
     </script>
 
 @endsection

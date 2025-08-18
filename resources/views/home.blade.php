@@ -76,29 +76,46 @@
         <footer class="bg-gray-300 text-gray-800 py-8">
             <div class="container mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-sm border-t border-gray-300 pt-8">
+                    <!-- Horarios -->
                     <div>
                         <h4 class="font-bold text-base mb-2">Horarios administrativos</h4>
                         <p class="mb-1">Lunes a viernes: 8:00 a 20:00</p>
                         <p>Sábado: 8:00 a 12:00</p>
                     </div>
+                    <!-- Logo y dirección -->
                     <div class="flex flex-col items-center justify-center">
                         <img src="{{ asset('images/logoSinFondo.png') }}" alt="Logo de Clínica Comunal Santa Juana" class="h-12 w-12 mb-2">
-                        <p class="text-center">9 de julio 283, María Juana, Santa Fe</p>
+                        <p class="text-center">9 de julio 278, María Juana, Santa Fe</p>
                     </div>
-                    <div class="md:text-right">
-                        <h4 class="font-bold text-base mb-2">Contacto</h4>
-                        <p class="flex items-center justify-start md:justify-end mb-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8m-2 11H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v12a2 2 0 01-2 2z" /></svg>
-                            clinica_mj@gmail.com
-                        </p>
-                        <p class="flex items-center justify-start md:justify-end">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-                            (3406) 471001
-                        </p>
+                    <!-- Contacto y Redes Sociales -->
+                    <div class="md:text-right flex flex-col justify-between">
+                        <div>
+                            <h4 class="font-bold text-base mb-2">Contacto</h4>
+                            <p class="flex items-center justify-start md:justify-end mb-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8m-2 11H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v12a2 2 0 01-2 2z" /></svg>
+                                clinicasantajuana@coopmj.com.ar
+                            </p>
+                            <p class="flex items-center justify-start md:justify-end">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                                (3406) 472554 || (3406) 472555
+                            </p>
+                        </div>
+                        <!-- Redes Sociales -->
+                        <div class="mt-4 md:mt-0 flex flex-col items-start md:items-end">
+                            <h4 class="font-bold text-base mb-2">Síguenos</h4>
+                            <div class="flex space-x-4">
+                                <a href="https://www.facebook.com/p/Cl%C3%ADnica-Comunal-Santa-Juana-100063528853153/" class="text-gray-600 hover:text-blue-500 transition duration-300" target="_blank">
+                                    <img src="{{ asset('images/logoFacebook.webp') }}" alt="Facebook" class="h-6 w-6">
+                                </a>
+                                <a href="https://www.instagram.com/clinicacomunalsantajuana/" class="text-gray-600 hover:text-blue-500 transition duration-300" target="_blank">
+                                    <img src="{{ asset('images/logoIg.png') }}" alt="Instagram" class="h-6 w-8">
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="mt-8 text-center text-xs text-black">
-                    &copy; 2024 Clínica Comunal Santa Juana. Todos los derechos reservados.
+                    &copy; 2025 Clínica Comunal Santa Juana. Todos los derechos reservados.
                 </div>
             </div>
         </footer>

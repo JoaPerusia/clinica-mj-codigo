@@ -28,31 +28,44 @@ class ProfileController extends Controller
     /**
      * Update the user's profile information.
      */
-    public function update(Request $request): RedirectResponse
+    public function update(Request $request, string $id)
     {
-        $request->validate([
-            'nombre' => ['required', 'string', 'max:255'],
-            'apellido' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', Rule::unique('usuarios')->ignore($request->user()->id_usuario, 'id_usuario')],
-            'telefono' => ['nullable', 'string', 'max:20'],
-        ]);
+        $paciente = Paciente::findOrFail($id);
+        $usuario = Auth::user();
 
-        $request->user()->fill([
-            'nombre' => $request->nombre,
-            'apellido' => $request->apellido,
-            'email' => $request->email,
-            'telefono' => $request->telefono,
-        ]);
-
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        // Verificación de permisos: solo el admin o el dueño del perfil puede editar.
+        if ($usuario->id_rol != 1 && $paciente->id_usuario != $usuario->id_usuario) {
+            return redirect()->route('pacientes.index')->with('warning', 'No tienes permiso para editar este paciente.');
         }
 
-        $request->user()->save();
+        // Definir las reglas de validación de forma condicional
+        $rules = [
+            'nombre' => 'required|string|max:255',
+            'apellido' => 'required|string|max:255',
+            'telefono' => 'nullable|string|max:20',
+        ];
 
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+        if ($usuario->id_rol == 1) {
+            // Para el Administrador, se añaden las reglas para los campos restringidos
+            $rules['dni'] = 'required|string|max:20|unique:pacientes,dni,' . $id . ',id_paciente';
+            $rules['fecha_nacimiento'] = 'required|date';
+            $rules['obra_social'] = 'required|string|max:255';
+            $rules['id_usuario'] = 'required|exists:usuarios,id_usuario';
+        }
+
+        // Validar los datos de la petición con las reglas específicas para cada rol
+        $validatedData = $request->validate($rules);
+
+        // Actualizar los campos
+        $paciente->update($validatedData);
+
+        // Redireccionamiento dinámico
+        if ($usuario->id_rol == 1) {
+            return redirect()->route('admin.pacientes.index')->with('success', 'Paciente actualizado correctamente por el administrador.');
+        } else { // Rol 3
+            return redirect()->route('paciente.pacientes.index')->with('success', 'Paciente actualizado correctamente.');
+        }
     }
-
     /**
      * Delete the user's account.
      */

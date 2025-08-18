@@ -108,11 +108,11 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/mis-turnos', [TurnoController::class, 'misTurnos'])->name('mis_turnos');
 
-        
+
         Route::resource('pacientes', PacienteController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy'])->names([
             'index' => 'pacientes.index',
             'create' => 'pacientes.create',
-            'store' => 'pacientes.store', 
+            'store' => 'pacientes.store',
             'show' => 'pacientes.show',
             'edit' => 'pacientes.edit',
             'update' => 'pacientes.update',

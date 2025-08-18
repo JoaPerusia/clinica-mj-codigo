@@ -50,24 +50,38 @@
                     @csrf
                     @method('PUT')
 
-                    <div class="form-group"> 
-                        <label for="nombre" class="form-label">Nombre:</label> 
-                        <input type="text" name="nombre" id="nombre" value="{{ old('nombre', $paciente->nombre) }}" required class="form-input"> 
+                    <div class="form-group">
+                        <label for="nombre" class="form-label">Nombre:</label>
+                        <input type="text" name="nombre" id="nombre" value="{{ old('nombre', $paciente->nombre) }}" required class="form-input" @if(auth()->user()->id_rol != 1) disabled @endif>
+                        @if(auth()->user()->id_rol != 1)
+                            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Para modificar este campo, contacta a un administrador.</p>
+                        @endif
                     </div>
 
                     <div class="form-group">
                         <label for="apellido" class="form-label">Apellido:</label>
-                        <input type="text" name="apellido" id="apellido" value="{{ old('apellido', $paciente->apellido) }}" required class="form-input">
+                        <input type="text" name="apellido" id="apellido" value="{{ old('apellido', $paciente->apellido) }}" required class="form-input" @if(auth()->user()->id_rol != 1) disabled @endif>
+                        @if(auth()->user()->id_rol != 1)
+                            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Para modificar este campo, contacta a un administrador.</p>
+                        @endif
                     </div>
 
                     <div class="form-group">
                         <label for="dni" class="form-label">DNI:</label>
-                        <input type="text" name="dni" id="dni" value="{{ old('dni', $paciente->dni) }}" required class="form-input">
+                        <input type="text" name="dni" id="dni" value="{{ old('dni', $paciente->dni) }}" required class="form-input"
+                            @if(auth()->user()->id_rol != 1) disabled @endif>
+                        @if(auth()->user()->id_rol != 1)
+                            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Para modificar el DNI, contacta a un administrador.</p>
+                        @endif
                     </div>
 
                     <div class="form-group">
                         <label for="fecha_nacimiento" class="form-label">Fecha de Nacimiento:</label>
-                        <input type="date" name="fecha_nacimiento" id="fecha_nacimiento" value="{{ old('fecha_nacimiento', $paciente->fecha_nacimiento) }}" required class="form-input">
+                        <input type="date" name="fecha_nacimiento" id="fecha_nacimiento" value="{{ old('fecha_nacimiento', $paciente->fecha_nacimiento) }}" required class="form-input"
+                            @if(auth()->user()->id_rol != 1) disabled @endif>
+                        @if(auth()->user()->id_rol != 1)
+                            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Para modificar la fecha de nacimiento, contacta a un administrador.</p>
+                        @endif
                     </div>
 
                     <div class="form-group">
@@ -77,7 +91,11 @@
 
                     <div class="form-group">
                         <label for="obra_social" class="form-label">Obra Social:</label>
-                        <input type="text" name="obra_social" id="obra_social" value="{{ old('obra_social', $paciente->obra_social) }}" required class="form-input">
+                        <input type="text" name="obra_social" id="obra_social" value="{{ old('obra_social', $paciente->obra_social) }}" required class="form-input"
+                            @if(auth()->user()->id_rol != 1) disabled @endif>
+                        @if(auth()->user()->id_rol != 1)
+                            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Para modificar tu obra social, contacta a un administrador.</p>
+                        @endif
                     </div>
 
                     {{-- Campo para id_usuario (solo visible para admin, oculto para paciente) --}}
