@@ -8,6 +8,7 @@ use App\Http\Controllers\PacienteDashboardController;
 use App\Http\Controllers\EspecialidadController;
 use App\Http\Controllers\TurnoController; 
 use App\Http\Controllers\PacienteController;
+use App\Http\Controllers\MedicoController;
 
 
 Route::get('/', function () {
@@ -52,6 +53,14 @@ Route::middleware('auth')->group(function () {
             'destroy' => 'turnos.destroy',
         ]);
         
+        Route::resource('medicos', MedicoController::class)->names([
+        'index' => 'medicos.index',
+        'create' => 'medicos.create',
+        'store' => 'medicos.store',
+        'edit' => 'medicos.edit',
+        'update' => 'medicos.update',
+        'destroy' => 'medicos.destroy',
+        ]);
 
         Route::resource('especialidades', EspecialidadController::class)->names([
             'index' => 'especialidades.index',

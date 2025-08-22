@@ -1,26 +1,7 @@
 <x-guest-layout>
     <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100 dark:bg-gray-900">
         <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white dark:bg-gray-800 shadow-md overflow-hidden sm:rounded-lg">
-            {{-- Espacio para el logo, si quieres añadir uno estático --}}
-            <div class="flex justify-center mb-4">
-                {{-- Puedes pegar aquí el contenido de tu application-logo.blade.php si es solo el SVG --}}
-                {{-- O usar una imagen: <img src="{{ asset('images/your-logo.png') }}" alt="Tu Logo" class="w-20 h-20"> --}}
-                {{-- Si no quieres logo, puedes dejar este div vacío o eliminarlo --}}
-            </div>
-
-            {{-- Bloque de errores de validación, emulando <x-validation-errors> --}}
-            @if ($errors->any())
-                <div class="mb-4 font-medium text-red-600 dark:text-red-400">
-                    {{ __('¡Ups! Algo salió mal.') }}
-                </div>
-
-                <ul class="mt-3 list-disc list-inside text-sm text-red-600 dark:text-red-400">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            @endif
-
+            <x-validation-errors class="mb-4" />
             <form method="POST" action="{{ route('register') }}">
                 @csrf
 

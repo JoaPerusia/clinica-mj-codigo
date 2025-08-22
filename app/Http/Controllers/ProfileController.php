@@ -28,44 +28,46 @@ class ProfileController extends Controller
     /**
      * Update the user's profile information.
      */
-    public function update(Request $request, string $id)
+    public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $paciente = Paciente::findOrFail($id);
-        $usuario = Auth::user();
+        $user = $request->user();
+        
+        if ($user->id_rol == 1) { // Lógica para el Administrador
+            // El administrador puede actualizar todos los campos del usuario
+            $request->validate([
+                'name' => ['required', 'string', 'max:255'],
+                'apellido' => ['required', 'string', 'max:255'],
+                'dni' => ['required', 'string', 'max:20', 'unique:users,dni,'.$user->id],
+                'fecha_nacimiento' => ['required', 'date'],
+                'obra_social' => ['required', 'string', 'max:255'],
+                'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email,'.$user->id],
+                'telefono' => ['nullable', 'string', 'max:20'],
+            ]);
 
-        // Verificación de permisos: solo el admin o el dueño del perfil puede editar.
-        if ($usuario->id_rol != 1 && $paciente->id_usuario != $usuario->id_usuario) {
-            return redirect()->route('pacientes.index')->with('warning', 'No tienes permiso para editar este paciente.');
+            $user->fill($request->validated());
+
+        } else { // Lógica para usuarios regulares
+            // Los usuarios regulares solo pueden actualizar su email y teléfono
+            $request->validate([
+                'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:users,email,'.$user->id],
+                'telefono' => ['nullable', 'string', 'max:20'],
+            ]);
+            
+            $user->fill([
+                'email' => $request->validated()['email'],
+                'telefono' => $request->validated()['telefono'],
+            ]);
         }
 
-        // Definir las reglas de validación de forma condicional
-        $rules = [
-            'nombre' => 'required|string|max:255',
-            'apellido' => 'required|string|max:255',
-            'telefono' => 'nullable|string|max:20',
-        ];
-
-        if ($usuario->id_rol == 1) {
-            // Para el Administrador, se añaden las reglas para los campos restringidos
-            $rules['dni'] = 'required|string|max:20|unique:pacientes,dni,' . $id . ',id_paciente';
-            $rules['fecha_nacimiento'] = 'required|date';
-            $rules['obra_social'] = 'required|string|max:255';
-            $rules['id_usuario'] = 'required|exists:usuarios,id_usuario';
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
         }
 
-        // Validar los datos de la petición con las reglas específicas para cada rol
-        $validatedData = $request->validate($rules);
+        $user->save();
 
-        // Actualizar los campos
-        $paciente->update($validatedData);
-
-        // Redireccionamiento dinámico
-        if ($usuario->id_rol == 1) {
-            return redirect()->route('admin.pacientes.index')->with('success', 'Paciente actualizado correctamente por el administrador.');
-        } else { // Rol 3
-            return redirect()->route('paciente.pacientes.index')->with('success', 'Paciente actualizado correctamente.');
-        }
+        return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
+    
     /**
      * Delete the user's account.
      */

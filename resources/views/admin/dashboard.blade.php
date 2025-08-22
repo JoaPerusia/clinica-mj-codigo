@@ -18,6 +18,9 @@
                     <a href="{{ route('admin.especialidades.index') }}" class="btn-primary">
                         Gestionar Especialidades
                     </a>
+                    <a href="{{ route('admin.medicos.index') }}" class="btn-primary">
+                        Gestionar Médicos
+                    </a>
                     <a href="{{ route('admin.pacientes.index') }}" class="btn-primary">
                         Gestionar Pacientes
                     </a>

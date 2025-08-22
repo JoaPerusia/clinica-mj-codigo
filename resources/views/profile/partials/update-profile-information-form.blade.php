@@ -17,36 +17,83 @@
         @csrf
         @method('patch')
 
-        {{-- Campo Nombre (Editable) --}}
-        <div>
-            <x-input-label for="nombre" :value="__('Nombre')" />
-            <x-text-input id="nombre" name="nombre" type="text" class="mt-1 block w-full" :value="old('nombre', $user->nombre)" required autofocus autocomplete="name" />
-            <x-input-error class="mt-2" :messages="$errors->get('nombre')" />
-        </div>
+        @if(auth()->user()->id_rol == 1)
+            {{-- Campos para Administrador (Todos editables) --}}
+            <div>
+                <x-input-label for="nombre" :value="__('Nombre')" />
+                <x-text-input id="nombre" name="nombre" type="text" class="mt-1 block w-full" :value="old('nombre', $user->nombre)" required autofocus autocomplete="name" />
+                <x-input-error class="mt-2" :messages="$errors->get('nombre')" />
+            </div>
 
-        {{-- Campo Apellido (Editable) --}}
-        <div class="mt-4">
-            <x-input-label for="apellido" :value="__('Apellido')" />
-            <x-text-input id="apellido" name="apellido" type="text" class="mt-1 block w-full" :value="old('apellido', $user->apellido)" required autocomplete="family-name" />
-            <x-input-error class="mt-2" :messages="$errors->get('apellido')" />
-        </div>
+            <div class="mt-4">
+                <x-input-label for="apellido" :value="__('Apellido')" />
+                <x-text-input id="apellido" name="apellido" type="text" class="mt-1 block w-full" :value="old('apellido', $user->apellido)" required autocomplete="family-name" />
+                <x-input-error class="mt-2" :messages="$errors->get('apellido')" />
+            </div>
 
-        {{-- Campo Email (Editable) --}}
+            <div class="mt-4">
+                <x-input-label for="dni" :value="__('DNI')" />
+                <x-text-input id="dni" name="dni" type="text" class="mt-1 block w-full" :value="old('dni', $user->dni)" required autocomplete="dni" />
+                <x-input-error class="mt-2" :messages="$errors->get('dni')" />
+            </div>
+            
+            <div class="mt-4">
+                <x-input-label for="fecha_nacimiento" :value="__('Fecha de Nacimiento')" />
+                <x-text-input id="fecha_nacimiento" name="fecha_nacimiento" type="date" class="mt-1 block w-full" :value="old('fecha_nacimiento', $user->fecha_nacimiento)" required autocomplete="bday" />
+                <x-input-error class="mt-2" :messages="$errors->get('fecha_nacimiento')" />
+            </div>
+
+            <div class="mt-4">
+                <x-input-label for="obra_social" :value="__('Obra Social')" />
+                <x-text-input id="obra_social" name="obra_social" type="text" class="mt-1 block w-full" :value="old('obra_social', $user->obra_social)" required autocomplete="organization" />
+                <x-input-error class="mt-2" :messages="$errors->get('obra_social')" />
+            </div>
+        @else
+            {{-- Campos para Paciente (Solo teléfono y email editables) --}}
+            <div>
+                <x-input-label for="nombre" :value="__('Nombre')" />
+                <x-text-input id="nombre" name="nombre" type="text" class="mt-1 block w-full" :value="old('nombre', $user->nombre)" disabled />
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Para modificar este campo, contacta a un administrador.</p>
+            </div>
+
+            <div class="mt-4">
+                <x-input-label for="apellido" :value="__('Apellido')" />
+                <x-text-input id="apellido" name="apellido" type="text" class="mt-1 block w-full" :value="old('apellido', $user->apellido)" disabled />
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Para modificar este campo, contacta a un administrador.</p>
+            </div>
+
+            <div class="mt-4">
+                <x-input-label for="dni" :value="__('DNI')" />
+                <x-text-input id="dni" name="dni" type="text" class="mt-1 block w-full" :value="old('dni', $user->dni)" disabled />
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Para modificar este campo, contacta a un administrador.</p>
+            </div>
+            
+            <div class="mt-4">
+                <x-input-label for="fecha_nacimiento" :value="__('Fecha de Nacimiento')" />
+                <x-text-input id="fecha_nacimiento" name="fecha_nacimiento" type="date" class="mt-1 block w-full" :value="old('fecha_nacimiento', $user->fecha_nacimiento)" disabled />
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Para modificar este campo, contacta a un administrador.</p>
+            </div>
+
+            <div class="mt-4">
+                <x-input-label for="obra_social" :value="__('Obra Social')" />
+                <x-text-input id="obra_social" name="obra_social" type="text" class="mt-1 block w-full" :value="old('obra_social', $user->obra_social)" disabled />
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Para modificar este campo, contacta a un administrador.</p>
+            </div>
+        @endif
+
+        {{-- Campo Email (siempre editable) --}}
         <div class="mt-4">
             <x-input-label for="email" :value="__('Email')" />
             <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="username" />
             <x-input-error class="mt-2" :messages="$errors->get('email')" />
-
             @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
                 <div>
                     <p class="text-sm mt-2 text-gray-800 dark:text-gray-200">
-                        {{ __('Tu dirección de correo electrónico no está verificada.') }}
-
+                        {{ __('Tu dirección de correo electrónico no ha sido verificada.') }}
                         <button form="send-verification" class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800">
                             {{ __('Haz clic aquí para reenviar el correo de verificación.') }}
                         </button>
                     </p>
-
                     @if (session('status') === 'verification-link-sent')
                         <p class="mt-2 font-medium text-sm text-green-600 dark:text-green-400">
                             {{ __('Se ha enviado un nuevo enlace de verificación a tu dirección de correo electrónico.') }}
@@ -56,31 +103,10 @@
             @endif
         </div>
 
-        {{-- Campo DNI (Solo Lectura) --}}
-        <div class="mt-4">
-            <x-input-label for="dni" :value="__('DNI')" />
-            <x-text-input id="dni" name="dni" type="text" class="mt-1 block w-full" :value="old('dni', $user->dni)" disabled />
-            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ __('Para modificar el DNI, contacta a un administrador.') }}</p>
-        </div>
-
-        {{-- Campo Fecha de Nacimiento (Solo Lectura) --}}
-        <div class="mt-4">
-            <x-input-label for="fecha_nacimiento" :value="__('Fecha de Nacimiento')" />
-            <x-text-input id="fecha_nacimiento" name="fecha_nacimiento" type="date" class="mt-1 block w-full" :value="old('fecha_nacimiento', $user->fecha_nacimiento)" disabled />
-            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ __('Para modificar la fecha de nacimiento, contacta a un administrador.') }}</p>
-        </div>
-
-        {{-- Campo Obra Social (Solo Lectura) --}}
-        <div class="mt-4">
-            <x-input-label for="obra_social" :value="__('Obra Social')" />
-            <x-text-input id="obra_social" name="obra_social" type="text" class="mt-1 block w-full" :value="old('obra_social', $user->obra_social)" disabled />
-            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ __('Para modificar la obra social, contacta a un administrador.') }}</p>
-        </div>
-
-        {{-- Campo Teléfono (Editable) --}}
+        {{-- Campo Teléfono (siempre editable) --}}
         <div class="mt-4">
             <x-input-label for="telefono" :value="__('Teléfono')" />
-            <x-text-input id="telefono" name="telefono" type="text" class="mt-1 block w-full" :value="old('telefono', $user->telefono)" autocomplete="tel" />
+            <x-text-input id="telefono" name="telefono" type="tel" class="mt-1 block w-full" :value="old('telefono', $user->telefono)" autocomplete="tel" />
             <x-input-error class="mt-2" :messages="$errors->get('telefono')" />
         </div>
 
@@ -92,7 +118,6 @@
 
         <div class="flex items-center gap-4 mt-4">
             <x-primary-button>{{ __('Guardar Cambios') }}</x-primary-button>
-
             @if (session('status') === 'profile-updated')
                 <p
                     x-data="{ show: true }"
