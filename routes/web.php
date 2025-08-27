@@ -6,10 +6,15 @@ use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\MedicoDashboardController;
 use App\Http\Controllers\PacienteDashboardController;
 use App\Http\Controllers\EspecialidadController;
-use App\Http\Controllers\TurnoController; 
+use App\Http\Controllers\TurnoController;
 use App\Http\Controllers\PacienteController;
 use App\Http\Controllers\MedicoController;
 
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+*/
 
 Route::get('/', function () {
     return view('home');
@@ -36,72 +41,52 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/turnos/disponibles', [TurnoController::class, 'getHorariosDisponibles'])->name('api.turnos.disponibles');
 });
 
+
 // --- RUTAS PROTEGIDAS POR ROL ---
 
-    // Rutas para Administrador (solo si id_rol es 1)
-    Route::middleware(['role:1'])->prefix('admin')->name('admin.')->group(function () {
-        Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
-        // Route::get('/turnos/disponibles', [TurnoController::class, 'getHorariosDisponibles'])->name('turnos.disponibles');
-
-        Route::resource('turnos', TurnoController::class)->names([
-            'index' => 'turnos.index',
-            'create' => 'turnos.create',
-            'store' => 'turnos.store',
-            'show' => 'turnos.show',
-            'edit' => 'turnos.edit',
-            'update' => 'turnos.update',
-            'destroy' => 'turnos.destroy',
-        ]);
-        
-        Route::resource('medicos', MedicoController::class)->names([
-        'index' => 'medicos.index',
-        'create' => 'medicos.create',
-        'store' => 'medicos.store',
-        'edit' => 'medicos.edit',
-        'update' => 'medicos.update',
-        'destroy' => 'medicos.destroy',
-        ]);
-
-        Route::resource('especialidades', EspecialidadController::class)->names([
-            'index' => 'especialidades.index',
-            'create' => 'especialidades.create',
-            'store' => 'especialidades.store',
-            'show' => 'especialidades.show',
-            'edit' => 'especialidades.edit',
-            'update' => 'especialidades.update',
-            'destroy' => 'especialidades.destroy',
-        ]);
-
-       
-        Route::resource('pacientes', PacienteController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy'])->names([
-            'index' => 'pacientes.index',
-            'create' => 'pacientes.create',
-            'store' => 'pacientes.store', 
-            'show' => 'pacientes.show',
-            'edit' => 'pacientes.edit',
-            'update' => 'pacientes.update',
-            'destroy' => 'pacientes.destroy',
-        ]); 
-    });
+// Rutas para Administrador
+Route::middleware(['role:Administrador'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+    Route::resource('medicos', MedicoController::class);
+    Route::resource('pacientes', PacienteController::class);
+    Route::resource('especialidades', EspecialidadController::class);
+    Route::resource('turnos', TurnoController::class);
+});
 
 
-    // Rutas para Médico (solo si id_rol es 2)
-    Route::middleware(['role:2'])->prefix('medico')->name('medico.')->group(function () {
-        Route::get('/dashboard', [MedicoDashboardController::class, 'index'])->name('dashboard');
-        Route::resource('turnos', TurnoController::class)->names([
-            'index' => 'turnos.index',
-            'create' => 'turnos.create',
-            'store' => 'turnos.store',
-            'show' => 'turnos.show',
-            'edit' => 'turnos.edit',
-            'update' => 'turnos.update',
-            'destroy' => 'turnos.destroy',
-        ]);
-        Route::get('/mis-turnos', [TurnoController::class, 'misTurnosMedico'])->name('mis_turnos');
-    });
+// Rutas para Médico
+Route::middleware(['role:Medico'])->prefix('medico')->name('medico.')->group(function () {
+    Route::get('/dashboard', [MedicoDashboardController::class, 'index'])->name('dashboard');
 
-    // Rutas para Paciente (solo si id_rol es 3)
-    Route::middleware(['role:3'])->prefix('paciente')->name('paciente.')->group(function () {
+    // Rutas de paciente accesibles para el médico
+    Route::resource('turnos', TurnoController::class)->names([
+        'index' => 'turnos.index',
+        'create' => 'turnos.create',
+        'store' => 'turnos.store',
+        'show' => 'turnos.show',
+        'edit' => 'turnos.edit',
+        'update' => 'turnos.update',
+        'destroy' => 'turnos.destroy',
+    ]);
+    Route::get('/mis-turnos', [TurnoController::class, 'misTurnosMedico'])->name('mis_turnos');
+    
+
+    Route::get('/mis-turnos', [TurnoController::class, 'misTurnos'])->name('mis_turnos');
+
+
+    Route::resource('pacientes', PacienteController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy'])->names([
+        'index' => 'pacientes.index',
+        'create' => 'pacientes.create',
+        'store' => 'pacientes.store',
+        'show' => 'pacientes.show',
+        'edit' => 'pacientes.edit',
+        'update' => 'pacientes.update',
+        'destroy' => 'pacientes.destroy',
+    ]);
+});
+
+// Rutas para Paciente
+Route::middleware(['role:Paciente'])->prefix('paciente')->name('paciente.')->group(function () {
         Route::get('/dashboard', [PacienteDashboardController::class, 'index'])->name('dashboard');
         // Route::get('/turnos/disponibles', [TurnoController::class, 'getHorariosDisponibles'])->name('turnos.disponibles');
 

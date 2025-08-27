@@ -11,9 +11,9 @@
                     <div class="action-buttons-container"> 
                         @php
                             $dashboardRoute = '';
-                            if (auth()->user()->id_rol == 1) {
+                            if (auth()->user()->hasRole('Administrador')) {
                                 $dashboardRoute = route('admin.dashboard');
-                            } elseif (auth()->user()->id_rol == 3) {
+                            } elseif (auth()->user()->hasRole('Paciente')) {
                                 $dashboardRoute = route('paciente.dashboard');
                             }
                         @endphp
@@ -38,9 +38,9 @@
 
                 {{-- Determinar la ruta de almacenamiento dinámicamente según el rol --}}
                 <form method="POST" action="
-                    @if(auth()->check() && auth()->user()->id_rol == 1)
+                    @if(auth()->check() && auth()->user()->hasRole('Administrador'))
                         {{ route('admin.pacientes.store') }}
-                    @elseif(auth()->check() && auth()->user()->id_rol == 3)
+                    @elseif(auth()->check() && auth()->user()->hasRole('Paciente'))
                         {{ route('paciente.pacientes.store') }}
                     @else
                         {{-- Fallback o manejo de error si el rol no está cubierto --}}
@@ -80,7 +80,7 @@
                     </div>
 
                     {{-- Campo para id_usuario (solo visible para admin, oculto para paciente) --}}
-                    @if(auth()->check() && auth()->user()->id_rol == 1)
+                    @if(auth()->check() && auth()->user()->hasRole('Administrador'))
                         <div class="form-group">
                             <label for="id_usuario" class="form-label">Usuario Asociado (ID):</label>
                             <input type="number" name="id_usuario" id="id_usuario" value="{{ old('id_usuario') }}" required class="form-input">
@@ -90,9 +90,9 @@
                     <button type="submit" class="btn-primary mt-4">Guardar Paciente</button>
                     @php
                         $cancelRoute = '';
-                        if (auth()->check() && auth()->user()->id_rol == 1) {
+                        if (auth()->check() && auth()->user()->hasRole('Administrador')) {
                             $cancelRoute = route('admin.pacientes.index');
-                        } elseif (auth()->check() && auth()->user()->id_rol == 3) {
+                        } elseif (auth()->check() && auth()->user()->hasRole('Paciente')) {
                             $cancelRoute = route('paciente.pacientes.index');
                         }
                     @endphp

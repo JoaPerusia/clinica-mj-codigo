@@ -24,7 +24,6 @@ class User extends Authenticatable
         'email',
         'password',
         'telefono',
-        'id_rol',
     ];
 
     protected $hidden = [
@@ -37,11 +36,17 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
-    public function rol()
+    public function roles()
     {
-        return $this->belongsTo(Rol::class, 'id_rol', 'id_rol');
+        return $this->belongsToMany(Rol::class, 'role_user', 'id_usuario', 'id_rol');
     }
 
+    public function hasRole($rol)
+    {
+        return $this->roles()->where('rol', $rol)->exists();
+    }
+    
+    // Tus otras relaciones (pacientes, medico) pueden permanecer como están
     public function pacientes()
     {
         return $this->hasMany(Paciente::class, 'id_usuario', 'id_usuario');

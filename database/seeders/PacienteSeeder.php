@@ -13,15 +13,12 @@ use Carbon\Carbon;
 
 class PacienteSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        $pacienteRol = Rol::where('rol', 'paciente')->first();
+        $pacienteRol = Rol::where('rol', 'Paciente')->first();
 
         if (!$pacienteRol) {
-            $this->command->info('El rol "paciente" no fue encontrado. Asegúrate de que RolSeeder se ejecute primero.');
+            $this->command->info('El rol "Paciente" no fue encontrado. Asegúrate de que RolSeeder se ejecute primero.');
             return;
         }
 
@@ -42,13 +39,13 @@ class PacienteSeeder extends Seeder
                 'fecha_nacimiento' => '1985-11-22',
                 'obra_social' => 'Swiss Medical',
                 'email' => 'carlos.rodriguez@example.com',
-                'telefono' => '1166778899',
+                'telefono' => '1144556677',
             ],
             [
                 'nombre' => 'Laura',
                 'apellido' => 'Fernández',
-                'dni' => '30555666',
-                'fecha_nacimiento' => '1992-01-01',
+                'dni' => '30444555',
+                'fecha_nacimiento' => '1995-09-10',
                 'obra_social' => 'Particular',
                 'email' => 'laura.fernandez@example.com',
                 'telefono' => '1199887766',
@@ -56,33 +53,32 @@ class PacienteSeeder extends Seeder
         ];
 
         foreach ($pacientesData as $data) {
-            // Crear el usuario asociado al paciente con todos los campos (incluido telefono en 'usuarios')
-            $user = User::create([
-                'nombre' => $data['nombre'],
-                'apellido' => $data['apellido'],
-                'dni' => $data['dni'],
-                'fecha_nacimiento' => $data['fecha_nacimiento'],
-                'obra_social' => $data['obra_social'],
-                'email' => $data['email'],
-                'telefono' => $data['telefono'], 
-                'password' => Hash::make('password'),
-                'id_rol' => $pacienteRol->id_rol,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            $user = User::firstOrCreate(
+                ['email' => $data['email']],
+                [
+                    'nombre' => $data['nombre'],
+                    'apellido' => $data['apellido'],
+                    'dni' => $data['dni'],
+                    'fecha_nacimiento' => $data['fecha_nacimiento'],
+                    'obra_social' => $data['obra_social'],
+                    'telefono' => $data['telefono'], 
+                    'password' => Hash::make('password'),
+                ]
+            );
 
-            // Crear el registro del paciente, vinculándolo al usuario
-            Paciente::create([
-                'nombre' => $data['nombre'],
-                'apellido' => $data['apellido'],
-                'dni' => $data['dni'],
-                'fecha_nacimiento' => Carbon::parse($data['fecha_nacimiento']),
-                'obra_social' => $data['obra_social'],
-                'telefono' => $data['telefono'], 
-                'id_usuario' => $user->id_usuario,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+            $user->roles()->syncWithoutDetaching([$pacienteRol->id_rol]);
+
+            Paciente::firstOrCreate(
+                ['id_usuario' => $user->id_usuario],
+                [
+                    'nombre' => $data['nombre'],
+                    'apellido' => $data['apellido'],
+                    'dni' => $data['dni'],
+                    'fecha_nacimiento' => Carbon::parse($data['fecha_nacimiento']),
+                    'obra_social' => $data['obra_social'],
+                    'telefono' => $data['telefono'], 
+                ]
+            );
         }
 
         $this->command->info('Pacientes de prueba creados exitosamente.');

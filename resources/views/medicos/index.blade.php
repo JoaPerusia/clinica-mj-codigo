@@ -5,13 +5,13 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="content-wrapper">
                 <h1 class="page-title">Gestión de Médicos</h1>
-                
+
                 <div class="action-buttons-container">
                     <a href="{{ route('admin.dashboard') }}" class="btn-secondary">
                         ← Inicio
                     </a>
                 </div>
-
+                
                 <div class="action-buttons-container mb-6">
                     <a href="{{ route('admin.medicos.create') }}" class="btn-primary">
                         Agregar Médico
@@ -38,11 +38,24 @@
                                 <tr>
                                     <th scope="col" class="py-3 px-6">Nombre</th>
                                     <th scope="col" class="py-3 px-6">Especialidades</th>
-                                    <th scope="col" class="py-3 px-6">Horarios de Trabajo</th>
+                                    <th scope="col" class="py-3 px-6">Día</th>
+                                    <th scope="col" class="py-3 px-6">Horarios</th>
                                     <th scope="col" class="py-3 px-6">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
+                                @php
+                                    // Mapeo de números de día a nombres, ya que los datos se guardan así.
+                                    $diasSemana = [
+                                        0 => 'Domingo',
+                                        1 => 'Lunes',
+                                        2 => 'Martes',
+                                        3 => 'Miércoles',
+                                        4 => 'Jueves',
+                                        5 => 'Viernes',
+                                        6 => 'Sábado',
+                                    ];
+                                @endphp
                                 @foreach ($medicos as $medico)
                                 <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
                                     <td class="py-4 px-6">{{ $medico->nombre }} {{ $medico->apellido }}</td>
@@ -53,9 +66,16 @@
                                     </td>
                                     <td class="py-4 px-6">
                                         @forelse($medico->horariosTrabajo as $horario)
-                                            <p>{{ ucfirst($horario->dia_semana) }}: {{ \Carbon\Carbon::parse($horario->hora_inicio)->format('H:i') }} - {{ \Carbon\Carbon::parse($horario->hora_fin)->format('H:i') }}</p>
+                                            <p>{{ $diasSemana[$horario->dia_semana] ?? 'Día no válido' }}</p>
                                         @empty
-                                            <p>Sin horarios</p>
+                                            <p>No tiene</p>
+                                        @endforelse
+                                    </td>
+                                    <td class="py-4 px-6">
+                                        @forelse($medico->horariosTrabajo as $horario)
+                                            <p>{{ \Carbon\Carbon::parse($horario->hora_inicio)->format('H:i') }} - {{ \Carbon\Carbon::parse($horario->hora_fin)->format('H:i') }}</p>
+                                        @empty
+                                            <p>horarios de trabajo</p>
                                         @endforelse
                                     </td>
                                     <td class="py-4 px-6">

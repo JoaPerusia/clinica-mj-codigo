@@ -16,9 +16,8 @@ class Rol extends Model
         'rol',
     ];
 
-    public function usuarios()
+    public function users()
     {
-        // Asegúrate de que la clave foránea y la clave local sean correctas
-        return $this->hasMany(User::class, 'id_rol', 'id_rol');
+        return $this->belongsToMany(User::class, 'role_user', 'id_rol', 'id_usuario');
     }
 }

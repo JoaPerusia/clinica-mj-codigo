@@ -28,7 +28,9 @@ class MedicoController extends Controller
     public function create()
     {
         $especialidades = Especialidad::all();
-        $usuarios = User::where('id_rol', 2)->get(); // Solo usuarios con rol de médico
+        $usuarios = User::whereHas('roles', function ($query) {
+            $query->where('rol', 'Medico');
+        })->get();
         $diasSemana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
         
         return view('medicos.create', compact('especialidades', 'usuarios', 'diasSemana'));
@@ -42,7 +44,8 @@ class MedicoController extends Controller
         $validatedData = $request->validate([
             'nombre' => 'required|string|max:255',
             'apellido' => 'required|string|max:255',
-            'id_usuario' => 'required|exists:usuarios,id_usuario|unique:medicos,id_usuario',
+            // Aseguramos que el id_usuario existe en la tabla `usuarios` pero no en `medicos`
+            'id_usuario' => 'required|exists:usuarios,id_usuario|unique:medicos,id_usuario', 
             'especialidades' => 'required|array',
             'especialidades.*' => 'exists:especialidades,id_especialidad',
             'horarios' => 'required|array',
@@ -51,30 +54,14 @@ class MedicoController extends Controller
             'horarios.*.hora_fin' => 'required|date_format:H:i|after:horarios.*.hora_inicio',
         ]);
 
-        try {
-            DB::beginTransaction();
+    }
 
-            $medico = Medico::create([
-                'nombre' => $validatedData['nombre'],
-                'apellido' => $validatedData['apellido'],
-                'id_usuario' => $validatedData['id_usuario'],
-            ]);
-
-            // Sincronizar especialidades
-            $medico->especialidades()->sync($validatedData['especialidades']);
-
-            // Guardar horarios
-            foreach ($validatedData['horarios'] as $horario) {
-                $medico->horariosTrabajo()->create($horario);
-            }
-
-            DB::commit();
-
-            return redirect()->route('admin.medicos.index')->with('success', 'Médico creado correctamente.');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->withInput()->with('error', 'Hubo un error al crear el médico: ' . $e->getMessage());
-        }
+    /**
+     * Display the specified resource.
+     */
+    public function show(string $id)
+    {
+        // No implementado para esta versión
     }
 
     /**
@@ -82,11 +69,17 @@ class MedicoController extends Controller
      */
     public function edit(string $id)
     {
+        // Carga el médico y sus relaciones 'especialidades' y 'horariosTrabajo'
         $medico = Medico::with('especialidades', 'horariosTrabajo')->findOrFail($id);
         $especialidades = Especialidad::all();
+        $usuarios = User::whereHas('roles', function ($query) {
+    $query->where('rol', 'Paciente');
+})->get();
+    
+        // Mapeo para nombres de días de la semana, si es necesario
         $diasSemana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
-        
-        return view('medicos.edit', compact('medico', 'especialidades', 'diasSemana'));
+    
+        return view('medicos.edit', compact('medico', 'especialidades', 'usuarios', 'diasSemana'));
     }
 
     /**
@@ -97,6 +90,8 @@ class MedicoController extends Controller
         $medico = Medico::findOrFail($id);
 
         $validatedData = $request->validate([
+            'nombre' => 'required|string|max:255',
+            'apellido' => 'required|string|max:255',
             'especialidades' => 'required|array',
             'especialidades.*' => 'exists:especialidades,id_especialidad',
             'horarios' => 'required|array',

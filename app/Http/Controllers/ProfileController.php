@@ -32,7 +32,7 @@ class ProfileController extends Controller
     {
         $user = $request->user();
         
-        if ($user->id_rol == 1) { // Lógica para el Administrador
+        if ($user->hasRole('Administrador')) { // Lógica para el Administrador
             // El administrador puede actualizar todos los campos del usuario
             $request->validate([
                 'name' => ['required', 'string', 'max:255'],

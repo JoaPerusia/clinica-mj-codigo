@@ -51,9 +51,10 @@ class RegisteredUserController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'telefono' => $request->telefono,
-            'id_rol' => 3, // Siempre asigna el rol 3 (Paciente) para el registro público
         ]);
 
+        $pacienteRol = Rol::where('rol', 'Paciente')->first();
+        $user->roles()->attach($pacienteRol->id_rol);
         event(new Registered($user));
 
         // Auto-crear el perfil de Paciente para el usuario recién registrado
@@ -70,11 +71,11 @@ class RegisteredUserController extends Controller
         Auth::login($user);
 
         // --- Lógica de redirección por rol directamente aquí ---
-        if ($user->id_rol == 1) { // Administrador
+        if ($user->hasRole('Administrador')) { // Administrador
             return Redirect::route('admin.dashboard');
-        } elseif ($user->id_rol == 2) { // Médico
+        } elseif ($user->hasRole('Medico')) { // Médico
             return Redirect::route('medico.dashboard');
-        } elseif ($user->id_rol == 3) { // Paciente
+        } elseif ($user->hasRole('Paciente')) { // Paciente
             return Redirect::route('paciente.dashboard');
         }
 

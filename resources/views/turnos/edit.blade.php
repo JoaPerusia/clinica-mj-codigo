@@ -29,7 +29,7 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route(Auth::user()->id_rol == 1 ? 'admin.turnos.update' : (Auth::user()->id_rol == 2 ? 'medico.turnos.update' : 'paciente.turnos.update'), $turno->id_turno) }}">
+                <form method="POST" action="{{ route(Auth::user()->hasRole('Administrador') ? 'admin.turnos.update' : (Auth::user()->hasRole('Medico') ? 'medico.turnos.update' : 'paciente.turnos.update'), $turno->id_turno) }}">
                     @csrf
                     @method('PUT')
 
@@ -64,8 +64,8 @@
                         $estadoActual = $turno->estado;
                         $isDisabled = in_array($estadoActual, ['realizado', 'cancelado', 'ausente']);
                         // Solo el médico y el admin pueden cambiar el estado
-                        $isMedico = Auth::user()->id_rol == 2;
-                        $isAdmin = Auth::user()->id_rol == 1;
+                        $isMedico = Auth::user()->hasRole('Medico');
+                        $isAdmin = Auth::user()->hasRole('Administrador');
                     @endphp
 
                     @if ($isMedico || $isAdmin)
@@ -98,11 +98,11 @@
                     
                     @php
                         $cancelRoute = '';
-                        if (auth()->check() && auth()->user()->id_rol == 1) {
+                        if (auth()->check() && auth()->user()->hasRole('Administrador')) {
                             $cancelRoute = route('admin.turnos.index');
-                        } elseif (auth()->check() && auth()->user()->id_rol == 3) {
+                        } elseif (auth()->check() && auth()->user()->hasRole('Paciente')) {
                             $cancelRoute = route('paciente.turnos.index');
-                        } elseif (auth()->check() && auth()->user()->id_rol == 2) {
+                        } elseif (auth()->check() && auth()->user()->hasRole('Medico')) {
                             $cancelRoute = route('medico.turnos.index');
                         }
                     @endphp

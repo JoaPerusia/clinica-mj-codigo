@@ -60,7 +60,7 @@
                 </div>
 
                 {{-- Campo oculto para id_rol, por defecto 3 (Paciente) --}}
-                <input type="hidden" name="id_rol" value="3">
+                
 
                 
                 <div class="flex items-center justify-end mt-4">

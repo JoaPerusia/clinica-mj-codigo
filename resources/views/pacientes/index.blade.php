@@ -11,9 +11,9 @@
                     <div class="action-buttons-container"> {{-- Usando la nueva clase --}}
                         @php
                             $dashboardRoute = '';
-                            if (auth()->user()->id_rol == 1) {
+                            if (auth()->user()->hasRole('Administrador')) {
                                 $dashboardRoute = route('admin.dashboard');
-                            } elseif (auth()->user()->id_rol == 3) {
+                            } elseif (auth()->user()->hasRole('Paciente')) {
                                 $dashboardRoute = route('paciente.dashboard');
                             }
                         @endphp
@@ -27,13 +27,13 @@
                 @endif
 
                 {{-- Botón para Crear Nuevo Paciente (dinámico por rol) --}}
-                @if(auth()->check() && (auth()->user()->id_rol == 1 || auth()->user()->id_rol == 3))
+                @if(auth()->check() && (auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Paciente')))
                     <div class="action-buttons-container mb-6"> {{-- Usando la nueva clase, y mb-6 para más separación de la tabla --}}
                         @php
                             $createPacienteRoute = '';
-                            if (auth()->user()->id_rol == 1) {
+                            if (auth()->user()->hasRole('Administrador')) {
                                 $createPacienteRoute = route('admin.pacientes.create');
-                            } elseif (auth()->user()->id_rol == 3) {
+                            } elseif (auth()->user()->hasRole('Paciente')) {
                                 $createPacienteRoute = route('paciente.pacientes.create');
                             }
                         @endphp
@@ -95,14 +95,14 @@
                                     <td class="table-data">{{ $paciente->usuario ? $paciente->usuario->nombre . ' (' . $paciente->usuario->id_usuario . ')' : 'N/A' }}</td>
                                     <td class="table-actions"> 
                                         @if(auth()->check())
-                                            @if(auth()->user()->id_rol == 1)
+                                            @if(auth()->user()->hasRole('Administrador'))
                                                 <a href="{{ route('admin.pacientes.edit', $paciente->id_paciente) }}" class="btn-info table-action-button text-sm px-4 py-2 mt-1">Editar</a>
                                                 <form action="{{ route('admin.pacientes.destroy', $paciente->id_paciente) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de eliminar este paciente?');">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn-danger text-sm px-4 py-2 mt-1">Eliminar</button>
                                                 </form>
-                                            @elseif(auth()->user()->id_rol == 3 && $paciente->id_usuario == auth()->user()->id_usuario)
+                                            @elseif(auth()->user()->hasRole('Paciente') && $paciente->id_usuario == auth()->user()->id_usuario)
                                                 <a href="{{ route('paciente.pacientes.edit', $paciente->id_paciente) }}" class="btn-info table-action-button text-sm px-4 py-2 mt-1">Editar</a>
                                                 <form action="{{ route('paciente.pacientes.destroy', $paciente->id_paciente) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de eliminar este paciente?');">
                                                     @csrf

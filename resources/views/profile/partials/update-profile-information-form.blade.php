@@ -17,7 +17,7 @@
         @csrf
         @method('patch')
 
-        @if(auth()->user()->id_rol == 1)
+        @if(auth()->user()->hasRole('Administrador'))
             {{-- Campos para Administrador (Todos editables) --}}
             <div>
                 <x-input-label for="nombre" :value="__('Nombre')" />

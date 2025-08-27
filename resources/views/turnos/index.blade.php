@@ -11,11 +11,11 @@
                     <div class="action-buttons-container"> 
                         @php
                             $dashboardRoute = '';
-                            if (auth()->user()->id_rol == 1) {
+                            if (auth()->user()->hasRole('Administrador')) {
                                 $dashboardRoute = route('admin.dashboard');
-                            } elseif (auth()->user()->id_rol == 2) {
+                            } elseif (auth()->user()->hasRole('Medico')) {
                                 $dashboardRoute = route('medico.dashboard');
-                            } elseif (auth()->user()->id_rol == 3) {
+                            } elseif (auth()->user()->hasRole('Paciente')) {
                                 $dashboardRoute = route('paciente.dashboard');
                             }
                         @endphp
@@ -29,13 +29,13 @@
                 @endif
 
                 {{-- Ajuste de la ruta para crear turno según el rol --}}
-                @if(auth()->check() && (auth()->user()->id_rol == 1 || auth()->user()->id_rol == 3))
+                @if(auth()->check() && (auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Paciente')))
                     <div class="action-buttons-container mb-6"> 
-                        @if(auth()->user()->id_rol == 1)
+                        @if(auth()->user()->hasRole('Administrador'))
                             <a href="{{ route('admin.turnos.create') }}" class="btn-primary">
                                 Reservar Turno
                             </a>
-                        @elseif(auth()->user()->id_rol == 3)
+                        @elseif(auth()->user()->hasRole('Paciente'))
                             <a href="{{ route('paciente.turnos.create') }}" class="btn-primary">
                                 Reservar Turno
                             </a>
@@ -138,7 +138,7 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         @if(auth()->check())
                                             {{-- Lógica de botones de acción con clases ajustadas para ser más pequeños --}}
-                                            @if(auth()->user()->id_rol == 1)
+                                            @if(auth()->user()->hasRole('Administrador'))
                                                 <a href="{{ route('admin.turnos.edit', $turno->id_turno) }}" class="btn-info text-sm px-4 py-2 mt-1">Editar</a>
                                                 {{-- El botón de eliminar ahora solo cambia el estado a 'cancelado' --}}
                                                 <form action="{{ route('admin.turnos.destroy', $turno->id_turno) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');">
@@ -146,13 +146,13 @@
                                                     @method('DELETE')
                                                     <button type="submit" class="btn-danger text-sm px-4 py-2 mt-1">Cancelar</button>
                                                 </form>
-                                            @elseif(auth()->user()->id_rol == 3 && $turno->estado == 'pendiente')
+                                            @elseif(auth()->user()->hasRole('Paciente') && $turno->estado == 'pendiente')
                                                 <form action="{{ route('paciente.turnos.destroy', $turno->id_turno) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn-danger text-sm px-4 py-2 mt-1">Cancelar</button>
                                                 </form>
-                                            @elseif(auth()->user()->id_rol == 2 && $turno->medico && $turno->medico->id_usuario == auth()->user()->id_usuario)
+                                            @elseif(auth()->user()->hasRole('Medico') && $turno->medico && $turno->medico->id_usuario == auth()->user()->id_usuario)
                                                 <a href="{{ route('medico.turnos.edit', $turno->id_turno) }}" class="btn-info text-sm px-4 py-2 mt-1">Editar</a>
                                             @else
                                                 <span class="text-gray-500 dark:text-gray-400">No disponible</span>

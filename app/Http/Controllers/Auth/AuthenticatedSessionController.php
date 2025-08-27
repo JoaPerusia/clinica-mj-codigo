@@ -33,15 +33,12 @@ class AuthenticatedSessionController extends Controller
         // Obtén el usuario autenticado
         $user = Auth::user();
 
-        // Redirige según el id_rol del usuario
-        switch ($user->id_rol) {
-            case 1: // Si 1 es el ID para 'Administrador'
-                return redirect()->intended(route('admin.dashboard'));
-            case 2: // Si 2 es el ID para 'Médico'
-                return redirect()->intended(route('medico.dashboard'));
-            case 3: // Si 3 es el ID para 'Paciente' (y predeterminado si el rol no coincide)
-            default:
-                return redirect()->intended(route('paciente.dashboard'));
+        if ($user->hasRole('Administrador')) {
+            return redirect()->intended(route('admin.dashboard'));
+        } elseif ($user->hasRole('Medico')) {
+            return redirect()->intended(route('medico.dashboard'));
+        } elseif ($user->hasRole('Paciente')) {
+            return redirect()->intended(route('paciente.dashboard'));
         }
     }
 

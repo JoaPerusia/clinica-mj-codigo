@@ -18,9 +18,9 @@ class PacienteController extends Controller
 
         $query = Paciente::query();
 
-        if ($usuario->id_rol == 1) {
+        if ($usuario->hasRole('Administrador')) {
             // El administrador ve todos los pacientes
-        } elseif ($usuario->id_rol == 3) {
+        } elseif ($usuario->hasRole('Paciente')) {
             // El paciente solo ve sus propios pacientes
             $query->where('id_usuario', $usuario->id_usuario);
         } else {
@@ -42,7 +42,7 @@ class PacienteController extends Controller
     {
         $usuario = Auth::user();
 
-        if ($usuario->id_rol == 1 || $usuario->id_rol == 3) {
+        if ($usuario->hasRole('Administrador') || $usuario->hasRole('Paciente')) {
             return view('pacientes.create');
         }
 
@@ -62,7 +62,7 @@ class PacienteController extends Controller
             'obra_social' => 'required|string|max:255', // *** AÑADIDO: Regla para obra_social ***
         ];
 
-        if ($usuario->id_rol == 1) {
+        if ($usuario->hasRole('Administrador')) {
             $rules['id_usuario'] = 'required|exists:usuarios,id_usuario';
         }
 
@@ -70,15 +70,15 @@ class PacienteController extends Controller
             $validatedData = $request->validate($rules);
             $data = $request->all();
 
-            if ($usuario->id_rol == 3) {
+            if ($usuario->hasRole('Paciente')) {
                 $data['id_usuario'] = $usuario->id_usuario;
             }
 
             Paciente::create($data);
 
-            if ($usuario->id_rol == 1) {
+            if ($usuario->hasRole('Administrador')) {
                 return redirect()->route('admin.pacientes.index')->with('success', 'Paciente creado con éxito por el administrador.');
-            } elseif ($usuario->id_rol == 3) {
+            } elseif ($usuario->hasRole('Paciente')) {
                 return redirect()->route('paciente.pacientes.index')->with('success', 'Familiar/Paciente añadido con éxito.');
             } else {
                 return redirect()->route('dashboard')->with('success', 'Paciente creado con éxito.');
@@ -86,9 +86,9 @@ class PacienteController extends Controller
 
         } catch (ValidationException $e) {
             $redirectRoute = '';
-            if ($usuario->id_rol == 1) {
+            if ($usuario->hasRole('Administrador')) {
                 $redirectRoute = 'admin.pacientes.create';
-            } elseif ($usuario->id_rol == 3) {
+            } elseif ($usuario->hasRole('Paciente')) {
                 $redirectRoute = 'paciente.pacientes.create';
             } else {
                 $redirectRoute = 'dashboard';
@@ -105,7 +105,7 @@ class PacienteController extends Controller
         $paciente = Paciente::findOrFail($id);
         $usuario = Auth::user();
 
-        if ($usuario->id_rol == 1 || ($usuario->id_rol == 3 && $paciente->id_usuario == $usuario->id_usuario)) {
+        if ($usuario->hasRole('Administrador') || ($usuario->hasRole('Paciente') && $paciente->id_usuario == $usuario->id_usuario)) {
             return view('pacientes.show', compact('paciente'));
         }
 
@@ -118,10 +118,10 @@ class PacienteController extends Controller
         $usuario = Auth::user();
 
         // Permitir la edición si el usuario es un administrador o si es el dueño del perfil del paciente.
-        if ($usuario->id_rol == 1) {
+        if ($usuario->hasRole('Administrador')) {
             // Un administrador puede editar cualquier paciente.
             return view('pacientes.edit', compact('paciente'));
-        } elseif ($usuario->id_rol == 3 && $paciente->id_usuario == $usuario->id_usuario) {
+        } elseif ($usuario->hasRole('Paciente') && $paciente->id_usuario == $usuario->id_usuario) {
             // Un paciente puede editarse a sí mismo.
             return view('pacientes.edit', compact('paciente'));
         } else {
@@ -136,12 +136,12 @@ class PacienteController extends Controller
         $usuario = Auth::user();
 
         // Verificación de permisos: el admin puede editar cualquier paciente, el paciente solo el suyo.
-        if ($usuario->id_rol != 1 && $paciente->id_usuario != $usuario->id_usuario) {
+        if (!$usuario->hasRole('Administrador') && $paciente->id_usuario != $usuario->id_usuario) {
             return redirect()->route('pacientes.index')->with('warning', 'No tienes permiso para editar este paciente.');
         }
 
         // Reglas de validación según el rol
-        if ($usuario->id_rol == 1) {
+        if ($usuario->hasRole('Administrador')) {
             // Reglas para el Administrador (puede modificar todos los campos)
             $rules = [
                 'nombre' => 'required|string|max:255',
@@ -184,11 +184,11 @@ class PacienteController extends Controller
         $paciente = Paciente::findOrFail($id);
         $usuario = Auth::user();
 
-        if ($usuario->id_rol != 1 && $paciente->id_usuario != $usuario->id_usuario) {
+        if (!$usuario->hasRole('Administrador') && $paciente->id_usuario != $usuario->id_usuario) {
             $redirectRoute = '';
-            if ($usuario->id_rol == 1) {
+            if ($usuario->hasRole('Administrador')) {
                 $redirectRoute = 'admin.pacientes.index';
-            } elseif ($usuario->id_rol == 3) {
+            } elseif ($usuario->hasRole('Paciente')) {
                 $redirectRoute = 'paciente.pacientes.index';
             } else {
                 $redirectRoute = 'dashboard';
@@ -199,9 +199,9 @@ class PacienteController extends Controller
         $paciente->delete();
 
         $redirectRoute = '';
-        if ($usuario->id_rol == 1) {
+        if ($usuario->hasRole('Administrador')) {
             $redirectRoute = 'admin.pacientes.index';
-        } elseif ($usuario->id_rol == 3) {
+        } elseif ($usuario->hasRole('Paciente')) {
             $redirectRoute = 'paciente.pacientes.index';
         } else {
             $redirectRoute = 'dashboard';

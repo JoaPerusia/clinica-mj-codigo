@@ -7,7 +7,7 @@
                 <h1 class="page-title">Crear Nueva Especialidad</h1> 
 
                 {{-- Botón de Inicio para Admin --}}
-                @if(auth()->check() && auth()->user()->id_rol == 1)
+                @if(auth()->check() && auth()->user()->hasRole('Administrador'))
                     <div class="action-buttons-container"> 
                         <a href="{{ route('admin.dashboard') }}" class="btn-secondary">
                             ← Inicio
