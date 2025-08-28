@@ -12,7 +12,9 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
 use App\Models\Paciente; 
+use App\Models\Rol;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\DB;
 
 class RegisteredUserController extends Controller
 {
@@ -32,9 +34,9 @@ class RegisteredUserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'nombre' => ['required', 'string', 'max:255'],
             'apellido' => ['required', 'string', 'max:255'],
-            'dni' => ['required', 'string', 'max:20', 'unique:usuarios,dni'], 
+            'dni' => ['required', 'string', 'max:20', 'unique:usuarios'], 
             'fecha_nacimiento' => ['required', 'date'],
             'obra_social' => ['required', 'string', 'max:255'],
             'telefono' => ['required', 'string', 'max:20'],
@@ -42,44 +44,67 @@ class RegisteredUserController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        $user = User::create([
-            'nombre' => $request->name,
-            'apellido' => $request->apellido,
-            'dni' => $request->dni,
-            'fecha_nacimiento' => $request->fecha_nacimiento,
-            'obra_social' => $request->obra_social,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'telefono' => $request->telefono,
-        ]);
+        DB::beginTransaction();
 
-        $pacienteRol = Rol::where('rol', 'Paciente')->first();
-        $user->roles()->attach($pacienteRol->id_rol);
+        try {
+            // 1. Buscar si ya existe un paciente con ese DNI.
+            $pacienteExistente = Paciente::where('dni', $request->dni)->first();
+
+            // 2. Crear el nuevo usuario
+            $user = User::create([
+                'nombre' => $request->nombre,
+                'apellido' => $request->apellido,
+                'email' => $request->email,
+                'dni' => $request->dni,
+                'password' => Hash::make($request->password),
+                'fecha_nacimiento' => $request->fecha_nacimiento,
+                'obra_social' => $request->obra_social,
+                'telefono' => $request->telefono,
+            ]);
+
+            // 3. Asignar el rol de Paciente al usuario
+            $pacienteRol = Rol::where('rol', 'Paciente')->first();
+            if ($pacienteRol) {
+                $user->roles()->attach($pacienteRol->id_rol);
+            }
+
+            // 4. Lógica de vinculación: Si el paciente ya existe, vincularlo al usuario.
+            // Si no, crear un nuevo registro de paciente.
+            if ($pacienteExistente) {
+                $pacienteExistente->id_usuario = $user->id_usuario;
+                $pacienteExistente->save();
+            } else {
+                Paciente::create([
+                    'nombre' => $user->nombre,
+                    'apellido' => $user->apellido,
+                    'dni' => $user->dni,
+                    'fecha_nacimiento' => $user->fecha_nacimiento,
+                    'obra_social' => $user->obra_social,
+                    'telefono' => $user->telefono,
+                    'id_usuario' => $user->id_usuario,
+                ]);
+            }
+            
+            DB::commit();
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withInput()->with('error', 'Hubo un error en el registro: ' . $e->getMessage());
+        }
+
         event(new Registered($user));
-
-        // Auto-crear el perfil de Paciente para el usuario recién registrado
-        Paciente::create([
-            'nombre' => $user->nombre,
-            'apellido' => $user->apellido,
-            'dni' => $user->dni,
-            'fecha_nacimiento' => $user->fecha_nacimiento,
-            'obra_social' => $user->obra_social,
-            'telefono' => $user->telefono,
-            'id_usuario' => $user->id_usuario,
-        ]);
 
         Auth::login($user);
 
-        // --- Lógica de redirección por rol directamente aquí ---
-        if ($user->hasRole('Administrador')) { // Administrador
+        // --- Lógica de redirección por rol ---
+        if ($user->hasRole('Administrador')) {
             return Redirect::route('admin.dashboard');
-        } elseif ($user->hasRole('Medico')) { // Médico
+        } elseif ($user->hasRole('Medico')) {
             return Redirect::route('medico.dashboard');
-        } elseif ($user->hasRole('Paciente')) { // Paciente
+        } elseif ($user->hasRole('Paciente')) {
             return Redirect::route('paciente.dashboard');
         }
 
-        // Redirección por defecto si el rol no coincide con ninguno (debería ser el dashboard genérico)
         return Redirect::route('dashboard');
     }
 }
