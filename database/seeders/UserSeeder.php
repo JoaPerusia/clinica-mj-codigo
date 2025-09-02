@@ -22,18 +22,18 @@ class UserSeeder extends Seeder
                     'nombre' => 'Admin',
                     'apellido' => 'Test',
                     'password' => Hash::make('password'),
-                    'dni' => '11223344',
+                    'dni' => '12345678',
                     'fecha_nacimiento' => '1980-01-01',
                     'obra_social' => 'AdminSalud',
                     'telefono' => '1234567890',
                 ]
             );
 
-            $user->roles()->attach($adminRol->id_rol);
+            $user->roles()->syncWithoutDetaching([$adminRol->id_rol]);
 
             $this->command->info('Usuario Administrador creado y rol asignado correctamente.');
         } else {
-            $this->command->info('El rol "Administrador" no fue encontrado. Asegúrate de que RolSeeder se ejecute primero.');
+            $this->command->info('El rol \"Administrador\" no fue encontrado. Asegúrate de que RolSeeder se ejecute primero.');
         }
     }
 }

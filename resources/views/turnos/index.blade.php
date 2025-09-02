@@ -68,11 +68,17 @@
                             <option value="ausente" {{ $estado_filtro == 'ausente' ? 'selected' : '' }}>Ausentes</option>
                         </select>
                     </div>
-                    {{-- Nuevo: Input para el filtro por DNI con botón de buscar --}}
+                    {{-- Buscador por DNI de Paciente --}}
                     <div class="flex items-center space-x-2">
-                        <label for="dni_filtro" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Buscar por DNI:</label>
+                        <label for="dni_filtro" class="block text-sm font-medium text-gray-700 dark:text-gray-300">DNI Paciente:</label>
                         <input type="text" id="dni_filtro" placeholder="DNI del paciente" value="{{ $dni_filtro ?? '' }}" class="mt-1 block w-auto pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                         <button id="buscar_dni_btn" class="btn-primary text-sm px-4 py-2 mt-1">Buscar</button>
+                    </div>
+                     {{-- Buscador por DNI de Médico --}}
+                    <div class="flex items-center space-x-2">
+                        <label for="dni_filtro_medico" class="block text-sm font-medium text-gray-700 dark:text-gray-300">DNI Médico:</label>
+                        <input type="text" id="dni_filtro_medico" name="dni_filtro_medico" placeholder="DNI del médico" value="{{ request('dni_filtro_medico') }}" class="mt-1 block w-auto pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <button id="buscar_dni_medico_btn" class="btn-primary text-sm px-4 py-2 mt-1">Buscar</button>
                     </div>
                 </div>
 
@@ -92,10 +98,6 @@
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                         Paciente
                                     </th>
-                                    {{-- Nuevo: Columna para el DNI --}}
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                        DNI
-                                    </th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                                         Fecha
                                     </th>
@@ -113,18 +115,14 @@
                             <tbody class="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
                                 @foreach($turnos as $turno)
                                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-900 transition duration-150 ease-in-out">
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-200">
-                                        {{ $turno->medico->nombre }} {{ $turno->medico->apellido }}
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                        {{ $turno->medico->usuario->nombre }} {{ $turno->medico->usuario->apellido }} - ({{ $turno->medico->usuario->dni ?? 'N/A' }})
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                         {{ $turno->medico->especialidades->pluck('nombre_especialidad')->implode(', ') }}
                                     </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                            {{ $turno->paciente->nombre }} {{ $turno->paciente->apellido }}
-                                        </td>
-                                    {{-- Nuevo: Celda para mostrar el DNI --}}
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                        {{ $turno->paciente->dni ?? 'N/A' }}
+                                        {{ $turno->paciente->nombre }} {{ $turno->paciente->apellido }} - ({{ $turno->paciente->dni ?? 'N/A' }})
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                         {{ \Carbon\Carbon::parse($turno->fecha)->format('d/m/Y') }}
@@ -139,21 +137,21 @@
                                         @if(auth()->check())
                                             {{-- Lógica de botones de acción con clases ajustadas para ser más pequeños --}}
                                             @if(auth()->user()->hasRole('Administrador'))
-                                                <a href="{{ route('admin.turnos.edit', $turno->id_turno) }}" class="btn-info text-sm px-4 py-2 mt-1">Editar</a>
+                                                <a href="{{ route('admin.turnos.edit', $turno->id_turno) }}" class="btn-info text-sm px-3 py-2 mt-1">Editar</a>
                                                 {{-- El botón de eliminar ahora solo cambia el estado a 'cancelado' --}}
                                                 <form action="{{ route('admin.turnos.destroy', $turno->id_turno) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn-danger text-sm px-4 py-2 mt-1">Cancelar</button>
+                                                    <button type="submit" class="btn-danger text-sm px-3 py-2 mt-1">Cancelar</button>
                                                 </form>
                                             @elseif(auth()->user()->hasRole('Paciente') && $turno->estado == 'pendiente')
                                                 <form action="{{ route('paciente.turnos.destroy', $turno->id_turno) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn-danger text-sm px-4 py-2 mt-1">Cancelar</button>
+                                                    <button type="submit" class="btn-danger text-sm px-3 py-2 mt-1">Cancelar</button>
                                                 </form>
                                             @elseif(auth()->user()->hasRole('Medico') && $turno->medico && $turno->medico->id_usuario == auth()->user()->id_usuario)
-                                                <a href="{{ route('medico.turnos.edit', $turno->id_turno) }}" class="btn-info text-sm px-4 py-2 mt-1">Editar</a>
+                                                <a href="{{ route('medico.turnos.edit', $turno->id_turno) }}" class="btn-info text-sm px-3 py-2 mt-1">Editar</a>
                                             @else
                                                 <span class="text-gray-500 dark:text-gray-400">No disponible</span>
                                             @endif
@@ -177,43 +175,67 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const estadoFiltroSelect = document.getElementById('estado_filtro');
-            const dniFiltroInput = document.getElementById('dni_filtro');
-            const buscarDniBtn = document.getElementById('buscar_dni_btn');
+            const dniFiltroPacienteInput = document.getElementById('dni_filtro_paciente');
+            const buscarDniPacienteBtn = document.getElementById('buscar_dni_paciente_btn');
+            const dniFiltroMedicoInput = document.getElementById('dni_filtro_medico');
+            const buscarDniMedicoBtn = document.getElementById('buscar_dni_medico_btn');
 
             function updateUrlAndRedirect() {
                 const selectedEstado = estadoFiltroSelect.value;
-                const dniValue = dniFiltroInput.value.trim();
+                const dniPacienteValue = dniFiltroPacienteInput.value.trim();
+                const dniMedicoValue = dniFiltroMedicoInput.value.trim();
                 const currentUrl = new URL(window.location.href);
 
                 // Actualizar el parámetro 'estado_filtro'
-                if (selectedEstado === 'todos') {
-                    currentUrl.searchParams.set('estado_filtro', selectedEstado);
+                currentUrl.searchParams.set('estado_filtro', selectedEstado);
+
+                // Actualizar el parámetro 'dni_filtro_paciente'
+                if (dniPacienteValue) {
+                    currentUrl.searchParams.set('dni_filtro_paciente', dniPacienteValue);
                 } else {
-                    currentUrl.searchParams.set('estado_filtro', selectedEstado);
+                    currentUrl.searchParams.delete('dni_filtro_paciente');
                 }
 
-                // Nuevo: Actualizar el parámetro 'dni_filtro'
-                if (dniValue) {
-                    currentUrl.searchParams.set('dni_filtro', dniValue);
+                // Actualizar el parámetro 'dni_filtro_medico'
+                if (dniMedicoValue) {
+                    currentUrl.searchParams.set('dni_filtro_medico', dniMedicoValue);
                 } else {
-                    currentUrl.searchParams.delete('dni_filtro');
+                    currentUrl.searchParams.delete('dni_filtro_medico');
                 }
 
-                // Asegurarse de que el parámetro de página se resetee a 1 cuando se cambia el filtro
+                // Asegurarse de que el parámetro de página se resetee a 1
                 currentUrl.searchParams.set('page', 1);
 
                 // Redirigir a la nueva URL
                 window.location.href = currentUrl.toString();
             }
 
+            // Eventos para el filtro de estado y los nuevos buscadores
             estadoFiltroSelect.addEventListener('change', updateUrlAndRedirect);
 
-            // Nuevo: Escuchar el evento 'click' en el botón de buscar
-            buscarDniBtn.addEventListener('click', function (event) {
-                event.preventDefault(); // Evitar cualquier comportamiento por defecto
+            buscarDniPacienteBtn.addEventListener('click', function (event) {
+                event.preventDefault(); 
                 updateUrlAndRedirect();
+            });
+
+            dniFiltroPacienteInput.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    updateUrlAndRedirect();
+                }
+            });
+
+            buscarDniMedicoBtn.addEventListener('click', function (event) {
+                event.preventDefault();
+                updateUrlAndRedirect();
+            });
+
+            dniFiltroMedicoInput.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    updateUrlAndRedirect();
+                }
             });
         });
     </script>
-
 @endsection

@@ -15,6 +15,9 @@ use Carbon\Carbon;
 
 class MedicoSeeder extends Seeder
 {
+    /**
+     * Run the database seeds.
+     */
     public function run(): void
     {
         $medicoRol = Rol::where('rol', 'Medico')->first();
@@ -31,6 +34,7 @@ class MedicoSeeder extends Seeder
             return;
         }
 
+        // Mapeo de días de la semana a números para mayor consistencia
         $diasSemanaMap = [
             'domingo' => 0,
             'lunes' => 1,
@@ -46,33 +50,48 @@ class MedicoSeeder extends Seeder
                 'nombre' => 'Dr. Juan',
                 'apellido' => 'Perez',
                 'email' => 'juan.perez@example.com',
-                'dni' => '98765432',
+                'dni' => '11222333',
                 'fecha_nacimiento' => '1980-01-01',
-                'obra_social' => 'Particular',
-                'telefono' => '1133445566',
-                'especialidades' => ['Cardiología', 'Clínica Médica'],
+                'obra_social' => 'Osde',
+                'telefono' => '1144445555',
+                'especialidades' => ['Pediatría', 'Cardiología'],
                 'horarios_trabajo' => [
-                    ['dia_semana' => 'lunes', 'hora_inicio' => '09:00', 'hora_fin' => '13:00'],
+                    ['dia_semana' => 'lunes', 'hora_inicio' => '09:00', 'hora_fin' => '12:00'],
                     ['dia_semana' => 'miercoles', 'hora_inicio' => '14:00', 'hora_fin' => '18:00'],
-                ],
+                ]
             ],
             [
                 'nombre' => 'Dra. Ana',
-                'apellido' => 'Gómez',
+                'apellido' => 'Gomez',
                 'email' => 'ana.gomez@example.com',
-                'dni' => '23456789',
-                'fecha_nacimiento' => '1985-06-25',
-                'obra_social' => 'Osde',
-                'telefono' => '1199887766',
+                'dni' => '22333444',
+                'fecha_nacimiento' => '1975-06-20',
+                'obra_social' => 'Swiss Medical',
+                'telefono' => '1166667777',
                 'especialidades' => ['Dermatología'],
                 'horarios_trabajo' => [
-                    ['dia_semana' => 'martes', 'hora_inicio' => '10:00', 'hora_fin' => '14:00'],
+                    ['dia_semana' => 'martes', 'hora_inicio' => '10:00', 'hora_fin' => '13:00'],
                     ['dia_semana' => 'jueves', 'hora_inicio' => '15:00', 'hora_fin' => '19:00'],
-                ],
+                ]
+            ],
+            [
+                'nombre' => 'Dr. Luis',
+                'apellido' => 'Ramirez',
+                'email' => 'luis.ramirez@example.com',
+                'dni' => '33444555',
+                'fecha_nacimiento' => '1992-03-10',
+                'obra_social' => 'Galeno',
+                'telefono' => '1188889999',
+                'especialidades' => ['Ginecología'],
+                'horarios_trabajo' => [
+                    ['dia_semana' => 'viernes', 'hora_inicio' => '08:00', 'hora_fin' => '12:00'],
+                    ['dia_semana' => 'sabado', 'hora_inicio' => '09:00', 'hora_fin' => '13:00'],
+                ]
             ],
         ];
 
         foreach ($medicosData as $data) {
+            // 1. Crear o encontrar el usuario (en la tabla 'usuarios'). Las líneas de nombre y apellido aquí son CORRECTAS.
             $user = User::firstOrCreate(
                 ['email' => $data['email']],
                 [
@@ -86,25 +105,27 @@ class MedicoSeeder extends Seeder
                 ]
             );
 
+            // 2. Adjuntar el rol de Médico
             $user->roles()->syncWithoutDetaching([$medicoRol->id_rol]);
 
+            // 3. Crear el perfil de médico asociado al usuario (en la tabla 'medicos').
+            // Aquí es donde se elimina la duplicación. Solo se inserta la clave foránea `id_usuario`.
             $medico = Medico::firstOrCreate(
-                ['id_usuario' => $user->id_usuario],
-                [
-                    'nombre' => $data['nombre'],
-                    'apellido' => $data['apellido'],
-                ]
+                ['id_usuario' => $user->id_usuario]
             );
 
+            // 4. Adjuntar especialidades al médico
             $especialidadesIds = Especialidad::whereIn('nombre_especialidad', $data['especialidades'])->pluck('id_especialidad');
             $medico->especialidades()->syncWithoutDetaching($especialidadesIds);
 
+            // 5. Añadir horarios de trabajo al médico
             foreach ($data['horarios_trabajo'] as $horario) {
+                // Usamos el mapa para obtener el número del día de la semana
                 $diaNumero = $diasSemanaMap[$horario['dia_semana']];
                 HorarioMedico::firstOrCreate(
                     [
                         'id_medico' => $medico->id_medico,
-                        'dia_semana' => $horario['dia_semana'],
+                        'dia_semana' => $diaNumero,
                         'hora_inicio' => $horario['hora_inicio'],
                         'hora_fin' => $horario['hora_fin'],
                     ]

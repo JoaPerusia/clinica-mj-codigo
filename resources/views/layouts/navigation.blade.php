@@ -124,12 +124,6 @@
                     <div class="font-medium text-sm text-gray-500">
                         {{ Auth::user()->email }}
                     </div>
-                    <div class="font-medium text-sm text-gray-500">
-                        @php
-                            $roles = Auth::user()->roles->pluck('rol')->implode(', ');
-                        @endphp
-                        Rol: {{ $roles ?? 'No definido' }}
-                    </div>
                 @endif
             </div>
 

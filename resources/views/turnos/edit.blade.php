@@ -43,7 +43,7 @@
                     {{-- Campo Médico (deshabilitado) --}}
                     <div class="form-group">
                         <label for="id_medico" class="form-label">Médico:</label>
-                        <input type="text" id="id_medico" class="form-input" value="{{ $turno->medico->nombre }} {{ $turno->medico->apellido }}" disabled>
+                        <input type="text" id="id_medico" class="form-input" value="{{ $turno->medico->usuario->nombre }} {{ $turno->medico->usuario->apellido }}" disabled>
                         <input type="hidden" name="id_medico" value="{{ $turno->id_medico }}"> {{-- Mantener el valor oculto para el controlador --}}
                     </div>
                     

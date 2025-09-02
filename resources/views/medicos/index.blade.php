@@ -17,7 +17,14 @@
                         Agregar Médico
                     </a>
                 </div>
-
+                <div class="mb-4 flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <label for="dni_filtro" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Buscar por DNI:</label>
+                        <input type="text" name="dni_filtro" id="dni_filtro" placeholder="DNI del médico" value="{{ request('dni_filtro') }}" class="mt-1 block w-auto pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <button id="buscar_dni_btn" type="submit" class="btn-primary text-sm px-4 py-2 mt-1">Buscar</button>
+                    </div>
+                </div>
+                
                 @if (session('success'))
                     <div class="alert-success">
                         {{ session('success') }}
@@ -36,6 +43,7 @@
                         <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                             <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                                 <tr>
+                                    <th scope="col" class="py-3 px-6">DNI</th>
                                     <th scope="col" class="py-3 px-6">Nombre</th>
                                     <th scope="col" class="py-3 px-6">Especialidades</th>
                                     <th scope="col" class="py-3 px-6">Día</th>
@@ -58,7 +66,8 @@
                                 @endphp
                                 @foreach ($medicos as $medico)
                                 <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                                    <td class="py-4 px-6">{{ $medico->nombre }} {{ $medico->apellido }}</td>
+                                    <td class="py-4 px-6">{{ $medico->usuario->dni }}</td>
+                                    <td class="py-4 px-6">{{ $medico->usuario->nombre }} {{ $medico->usuario->apellido }}</td>
                                     <td class="py-4 px-6">
                                         @foreach($medico->especialidades as $especialidad)
                                             <span class="badge badge-info">{{ $especialidad->nombre_especialidad }}</span>
@@ -98,4 +107,38 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const dniFiltroInput = document.getElementById('dni_filtro');
+            const buscarDniBtn = document.getElementById('buscar_dni_btn'); // Asegúrate de que tu botón tiene este ID
+
+            function updateUrlAndRedirect() {
+                const dniValue = dniFiltroInput.value.trim();
+                const currentUrl = new URL(window.location.href);
+
+                if (dniValue) {
+                    currentUrl.searchParams.set('dni_filtro', dniValue);
+                } else {
+                    currentUrl.searchParams.delete('dni_filtro');
+                }
+
+                currentUrl.searchParams.set('page', 1);
+
+                window.location.href = currentUrl.toString();
+            }
+
+            buscarDniBtn.addEventListener('click', function (event) {
+                event.preventDefault(); 
+                updateUrlAndRedirect();
+            });
+
+            dniFiltroInput.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    updateUrlAndRedirect();
+                }
+            });
+        });
+    </script>
 @endsection

@@ -18,7 +18,7 @@
                     </p>
 
                     @php
-                        $user_rol = Auth::user()->rol->rol ?? null;
+                        $user_rol = Auth::user()->roles->first()->rol ?? null;
                         $redirect_route = 'dashboard'; // Ruta por defecto
 
                         if ($user_rol === 'Administrador') {

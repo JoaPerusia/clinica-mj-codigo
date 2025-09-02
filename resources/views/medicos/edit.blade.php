@@ -29,12 +29,12 @@
 
                     <div class="form-group">
                         <label for="nombre" class="form-label">Nombre:</label>
-                        <input type="text" name="nombre" id="nombre" value="{{ old('nombre', $medico->nombre) }}" required class="form-input">
+                        <input type="text" name="nombre" id="nombre" value="{{ old('nombre', $medico->usuario->nombre) }}" required class="form-input">
                     </div>
 
                     <div class="form-group">
                         <label for="apellido" class="form-label">Apellido:</label>
-                        <input type="text" name="apellido" id="apellido" value="{{ old('apellido', $medico->apellido) }}" required class="form-input">
+                        <input type="text" name="apellido" id="apellido" value="{{ old('apellido', $medico->usuario->apellido) }}" required class="form-input">
                     </div>
 
                     {{-- Selección de Especialidades --}}

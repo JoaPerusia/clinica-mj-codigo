@@ -21,16 +21,31 @@ class TurnoController extends Controller
     public function index(Request $request)
     {
         $usuario = Auth::user();
-        $estado_filtro = $request->input('estado_filtro', 'pendiente'); // Por defecto, mostrar 'pendiente'
-        $dni_filtro = $request->input('dni_filtro'); // Nuevo: Obtener el valor del filtro de DNI
-        $perPage = 10; // Número de turnos por página
+        $estado_filtro = $request->input('estado_filtro', 'pendiente'); 
+        $dni_filtro_paciente = $request->input('dni_filtro_paciente'); // NUEVO: Filtro DNI paciente
+        $dni_filtro_medico = $request->input('dni_filtro_medico');   // NUEVO: Filtro DNI médico
+        $perPage = 10; 
 
-        // Cargar paciente y médico, además de las especialidades del médico
-        $query = Turno::with('paciente', 'medico.especialidades');
+        // Cargar paciente y médico con su respectivo usuario para acceder al DNI
+        $query = Turno::with('paciente', 'medico.usuario');
+
+        // NUEVO: Aplicar filtro por DNI del paciente si se ha proporcionado (aplica para todos los roles)
+        if ($dni_filtro_paciente) {
+            $query->whereHas('paciente', function ($q) use ($dni_filtro_paciente) {
+                $q->where('dni', 'like', '%' . $dni_filtro_paciente . '%');
+            });
+        }
+
+        // NUEVO: Aplicar filtro por DNI del médico si se ha proporcionado (aplica para todos los roles)
+        if ($dni_filtro_medico) {
+            $query->whereHas('medico.usuario', function ($q) use ($dni_filtro_medico) {
+                $q->where('dni', 'like', '%' . $dni_filtro_medico . '%');
+            });
+        }
 
         // Aplicar filtros según el rol y el estado_filtro
         if ($usuario->hasRole('Administrador')) {
-            // Admin ve todos los turnos, pero aplica el filtro de estado si está presente
+            // Admin ve todos los turnos, aplica el filtro de estado si está presente
             if ($estado_filtro === 'todos') {
                 $query->whereIn('estado', ['realizado', 'atendido', 'pendiente', 'cancelado', 'ausente']);
             } elseif ($estado_filtro === 'realizado_atendido') {
@@ -71,21 +86,13 @@ class TurnoController extends Controller
             return view('turnos.index', compact('turnos', 'estado_filtro'));
         }
 
-        // Nuevo: Aplicar filtro por DNI si se proporciona
-        if ($dni_filtro) {
-            $query->whereHas('paciente', function ($q) use ($dni_filtro) {
-                $q->where('dni', 'like', '%' . $dni_filtro . '%');
-            });
-        }
-
-        // Ordenar por fecha y hora descendente para que los más recientes aparezcan primero
-        // Usar paginate() en lugar de get()
+        // Ordenar por fecha y hora
         $turnos = $query->orderBy('fecha', 'asc')
                         ->orderBy('hora', 'asc')
                         ->paginate($perPage)
-                        ->withQueryString(); // Esto es crucial para mantener los parámetros de filtro en la paginación
+                        ->withQueryString();
 
-        return view('turnos.index', compact('turnos', 'estado_filtro', 'dni_filtro'));
+        return view('turnos.index', compact('turnos', 'estado_filtro', 'dni_filtro_paciente', 'dni_filtro_medico'));
     }
 
     /**
@@ -456,14 +463,25 @@ class TurnoController extends Controller
         $id_especialidad = $request->input('id_especialidad');
 
         if (!$id_especialidad) {
-            return response()->json([], 200); // Devuelve un array vacío si no hay especialidad seleccionada
+            return response()->json([], 200); 
         }
 
-        $medicos = Medico::whereHas('especialidades', function ($query) use ($id_especialidad) {
-            $query->where('especialidades.id_especialidad', $id_especialidad);
-        })->get(['id_medico', 'nombre', 'apellido']); // Solo selecciona las columnas necesarias
+        $medicos = Medico::with('usuario') // Paso 1: Cargar la relación con el usuario
+            ->whereHas('especialidades', function ($query) use ($id_especialidad) {
+                $query->where('especialidades.id_especialidad', $id_especialidad);
+            })
+            ->get();
 
-        return response()->json($medicos);
+        // Paso 2: Mapear los resultados para devolver solo la información necesaria
+        $medicos_formateados = $medicos->map(function ($medico) {
+            return [
+                'id_medico' => $medico->id_medico,
+                'nombre' => $medico->usuario->nombre,
+                'apellido' => $medico->usuario->apellido,
+            ];
+        });
+
+        return response()->json($medicos_formateados);
     }
 
    /**

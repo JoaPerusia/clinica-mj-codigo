@@ -17,8 +17,7 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): View
     {
-        // Cargar explícitamente la relación 'rol' para el usuario autenticado
-        $user = $request->user()->load('rol'); // <<-- MODIFICACIÓN AQUÍ
+        $user = $request->user()->load('roles');
 
         return view('profile.edit', [
             'user' => $user,

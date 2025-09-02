@@ -13,12 +13,15 @@ use Carbon\Carbon;
 
 class PacienteSeeder extends Seeder
 {
+    /**
+     * Run the database seeds.
+     */
     public function run(): void
     {
         $pacienteRol = Rol::where('rol', 'Paciente')->first();
 
         if (!$pacienteRol) {
-            $this->command->info('El rol "Paciente" no fue encontrado. Asegúrate de que RolSeeder se ejecute primero.');
+            $this->command->info('El rol \"Paciente\" no fue encontrado. Asegúrate de que RolSeeder se ejecute primero.');
             return;
         }
 
@@ -30,7 +33,7 @@ class PacienteSeeder extends Seeder
                 'fecha_nacimiento' => '1990-05-15',
                 'obra_social' => 'Osde',
                 'email' => 'maria.gonzalez@example.com',
-                'telefono' => '1133445566', 
+                'telefono' => '1133445566',
             ],
             [
                 'nombre' => 'Carlos',
@@ -39,14 +42,14 @@ class PacienteSeeder extends Seeder
                 'fecha_nacimiento' => '1985-11-22',
                 'obra_social' => 'Swiss Medical',
                 'email' => 'carlos.rodriguez@example.com',
-                'telefono' => '1144556677',
+                'telefono' => '1166778899',
             ],
             [
                 'nombre' => 'Laura',
-                'apellido' => 'Fernández',
-                'dni' => '30444555',
-                'fecha_nacimiento' => '1995-09-10',
-                'obra_social' => 'Particular',
+                'apellido' => 'Fernandez',
+                'dni' => '30555666',
+                'fecha_nacimiento' => '1995-09-30',
+                'obra_social' => 'Galeno',
                 'email' => 'laura.fernandez@example.com',
                 'telefono' => '1199887766',
             ],
@@ -61,11 +64,12 @@ class PacienteSeeder extends Seeder
                     'dni' => $data['dni'],
                     'fecha_nacimiento' => $data['fecha_nacimiento'],
                     'obra_social' => $data['obra_social'],
-                    'telefono' => $data['telefono'], 
+                    'telefono' => $data['telefono'],
                     'password' => Hash::make('password'),
                 ]
             );
 
+            // Usa la relación muchos a muchos para adjuntar el rol.
             $user->roles()->syncWithoutDetaching([$pacienteRol->id_rol]);
 
             Paciente::firstOrCreate(
@@ -74,9 +78,9 @@ class PacienteSeeder extends Seeder
                     'nombre' => $data['nombre'],
                     'apellido' => $data['apellido'],
                     'dni' => $data['dni'],
-                    'fecha_nacimiento' => Carbon::parse($data['fecha_nacimiento']),
+                    'fecha_nacimiento' => $data['fecha_nacimiento'],
                     'obra_social' => $data['obra_social'],
-                    'telefono' => $data['telefono'], 
+                    'telefono' => $data['telefono'],
                 ]
             );
         }

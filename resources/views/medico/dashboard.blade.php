@@ -9,7 +9,7 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="content-wrapper"> 
-                <h1 class="page-title">Bienvenido, Dr./Dra. {{ Auth::user()->medico->nombre }}!</h1> 
+                <h1 class="page-title">Bienvenido, Dr./Dra. {{ Auth::user()->medico->usuario->nombre }}!</h1> 
 
                 <div class="action-buttons-container"> 
                     <a href="{{ route('medico.turnos.index') }}" class="btn-primary">

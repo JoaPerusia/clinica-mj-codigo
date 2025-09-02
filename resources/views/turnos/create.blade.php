@@ -80,7 +80,7 @@
                             <option value="">Selecciona una especialidad primero</option>
                            <!-- @foreach($medicos as $medico)
                                 <option value="{{ $medico->id_medico }}">
-                                    {{ $medico->nombre }} {{ $medico->apellido }}
+                                    {{ $medico->usuario->nombre }} {{ $medico->usuario->apellido }}
                                     @if($medico->especialidades->isNotEmpty())
                                         ({{ $medico->especialidades->pluck('nombre')->join(', ') }})
                                     @endif
