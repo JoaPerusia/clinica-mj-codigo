@@ -22,6 +22,11 @@
                         <label for="dni_filtro" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Buscar por DNI:</label>
                         <input type="text" name="dni_filtro" id="dni_filtro" placeholder="DNI del médico" value="{{ request('dni_filtro') }}" class="mt-1 block w-auto pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                         <button id="buscar_dni_btn" type="submit" class="btn-primary text-sm px-4 py-2 mt-1">Buscar</button>
+                        <button id="limpiar_filtros_btn" class="btn-secondary text-sm px-4 py-2 mt-1" style="text-transform: none;" title="Restablecer filtros">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                            </svg>
+                        </button>
                     </div>
                 </div>
                 
@@ -112,6 +117,7 @@
         document.addEventListener('DOMContentLoaded', function () {
             const dniFiltroInput = document.getElementById('dni_filtro');
             const buscarDniBtn = document.getElementById('buscar_dni_btn'); // Asegúrate de que tu botón tiene este ID
+            const limpiarFiltrosBtn = document.getElementById('limpiar_filtros_btn');
 
             function updateUrlAndRedirect() {
                 const dniValue = dniFiltroInput.value.trim();
@@ -128,6 +134,18 @@
                 window.location.href = currentUrl.toString();
             }
 
+            function clearFiltersAndRedirect() {
+                // Reestablecer los campos a sus valores predeterminados
+                const currentUrl = new URL(window.location.href);
+
+                // Borrar todos los parámetros de búsqueda de la URL
+                currentUrl.searchParams.delete('dni_filtro');
+                currentUrl.searchParams.set('page', 1); // Resetear la página a 1
+
+                // Redirigir a la URL sin los parámetros de filtro
+                window.location.href = currentUrl.toString();
+            }
+
             buscarDniBtn.addEventListener('click', function (event) {
                 event.preventDefault(); 
                 updateUrlAndRedirect();
@@ -138,6 +156,11 @@
                     event.preventDefault();
                     updateUrlAndRedirect();
                 }
+            });
+
+            limpiarFiltrosBtn.addEventListener('click', function (event) {
+                event.preventDefault();
+                clearFiltersAndRedirect();
             });
         });
     </script>

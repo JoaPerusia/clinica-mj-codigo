@@ -1,8 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Busca el elemento de la imagen del carrusel por su ID
     const carouselImage = document.getElementById('carousel-image');
+
+    // **NUEVO: Verificar si el elemento existe antes de continuar**
+    if (!carouselImage) {
+        return; // Salir del script si no se encuentra el elemento
+    }
+
     // Define las rutas de las imágenes que se usarán en el carrusel
-        const images = [
+    const images = [
         '/images/carousel-1.jpg',
         '/images/carousel-2.jpg',
         '/images/carousel-3.jpg',

@@ -69,20 +69,6 @@ Route::middleware(['role:Medico'])->prefix('medico')->name('medico.')->group(fun
         'destroy' => 'turnos.destroy',
     ]);
     Route::get('/mis-turnos', [TurnoController::class, 'misTurnosMedico'])->name('mis_turnos');
-    
-
-    Route::get('/mis-turnos', [TurnoController::class, 'misTurnos'])->name('mis_turnos');
-
-
-    Route::resource('pacientes', PacienteController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy'])->names([
-        'index' => 'pacientes.index',
-        'create' => 'pacientes.create',
-        'store' => 'pacientes.store',
-        'show' => 'pacientes.show',
-        'edit' => 'pacientes.edit',
-        'update' => 'pacientes.update',
-        'destroy' => 'pacientes.destroy',
-    ]);
 });
 
 // Rutas para Paciente
