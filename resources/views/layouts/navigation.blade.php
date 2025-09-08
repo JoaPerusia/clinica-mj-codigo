@@ -51,17 +51,17 @@
                         @if (Auth::user()->hasRole('Medico'))
                             {{-- Opciones del Médico --}}
                             <x-nav-link :href="route('medico.turnos.index')" :active="request()->routeIs('medico.turnos.*')">
-                                {{ __('Mis turnos') }}
+                                {{ __('Turnos') }}
                             </x-nav-link>
                         @endif
 
                         @if (Auth::user()->hasRole('Paciente'))
                             {{-- Opciones del Paciente --}}
                             <x-nav-link :href="route('paciente.turnos.index')" :active="request()->routeIs('paciente.turnos.*')">
-                                {{ __('Mis turnos') }}
+                                {{ __('Turnos') }}
                             </x-nav-link>
                             <x-nav-link :href="route('paciente.pacientes.index')" :active="request()->routeIs('paciente.pacientes.*')">
-                                {{ __('Mis pacientes') }}
+                                {{ __('Pacientes') }}
                             </x-nav-link>
                         @endif
                     </div>
@@ -148,16 +148,16 @@
                 @if (Auth::user()->hasRole('Medico'))
                     {{-- Opciones del Médico --}}
                     <x-responsive-nav-link :href="route('medico.turnos.index')" :active="request()->routeIs('medico.turnos.*')">
-                        {{ __('Mis turnos') }}
+                        {{ __('Turnos') }}
                     </x-responsive-nav-link>
                 @endif
                 @if (Auth::user()->hasRole('Paciente'))
                     {{-- Opciones del Paciente --}}
                     <x-responsive-nav-link :href="route('paciente.turnos.index')" :active="request()->routeIs('paciente.turnos.*')">
-                        {{ __('Mis turnos') }}
+                        {{ __('Turnos') }}
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('paciente.pacientes.index')" :active="request()->routeIs('paciente.pacientes.*')">
-                        {{ __('Mis pacientes') }}
+                        {{ __('Pacientes') }}
                     </x-responsive-nav-link>
                 @endif
             @endif

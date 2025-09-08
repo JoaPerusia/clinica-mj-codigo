@@ -6,10 +6,10 @@
             <div class="content-wrapper">
                 <h1 class="page-title">Editar Médico</h1>
 
-                {{-- Botón de Inicio --}}
+                {{-- Botón de Regresar --}}
                 <div class="action-buttons-container">
-                    <a href="{{ route('admin.dashboard') }}" class="btn-secondary">
-                        ← Inicio
+                    <a href="{{ route('admin.medicos.index') }}" class="btn-secondary">
+                        ← Médicos
                     </a>
                 </div>
 
@@ -27,41 +27,56 @@
                     @csrf
                     @method('PUT')
 
+                    {{-- Nombre de Usuario - Campo estático --}}
                     <div class="form-group">
-                        <label for="nombre" class="form-label">Nombre:</label>
-                        <input type="text" name="nombre" id="nombre" value="{{ old('nombre', $medico->usuario->nombre) }}" required class="form-input">
+                        <label for="nombre" class="form-label">Usuario:</label>
+                        <p class="form-input">{{ $medico->usuario->nombre }} {{ $medico->usuario->apellido }} (DNI: {{ $medico->usuario->dni }})</p>
                     </div>
 
-                    <div class="form-group">
-                        <label for="apellido" class="form-label">Apellido:</label>
-                        <input type="text" name="apellido" id="apellido" value="{{ old('apellido', $medico->usuario->apellido) }}" required class="form-input">
-                    </div>
-
-                    {{-- Selección de Especialidades --}}
-                    <div class="form-group">
-                        <label for="especialidades" class="form-label">Especialidades:</label>
-                        <div class="grid grid-cols-2 gap-4">
-                            @foreach($especialidades as $especialidad)
-                                @php
-                                    $medicoEspecialidadesIds = $medico->especialidades->pluck('id_especialidad')->toArray();
-                                    $checked = in_array($especialidad->id_especialidad, old('especialidades', $medicoEspecialidadesIds));
-                                @endphp
-                                <div class="flex items-center">
-                                    <input type="checkbox" name="especialidades[]" value="{{ $especialidad->id_especialidad }}" 
-                                        id="especialidad_{{ $especialidad->id_especialidad }}" 
-                                        {{ $checked ? 'checked' : '' }} 
-                                        class="rounded dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800">
-                                    <label for="especialidad_{{ $especialidad->id_especialidad }}" class="ms-2 text-md text-gray-600 dark:text-gray-400">
-                                        {{ $especialidad->nombre_especialidad }}
-                                    </label>
+                    {{-- Campo de selección de Especialidad --}}
+                    <div class="form-group mb-8">
+                        <label class="form-label">Especialidad(es):</label>
+                        <div id="especialidades-container" class="space-y-4">
+                            @php
+                                // Obtener las especialidades actuales del médico
+                                $medicoEspecialidadesIds = $medico->especialidades->pluck('id_especialidad')->toArray();
+                            @endphp
+                            @forelse(old('especialidades', $medicoEspecialidadesIds) as $especialidadId)
+                                <div class="flex items-center space-x-2 specialty-select-group">
+                                    <select name="especialidades[]" class="form-input w-full">
+                                        <option value="">-- Seleccionar especialidad --</option>
+                                        @foreach($especialidades as $especialidad)
+                                            <option value="{{ $especialidad->id_especialidad }}"
+                                                {{ ($especialidad->id_especialidad == $especialidadId) ? 'selected' : '' }}>
+                                                {{ $especialidad->nombre_especialidad }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @if ($loop->index > 0)
+                                        <button type="button" class="btn-danger remove-specialty-btn w-6 h-6 p-1 flex items-center justify-center rounded-md">X</button>
+                                    @endif
                                 </div>
-                            @endforeach
+                            @empty
+                                <div class="flex items-center space-x-2 specialty-select-group">
+                                    <select name="especialidades[]" class="form-input w-full">
+                                        <option value="">-- Seleccionar especialidad --</option>
+                                        @foreach($especialidades as $especialidad)
+                                            <option value="{{ $especialidad->id_especialidad }}">
+                                                {{ $especialidad->nombre_especialidad }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                            @endforelse
                         </div>
+                        <button type="button" id="add-specialty-btn" class="inline-flex items-center px-3 py-1 text-sm font-semibold rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 mt-2">
+                            + Agregar Especialidad
+                        </button>
                     </div>
 
                     {{-- Horarios de Trabajo --}}
                     <div class="form-group">
-                        <label class="form-label">Horarios de Trabajo:</label>
+                        <h2 class="font-semibold text-lg text-gray-800 dark:text-gray-200">Horarios de Trabajo:</h2>
                         @php
                             $diasSemana = [
                                 0 => 'Domingo',
@@ -72,60 +87,99 @@
                                 5 => 'Viernes',
                                 6 => 'Sábado',
                             ];
+                            // Agrupa los horarios por día de la semana para una fácil manipulación
                             $horariosPorDia = $medico->horariosTrabajo->groupBy('dia_semana');
                         @endphp
-
+                        
                         @foreach($diasSemana as $dia_numero => $dia_nombre)
-                            <div class="mt-10 mb-10 day-schedule-container" data-day-number="{{ $dia_numero }}">
+                            <div class="day-schedule-container border-t pt-4 mt-4 first:border-t-0 first:pt-0 first:mt-0" data-day-number="{{ $dia_numero }}">
                                 <div class="flex items-center justify-between">
-                                    <h4 class="text-md font-semibold dark:text-gray-200">{{ $dia_nombre }}</h4>
-                                    <button type="button" class="btn-small add-schedule-btn text-white" data-day-number="{{ $dia_numero }}">
+                                    <h4 class="font-semibold text-sm text-gray-700 dark:text-gray-300">{{ ucfirst($dia_nombre) }}</h4>
+                                    <button 
+                                        type="button" 
+                                        class="inline-flex items-center px-3 py-1 text-sm font-semibold rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 mt-2 add-schedule-btn" 
+                                        data-day-number="{{ $dia_numero }}"
+                                        data-day-name="{{ $dia_nombre }}"
+                                    >
                                         + Agregar Horario
                                     </button>
                                 </div>
-                                <div class="schedule-inputs-container mt-2">
+                                <div class="schedule-inputs-container">
                                     @php
-                                        $horariosDelDia = $horariosPorDia->get($dia_numero, collect());
+                                        // Usa los datos antiguos en caso de errores de validación, si no, carga los datos del médico
+                                        $horariosDelDia = old('horarios.' . $dia_numero, $horariosPorDia->get($dia_numero, collect()));
                                     @endphp
-                                    
-                                    @if($horariosDelDia->isEmpty())
-                                        <div class="flex items-center space-x-2 schedule-input-group">
-                                            <input type="time" name="horarios[{{ $dia_numero }}][0][hora_inicio]" class="form-input">
+                                    @forelse($horariosDelDia as $key => $horario)
+                                        <div class="flex items-center space-x-2 mt-2 schedule-input-group">
+                                            @php
+                                                // Verifica si $horario es un array (del formulario) o un objeto (de la DB)
+                                                $horaInicio = is_array($horario) ? $horario['hora_inicio'] : \Carbon\Carbon::parse($horario->hora_inicio)->format('H:i');
+                                                $horaFin = is_array($horario) ? $horario['hora_fin'] : \Carbon\Carbon::parse($horario->hora_fin)->format('H:i');
+                                            @endphp
+                                            <input type="time" name="horarios[{{ $dia_numero }}][{{ $key }}][hora_inicio]" value="{{ $horaInicio }}" class="form-input">
                                             <span class="text-gray-500">-</span>
-                                            <input type="time" name="horarios[{{ $dia_numero }}][0][hora_fin]" class="form-input">
-                                            <input type="hidden" name="horarios[{{ $dia_numero }}][0][dia_semana]" value="{{ $dia_numero }}">
+                                            <input type="time" name="horarios[{{ $dia_numero }}][{{ $key }}][hora_fin]" value="{{ $horaFin }}" class="form-input">
+                                            <input type="hidden" name="horarios[{{ $dia_numero }}][{{ $key }}][dia_semana]" value="{{ $dia_numero }}">
+                                            <button type="button" class="btn-danger remove-schedule-btn w-6 h-6 p-1 flex items-center justify-center rounded-md">X</button>
                                         </div>
-                                    @else
-                                        @foreach($horariosDelDia as $key => $horario)
-                                            <div class="flex items-center space-x-2 mt-2 schedule-input-group">
-                                                <input type="time" name="horarios[{{ $dia_numero }}][{{ $key }}][hora_inicio]" value="{{ \Carbon\Carbon::parse($horario->hora_inicio)->format('H:i') }}" class="form-input">
-                                                <span class="text-gray-500">-</span>
-                                                <input type="time" name="horarios[{{ $dia_numero }}][{{ $key }}][hora_fin]" value="{{ \Carbon\Carbon::parse($horario->hora_fin)->format('H:i') }}" class="form-input">
-                                                <input type="hidden" name="horarios[{{ $dia_numero }}][{{ $key }}][dia_semana]" value="{{ $dia_numero }}">
-                                                <button type="button" class="btn-danger remove-schedule-btn w-6 h-6 p-1 flex items-center justify-center rounded-md">X</button>
-                                            </div>
-                                        @endforeach
-                                    @endif
+                                    @empty
+                                    @endforelse
                                 </div>
                             </div>
                         @endforeach
                     </div>
 
-                    <div class="mt-4">
-                        <button type="submit" class="btn-primary">Guardar cambios</button>
-                        <a href="{{ route('admin.medicos.index') }}" class="btn-secondary">Cancelar</a>
+                    {{-- Botones de acción --}}
+                    <div class="form-actions-container">
+                        <button type="submit" class="btn-primary">
+                            Actualizar Médico
+                        </button>
+                        <a href="{{ route('admin.medicos.index') }}" class="btn-secondary ml-2">Cancelar</a>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-    {{-- Script para la funcionalidad de agregar/eliminar campos de horario --}}
+    {{-- Scripts para la lógica dinámica de horarios y especialidades --}}
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
+            // Lógica para agregar campos de especialidad
+            const especialidadesContainer = document.getElementById('especialidades-container');
+            const addSpecialtyBtn = document.getElementById('add-specialty-btn');
+
+            function createNewSpecialtySelect() {
+                const newGroup = document.createElement('div');
+                newGroup.classList.add('flex', 'items-center', 'space-x-2', 'mt-2', 'specialty-select-group');
+                newGroup.innerHTML = `
+                    <select name="especialidades[]" class="form-input w-full">
+                        <option value="">-- Seleccionar especialidad --</option>
+                        @foreach($especialidades as $especialidad)
+                            <option value="{{ $especialidad->id_especialidad }}">
+                                {{ $especialidad->nombre_especialidad }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <button type="button" class="btn-danger remove-specialty-btn w-6 h-6 p-1 flex items-center justify-center rounded-md">X</button>
+                `;
+                especialidadesContainer.appendChild(newGroup);
+            }
+
+            addSpecialtyBtn.addEventListener('click', function() {
+                createNewSpecialtySelect();
+            });
+
+            especialidadesContainer.addEventListener('click', function(e) {
+                if (e.target.classList.contains('remove-specialty-btn')) {
+                    e.target.closest('.specialty-select-group').remove();
+                }
+            });
+
+            // Lógica para agregar campos de horario
             document.querySelectorAll('.add-schedule-btn').forEach(button => {
                 button.addEventListener('click', function() {
                     const dayNumber = this.dataset.dayNumber;
+                    const dayName = this.dataset.dayName;
                     const container = this.closest('.day-schedule-container').querySelector('.schedule-inputs-container');
                     const index = container.querySelectorAll('.schedule-input-group').length;
 
@@ -135,13 +189,14 @@
                         <input type="time" name="horarios[${dayNumber}][${index}][hora_inicio]" class="form-input">
                         <span class="text-gray-500">-</span>
                         <input type="time" name="horarios[${dayNumber}][${index}][hora_fin]" class="form-input">
-                        <input type="hidden" name="horarios[${dayNumber}][${index}][dia_semana]" value="${dayNumber}">
+                        <input type="hidden" name="horarios[${dayNumber}][${index}][dia_semana]" value="${dayNumber}"> // <--- ¡Valor corregido!
                         <button type="button" class="btn-danger remove-schedule-btn w-6 h-6 p-1 flex items-center justify-center rounded-md">X</button>
                     `;
                     container.appendChild(newGroup);
                 });
             });
 
+            // Lógica para eliminar campos de horario
             document.addEventListener('click', function(e) {
                 if (e.target.classList.contains('remove-schedule-btn')) {
                     const groupToRemove = e.target.closest('.schedule-input-group');

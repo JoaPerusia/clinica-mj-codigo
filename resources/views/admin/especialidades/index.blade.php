@@ -49,11 +49,11 @@
                                         <td class="table-data">{{ $especialidad->id_especialidad }}</td> 
                                         <td class="table-data">{{ $especialidad->nombre_especialidad }}</td>
                                         <td class="table-actions"> 
-                                            <a href="{{ route('admin.especialidades.edit', $especialidad->id_especialidad) }}" class="btn-info table-action-button">Editar</a>
+                                            <a href="{{ route('admin.especialidades.edit', $especialidad->id_especialidad) }}" class="btn-info table-action-button text-sm px-4 py-2 mt-1">Editar</a>
                                             <form action="{{ route('admin.especialidades.destroy', $especialidad->id_especialidad) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de que quieres eliminar esta especialidad?')">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn-danger">Eliminar</button>
+                                                <button type="submit" class="btn-danger text-sm px-4 py-2 mt-1">Eliminar</button>
                                             </form>
                                         </td>
                                     </tr>

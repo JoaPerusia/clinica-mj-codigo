@@ -8,6 +8,28 @@
             <div class="content-wrapper">
                 <h1 class="page-title">Editar Turno</h1>
 
+                {{-- Botón de Inicio (dinámico por rol) --}}
+                @if(auth()->check())
+                    <div class="action-buttons-container"> 
+                        @php
+                            $dashboardRoute = '';
+                            if (auth()->user()->hasRole('Administrador')) {
+                                $dashboardRoute = route('admin.turnos.index');
+                            } elseif (auth()->user()->hasRole('Paciente')) {
+                                $dashboardRoute = route('paciente.turnos.index');
+                            } elseif (auth()->user()->hasRole('Medico')) {
+                                $dashboardRoute = route('medico.turnos.index');
+                            }
+                        @endphp
+
+                        @if($dashboardRoute)
+                            <a href="{{ $dashboardRoute }}" class="btn-secondary">
+                                ← Turnos
+                            </a>
+                        @endif
+                    </div>
+                @endif
+
                 {{-- Mensajes de éxito o error --}}
                 @if (session('success'))
                     <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4 rounded-lg shadow" role="alert">
@@ -94,7 +116,7 @@
                         </div>
                     @endif
 
-                    <button type="submit" class="btn-primary mt-4" {{ $isDisabled ? 'disabled' : '' }}>Actualizar Turno</button>
+                    <button type="submit" class="btn-primary mt-4" {{ $isDisabled ? 'disabled' : '' }}>Guardar cambios</button>
                     
                     @php
                         $cancelRoute = '';

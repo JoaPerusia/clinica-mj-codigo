@@ -7,8 +7,8 @@
 
                 {{-- Nombre --}}
                 <div>
-                    <label for="name" class="block font-medium text-sm text-gray-700 dark:text-gray-300">{{ __('Nombre') }}</label>
-                    <input id="name" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" type="text" name="name" value="{{ old('name') }}" required autofocus autocomplete="name" />
+                    <label for="nombre" class="block font-medium text-sm text-gray-700 dark:text-gray-300">{{ __('Nombre') }}</label>
+                    <input id="nombre" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" type="text" name="nombre" value="{{ old('nombre') }}" required autofocus autocomplete="nombre" />
                 </div>
 
                 {{-- Apellido --}}

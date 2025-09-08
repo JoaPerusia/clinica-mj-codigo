@@ -8,19 +8,19 @@
 
                 {{-- Botón de Inicio (dinámico por rol) --}}
                 @if(auth()->check())
-                    <div class="action-buttons-container">
+                    <div class="action-buttons-container"> 
                         @php
                             $dashboardRoute = '';
                             if (auth()->user()->hasRole('Administrador')) {
-                                $dashboardRoute = route('admin.dashboard');
+                                $dashboardRoute = route('admin.turnos.index');
                             } elseif (auth()->user()->hasRole('Paciente')) {
-                                $dashboardRoute = route('paciente.dashboard');
+                                $dashboardRoute = route('paciente.turnos.index');
                             }
                         @endphp
 
                         @if($dashboardRoute)
                             <a href="{{ $dashboardRoute }}" class="btn-secondary">
-                                ← Inicio
+                                ← Turnos
                             </a>
                         @endif
                     </div>

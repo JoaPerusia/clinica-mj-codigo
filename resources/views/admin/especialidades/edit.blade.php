@@ -9,8 +9,8 @@
                 {{-- Botón de Inicio para Admin --}}
                 @if(auth()->check() && auth()->user()->hasRole('Administrador'))
                     <div class="action-buttons-container">
-                        <a href="{{ route('admin.dashboard') }}" class="btn-secondary">
-                            ← Inicio
+                        <a href="{{ route('admin.especialidades.index') }}" class="btn-secondary">
+                            ← Especialidades
                         </a>
                     </div>
                 @endif
@@ -32,7 +32,7 @@
                         <label for="nombre_especialidad" class="form-label">Nombre de la Especialidad</label> 
                         <input type="text" class="form-input" id="nombre_especialidad" name="nombre_especialidad" value="{{ old('nombre_especialidad', $especialidade->nombre_especialidad) }}" required> 
                     </div>
-                    <button type="submit" class="btn-primary">Actualizar Especialidad</button>
+                    <button type="submit" class="btn-primary">Guardar cambios</button>
                     <a href="{{ route('admin.especialidades.index') }}" class="btn-secondary ml-2">Cancelar</a> {{-- Añadido ml-2 para separar el botón --}}
                 </form>
             </div>

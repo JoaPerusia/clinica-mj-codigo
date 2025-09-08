@@ -12,15 +12,15 @@
                         @php
                             $dashboardRoute = '';
                             if (auth()->user()->hasRole('Administrador')) {
-                                $dashboardRoute = route('admin.dashboard');
+                                $dashboardRoute = route('admin.pacientes.index');
                             } elseif (auth()->user()->hasRole('Paciente')) {
-                                $dashboardRoute = route('paciente.dashboard');
+                                $dashboardRoute = route('paciente.pacientes.index');
                             }
                         @endphp
 
                         @if($dashboardRoute)
                             <a href="{{ $dashboardRoute }}" class="btn-secondary">
-                                ← Inicio
+                                ← Pacientes
                             </a>
                         @endif
                     </div>

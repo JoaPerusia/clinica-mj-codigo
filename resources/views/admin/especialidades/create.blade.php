@@ -9,8 +9,8 @@
                 {{-- Botón de Inicio para Admin --}}
                 @if(auth()->check() && auth()->user()->hasRole('Administrador'))
                     <div class="action-buttons-container"> 
-                        <a href="{{ route('admin.dashboard') }}" class="btn-secondary">
-                            ← Inicio
+                        <a href="{{ route('admin.especialidades.index') }}" class="btn-secondary">
+                            ← Especialidades
                         </a>
                     </div>
                 @endif
