@@ -29,17 +29,11 @@
                 @endif
 
                 {{-- Ajuste de la ruta para crear turno según el rol --}}
-                @if(auth()->check() && (auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Paciente')))
+                @if(auth()->check() && (auth()->user()->hasRolActivo('Administrador') || auth()->user()->hasRolActivo('Paciente')))
                     <div class="action-buttons-container mb-6"> 
-                        @if(auth()->user()->hasRole('Administrador'))
-                            <a href="{{ route('admin.turnos.create') }}" class="btn-primary">
-                                Reservar Turno
-                            </a>
-                        @elseif(auth()->user()->hasRole('Paciente'))
-                            <a href="{{ route('paciente.turnos.create') }}" class="btn-primary">
-                                Reservar Turno
-                            </a>
-                        @endif
+                        <a href="{{ route(strtolower(session('rol_activo')) . '.turnos.create') }}" class="btn-primary">
+                            Reservar Turno
+                        </a>
                     </div>
                 @endif
                 
@@ -142,22 +136,22 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         @if(auth()->check())
                                             {{-- Lógica de botones de acción con clases ajustadas para ser más pequeños --}}
-                                            @if(auth()->user()->hasRole('Administrador'))
-                                                <a href="{{ route('admin.turnos.edit', $turno->id_turno) }}" class="btn-info text-sm px-3 py-2 mt-1">Editar</a>
+                                            @if(auth()->user()->hasRolActivo('Administrador'))
+                                                <a href="{{ route(strtolower(session('rol_activo')) . '.turnos.edit', $turno->id_turno) }}" class="btn-info text-sm px-3 py-2 mt-1">Editar</a>
                                                 {{-- El botón de eliminar ahora solo cambia el estado a 'cancelado' --}}
-                                                <form action="{{ route('admin.turnos.destroy', $turno->id_turno) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');">
+                                                <form action="{{ route(strtolower(session('rol_activo')) . '.turnos.destroy', $turno->id_turno) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn-danger text-sm px-3 py-2 mt-1">Cancelar</button>
                                                 </form>
-                                            @elseif(auth()->user()->hasRole('Paciente') && $turno->estado == 'pendiente')
-                                                <form action="{{ route('paciente.turnos.destroy', $turno->id_turno) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');">
+                                            @elseif(auth()->user()->hasRolActivo('Paciente') && $turno->estado == 'pendiente')
+                                                <form action="{{ route(strtolower(session('rol_activo')) . '.turnos.destroy', $turno->id_turno) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn-danger text-sm px-3 py-2 mt-1">Cancelar</button>
                                                 </form>
-                                            @elseif(auth()->user()->hasRole('Medico') && $turno->medico && $turno->medico->id_usuario == auth()->user()->id_usuario)
-                                                <a href="{{ route('medico.turnos.edit', $turno->id_turno) }}" class="btn-info text-sm px-3 py-2 mt-1">Editar</a>
+                                            @elseif(auth()->user()->hasRolActivo('Medico') && $turno->medico && $turno->medico->id_usuario == auth()->user()->id_usuario)
+                                                <a href="{{ route(strtolower(session('rol_activo')) . '.turnos.edit', $turno->id_turno) }}" class="btn-info text-sm px-3 py-2 mt-1">Editar</a>
                                             @else
                                                 <span class="text-gray-500 dark:text-gray-400">No disponible</span>
                                             @endif

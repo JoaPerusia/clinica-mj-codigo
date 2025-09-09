@@ -60,4 +60,9 @@ class User extends Authenticatable
     {
         return $this->roles()->where('rol', $rol)->exists();
     }
+
+    public function hasRolActivo($rol)
+    {
+        return session('rol_activo') === $rol;
+    }
 }

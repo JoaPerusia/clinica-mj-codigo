@@ -32,7 +32,7 @@
                             {{ __('Inicio') }}
                         </x-nav-link>
 
-                        @if (Auth::user()->hasRole('Administrador'))
+                        @if (Auth::user()->hasRole('Administrador') && request()->is('admin*'))
                             {{-- Opciones del Administrador --}}
                             <x-nav-link :href="route('admin.turnos.index')" :active="request()->routeIs('admin.turnos.*')">
                                 {{ __('Turnos') }}
@@ -48,14 +48,14 @@
                             </x-nav-link>
                         @endif
 
-                        @if (Auth::user()->hasRole('Medico'))
+                        @if (Auth::user()->hasRole('Medico') && request()->is('medico*'))
                             {{-- Opciones del Médico --}}
                             <x-nav-link :href="route('medico.turnos.index')" :active="request()->routeIs('medico.turnos.*')">
                                 {{ __('Turnos') }}
                             </x-nav-link>
                         @endif
 
-                        @if (Auth::user()->hasRole('Paciente'))
+                        @if (Auth::user()->hasRole('Paciente') && request()->is('paciente*'))
                             {{-- Opciones del Paciente --}}
                             <x-nav-link :href="route('paciente.turnos.index')" :active="request()->routeIs('paciente.turnos.*')">
                                 {{ __('Turnos') }}
@@ -130,7 +130,7 @@
 
             {{-- Opciones de Navegación Responsive, se ocultan en el dashboard general --}}
             @if(!request()->routeIs('dashboard'))
-                @if (Auth::user()->hasRole('Administrador'))
+                @if (Auth::user()->hasRole('Administrador') && request()->is('admin*'))
                     {{-- Opciones del Administrador --}}
                     <x-responsive-nav-link :href="route('admin.turnos.index')" :active="request()->routeIs('admin.turnos.*')">
                         {{ __('Turnos') }}
@@ -145,13 +145,13 @@
                         {{ __('Pacientes') }}
                     </x-responsive-nav-link>
                 @endif
-                @if (Auth::user()->hasRole('Medico'))
+                @if (Auth::user()->hasRole('Medico') && request()->is('medico*'))
                     {{-- Opciones del Médico --}}
                     <x-responsive-nav-link :href="route('medico.turnos.index')" :active="request()->routeIs('medico.turnos.*')">
                         {{ __('Turnos') }}
                     </x-responsive-nav-link>
                 @endif
-                @if (Auth::user()->hasRole('Paciente'))
+                @if (Auth::user()->hasRole('Paciente') && request()->is('paciente*'))
                     {{-- Opciones del Paciente --}}
                     <x-responsive-nav-link :href="route('paciente.turnos.index')" :active="request()->routeIs('paciente.turnos.*')">
                         {{ __('Turnos') }}

@@ -189,7 +189,7 @@
                         <input type="time" name="horarios[${dayNumber}][${index}][hora_inicio]" class="form-input">
                         <span class="text-gray-500">-</span>
                         <input type="time" name="horarios[${dayNumber}][${index}][hora_fin]" class="form-input">
-                        <input type="hidden" name="horarios[${dayNumber}][${index}][dia_semana]" value="${dayName}">
+                        <input type="hidden" name="horarios[${dayNumber}][${index}][dia_semana]" value="${dayNumber}">
                         <button type="button" class="btn-danger remove-schedule-btn w-6 h-6 p-1 flex items-center justify-center rounded-md">X</button>
                     `;
                     container.appendChild(newGroup);

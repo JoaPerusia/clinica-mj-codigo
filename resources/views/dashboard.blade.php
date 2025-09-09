@@ -30,30 +30,28 @@
                     @if ($roles->count() > 1)
                         {{-- Muestra la pantalla de selección con los estilos deseados --}}
                         <h2 class="text-xl font-semibold mb-4">{{ __("¡Bienvenido al sistema de gestión de turnos de la Clínica Comunal Santa Juana!") }}</h2>
-                        <p class="mb-6">{{ __("Selecciona tu perfil para continuar.") }}</p>
+                        <p class="mb-6">{{ __('Tienes múltiples roles asignados. Por favor, selecciona el rol con el que deseas ingresar:') }}</p>
+
+                        @if(session('error'))
+                            <div class="alert-danger mb-4">
+                                {{ session('error') }}
+                            </div>
+                        @endif
 
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             @foreach ($roles as $rol)
                                 @php
-                                    $redirect_route = 'dashboard';
-                                    $description = '';
                                     $colorClass = $roleColors[$rol->rol] ?? 'bg-gray-500 hover:bg-gray-600';
-
-                                    if ($rol->rol === 'Administrador') {
-                                        $redirect_route = 'admin.dashboard';
-                                        $description = 'Gestiona usuarios, médicos, turnos y especialidades.';
-                                    } elseif ($rol->rol === 'Medico') {
-                                        $redirect_route = 'medico.dashboard';
-                                        $description = 'Accede a tu agenda de turnos.';
-                                    } elseif ($rol->rol === 'Paciente') {
-                                        $redirect_route = 'paciente.dashboard';
-                                        $description = 'Solicita turnos y consulta tus citas.';
-                                    }
+                                    $description = 'Accede a la vista de ' . $rol->rol;
                                 @endphp
-                                <a href="{{ route($redirect_route) }}" class="block p-6 {{ $colorClass }} text-white rounded-lg shadow-lg transition duration-200 ease-in-out transform hover:-translate-y-1">
-                                    <h3 class="text-xl font-bold">{{ $rol->rol }}</h3>
-                                    <p class="mt-2 text-sm opacity-90">{{ __($description) }}</p>
-                                </a>
+                                <form action="{{ route('rol.setActivo') }}" method="POST" class="w-full">
+                                    @csrf
+                                    <input type="hidden" name="rol" value="{{ $rol->rol }}">
+                                    <button type="submit" class="w-full p-6 {{ $colorClass }} text-white rounded-lg shadow-lg transition duration-200 ease-in-out transform hover:-translate-y-1 text-left">
+                                        <h3 class="text-xl font-bold">{{ $rol->rol }}</h3>
+                                        <p class="mt-2 text-sm opacity-90">{{ __($description) }}</p>
+                                    </button>
+                                </form>
                             @endforeach
                         </div>
                     @else

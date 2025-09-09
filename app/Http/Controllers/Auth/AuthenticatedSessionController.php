@@ -31,14 +31,16 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
 
         // Obtén el usuario autenticado
-        $user = Auth::user();
+       $user = $request->user();
 
-        if ($user->hasRole('Administrador')) {
-            return redirect()->intended(route('admin.dashboard'));
+        if ($user->roles->count() > 1) {
+            return redirect()->route('dashboard');
+        } elseif ($user->hasRole('Administrador')) {
+            return redirect()->route('admin.dashboard');
         } elseif ($user->hasRole('Medico')) {
-            return redirect()->intended(route('medico.dashboard'));
+            return redirect()->route('medico.dashboard');
         } elseif ($user->hasRole('Paciente')) {
-            return redirect()->intended(route('paciente.dashboard'));
+            return redirect()->route('paciente.dashboard');
         }
     }
 

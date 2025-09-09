@@ -61,9 +61,10 @@ class MedicoController extends Controller
             'especialidades' => 'required|array',
             'especialidades.*' => 'exists:especialidades,id_especialidad',
             'horarios' => 'required|array',
-            'horarios.*.dia_semana' => 'required|string',
-            'horarios.*.hora_inicio' => 'required|date_format:H:i',
-            'horarios.*.hora_fin' => 'required|date_format:H:i|after:horarios.*.hora_inicio',
+            'horarios.*' => 'array',
+            'horarios.*.*.dia_semana' => 'required|string', 
+            'horarios.*.*.hora_inicio' => 'required|date_format:H:i',
+            'horarios.*.*.hora_fin' => 'required|date_format:H:i|after:horarios.*.*.hora_inicio',
         ]);
 
         try {
@@ -71,12 +72,10 @@ class MedicoController extends Controller
 
             $usuario = User::findOrFail($validatedData['id_usuario']);
 
-            // Verifica si el usuario ya es un médico para evitar duplicados
             if ($usuario->hasRole('Medico')) {
                 return back()->withInput()->with('error', 'El usuario seleccionado ya es un médico.');
             }
 
-            // Encuentra el rol 'Medico'
             $medicoRol = Rol::where('rol', 'Medico')->first();
 
             if (!$medicoRol) {
@@ -84,20 +83,19 @@ class MedicoController extends Controller
                 return back()->withInput()->with('error', 'El rol "Medico" no fue encontrado.');
             }
 
-            // Asigna el rol de Medico al usuario
             $usuario->roles()->attach($medicoRol->id_rol);
 
-            // Crea el perfil de Medico asociado al usuario
             $medico = Medico::create([
                 'id_usuario' => $usuario->id_usuario,
             ]);
 
-            // Sincroniza las especialidades
             $medico->especialidades()->sync($validatedData['especialidades']);
 
-            // Guarda los horarios de trabajo
-            foreach ($validatedData['horarios'] as $horario) {
-                $medico->horariosTrabajo()->create($horario);
+            // Bucle anidado para manejar correctamente la estructura de datos
+            foreach ($validatedData['horarios'] as $dias) {
+                foreach ($dias as $horario) {
+                    $medico->horariosTrabajo()->create($horario);
+                }
             }
 
             DB::commit();
@@ -133,6 +131,8 @@ class MedicoController extends Controller
     /**
      * Update the specified resource in storage.
      */
+    // En tu MedicoController.php
+
     public function update(Request $request, string $id)
     {
         $medico = Medico::findOrFail($id);
@@ -141,21 +141,22 @@ class MedicoController extends Controller
             'especialidades' => 'required|array',
             'especialidades.*' => 'exists:especialidades,id_especialidad',
             'horarios' => 'required|array',
-            'horarios.*.dia_semana' => 'required|string',
-            'horarios.*.hora_inicio' => 'required|date_format:H:i',
-            'horarios.*.hora_fin' => 'required|date_format:H:i|after:horarios.*.hora_inicio',
+            'horarios.*' => 'array',
+            'horarios.*.*.dia_semana' => 'required|string', 
+            'horarios.*.*.hora_inicio' => 'required|date_format:H:i',
+            'horarios.*.*.hora_fin' => 'required|date_format:H:i|after:horarios.*.*.hora_inicio',
         ]);
 
         try {
             DB::beginTransaction();
 
-            // Sincronizar especialidades
             $medico->especialidades()->sync($validatedData['especialidades']);
 
-            // Eliminar horarios existentes y guardar los nuevos
             $medico->horariosTrabajo()->delete();
-            foreach ($validatedData['horarios'] as $horario) {
-                $medico->horariosTrabajo()->create($horario);
+            foreach ($validatedData['horarios'] as $dias) {
+                foreach ($dias as $horario) {
+                    $medico->horariosTrabajo()->create($horario);
+                }
             }
 
             DB::commit();
