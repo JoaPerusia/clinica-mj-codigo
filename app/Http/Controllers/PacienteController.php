@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Paciente;
-use App\Models\User; // Asegúrate de que este import esté presente
+use App\Models\User; 
 use Illuminate\Validation\ValidationException;
 
 class PacienteController extends Controller
@@ -59,7 +59,7 @@ class PacienteController extends Controller
             'dni' => 'required|string|max:20|unique:pacientes,dni',
             'fecha_nacimiento' => 'required|date',
             'telefono' => 'nullable|string|max:20',
-            'obra_social' => 'required|string|max:255', // *** AÑADIDO: Regla para obra_social ***
+            'obra_social' => 'nullable|string|max:255', 
         ];
 
         if ($usuario->hasRole('Administrador')) {

@@ -52,6 +52,7 @@ Route::middleware(['role:Administrador'])->prefix('admin')->name('admin.')->grou
     Route::resource('pacientes', PacienteController::class);
     Route::resource('especialidades', EspecialidadController::class);
     Route::resource('turnos', TurnoController::class);
+    Route::patch('/turnos/{turno}/cambiar-estado', [TurnoController::class, 'cambiarEstado'])->name('turnos.cambiar-estado');
 });
 
 
@@ -70,36 +71,40 @@ Route::middleware(['role:Medico'])->prefix('medico')->name('medico.')->group(fun
         'destroy' => 'turnos.destroy',
     ]);
     Route::get('/mis-turnos', [TurnoController::class, 'misTurnosMedico'])->name('mis_turnos');
+
+    Route::patch('/turnos/{turno}/cambiar-estado', [TurnoController::class, 'cambiarEstado'])->name('turnos.cambiar-estado');
 });
 
 // Rutas para Paciente
 Route::middleware(['role:Paciente'])->prefix('paciente')->name('paciente.')->group(function () {
-        Route::get('/dashboard', [PacienteDashboardController::class, 'index'])->name('dashboard');
-        // Route::get('/turnos/disponibles', [TurnoController::class, 'getHorariosDisponibles'])->name('turnos.disponibles');
+    Route::get('/dashboard', [PacienteDashboardController::class, 'index'])->name('dashboard');
+    // Route::get('/turnos/disponibles', [TurnoController::class, 'getHorariosDisponibles'])->name('turnos.disponibles');
 
-        Route::resource('turnos', TurnoController::class)->names([
-            'index' => 'turnos.index',
-            'create' => 'turnos.create',
-            'store' => 'turnos.store',
-            'show' => 'turnos.show',
-            'edit' => 'turnos.edit',
-            'update' => 'turnos.update',
-            'destroy' => 'turnos.destroy',
-        ]);
+    Route::resource('turnos', TurnoController::class)->names([
+        'index' => 'turnos.index',
+        'create' => 'turnos.create',
+        'store' => 'turnos.store',
+        'show' => 'turnos.show',
+        'edit' => 'turnos.edit',
+        'update' => 'turnos.update',
+        'destroy' => 'turnos.destroy',
+    ]);
 
-        Route::get('/mis-turnos', [TurnoController::class, 'misTurnos'])->name('mis_turnos');
+    Route::get('/mis-turnos', [TurnoController::class, 'misTurnos'])->name('mis_turnos');
 
 
-        Route::resource('pacientes', PacienteController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy'])->names([
-            'index' => 'pacientes.index',
-            'create' => 'pacientes.create',
-            'store' => 'pacientes.store',
-            'show' => 'pacientes.show',
-            'edit' => 'pacientes.edit',
-            'update' => 'pacientes.update',
-            'destroy' => 'pacientes.destroy',
-        ]);
-    });
+    Route::resource('pacientes', PacienteController::class)->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy'])->names([
+        'index' => 'pacientes.index',
+        'create' => 'pacientes.create',
+        'store' => 'pacientes.store',
+        'show' => 'pacientes.show',
+        'edit' => 'pacientes.edit',
+        'update' => 'pacientes.update',
+        'destroy' => 'pacientes.destroy',
+    ]);
+
+    Route::patch('/turnos/{turno}/cambiar-estado', [TurnoController::class, 'cambiarEstado'])->name('turnos.cambiar-estado');
+});
 
 
 require __DIR__.'/auth.php';

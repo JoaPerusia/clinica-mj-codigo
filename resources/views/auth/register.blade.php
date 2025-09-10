@@ -32,7 +32,7 @@
                 {{-- Obra Social --}}
                 <div class="mt-4">
                     <label for="obra_social" class="block font-medium text-sm text-gray-700 dark:text-gray-300">{{ __('Obra Social') }}</label>
-                    <input id="obra_social" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" type="text" name="obra_social" value="{{ old('obra_social') }}" required autocomplete="obra_social" />
+                    <input id="obra_social" class="block mt-1 w-full rounded-md shadow-sm border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 dark:focus:border-indigo-600 focus:ring-indigo-500 dark:focus:ring-indigo-600 rounded-md shadow-sm" type="text" name="obra_social" value="{{ old('obra_social') }}" autocomplete="obra_social" />
                 </div>
 
                 {{-- Teléfono --}}

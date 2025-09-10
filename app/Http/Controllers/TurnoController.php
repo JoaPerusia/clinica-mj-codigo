@@ -70,7 +70,7 @@ class TurnoController extends Controller
             // Aplicar filtro de estado para todos los roles
             if ($estado_filtro === 'todos') {
                 $query->whereIn('estado', ['realizado', 'atendido', 'pendiente', 'cancelado', 'ausente']);
-            } elseif ($estado_filtro === 'realizado_atendido') {
+            } elseif ($estado_filtro === 'realizado') {
                 $query->whereIn('estado', ['realizado', 'atendido']);
             } else {
                 $query->where('estado', $estado_filtro);
@@ -518,5 +518,49 @@ class TurnoController extends Controller
         }
         
         return response()->json($horariosDisponibles);
+    }
+
+    public function cambiarEstado(Request $request, Turno $turno)
+    {
+        $usuario = Auth::user();
+        $nuevoEstado = $request->input('estado');
+
+        // Validar el nuevo estado
+        if (!in_array($nuevoEstado, ['realizado', 'ausente', 'cancelado'])) {
+            return back()->with('error', 'Estado de turno inválido.');
+        }
+
+        // Autorización y lógica de actualización por rol
+        if ($usuario->hasRolActivo('Administrador')) {
+            $turno->estado = $nuevoEstado;
+        } elseif ($usuario->hasRolActivo('Medico')) {
+            // Un médico solo puede cambiar el estado de sus propios turnos
+            if ($turno->id_medico !== $usuario->medico->id_medico) {
+                return back()->with('error', 'No tienes permiso para modificar este turno.');
+            }
+
+            if ($nuevoEstado === 'realizado' || $nuevoEstado === 'ausente') {
+                $turno->estado = $nuevoEstado;
+            } else {
+                return back()->with('error', 'No tienes permiso para realizar esta acción.');
+            }
+        } elseif ($usuario->hasRolActivo('Paciente')) {
+            // Un paciente solo puede cancelar sus propios turnos
+            $paciente = $usuario->pacientes()->where('id_paciente', $turno->id_paciente)->first();
+            if (!$paciente) {
+                return back()->with('error', 'No tienes permiso para cancelar este turno.');
+            }
+
+            if ($nuevoEstado === 'cancelado') {
+                $turno->estado = $nuevoEstado;
+            } else {
+                return back()->with('error', 'No tienes permiso para realizar esta acción.');
+            }
+        } else {
+            return back()->with('error', 'No tienes permiso para realizar esta acción.');
+        }
+
+        $turno->save();
+        return back()->with('success', 'Estado del turno actualizado correctamente.');
     }
 }

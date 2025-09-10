@@ -38,8 +38,8 @@ class RegisteredUserController extends Controller
             'apellido' => ['required', 'string', 'max:255'],
             'dni' => ['required', 'string', 'max:20', 'unique:usuarios'], 
             'fecha_nacimiento' => ['required', 'date'],
-            'obra_social' => ['required', 'string', 'max:255'],
-            'telefono' => ['required', 'string', 'max:20'],
+            'obra_social' => ['nullable', 'string', 'max:255'],
+            'telefono' => ['nullable', 'string', 'max:20'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:usuarios'], 
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
@@ -98,10 +98,13 @@ class RegisteredUserController extends Controller
 
         // --- Lógica de redirección por rol ---
         if ($user->hasRole('Administrador')) {
+            session(['rol_activo' => 'Administrador']);
             return Redirect::route('admin.dashboard');
         } elseif ($user->hasRole('Medico')) {
+            session(['rol_activo' => 'Medico']);
             return Redirect::route('medico.dashboard');
         } elseif ($user->hasRole('Paciente')) {
+            session(['rol_activo' => 'Paciente']);
             return Redirect::route('paciente.dashboard');
         }
 

@@ -76,7 +76,7 @@
 
                     <div class="form-group">
                         <label for="obra_social" class="form-label">Obra Social:</label>
-                        <input type="text" name="obra_social" id="obra_social" value="{{ old('obra_social') }}" required class="form-input">
+                        <input type="text" name="obra_social" id="obra_social" value="{{ old('obra_social') }}" class="form-input">
                     </div>
 
                     {{-- Campo para id_usuario (solo visible para admin, oculto para paciente) --}}

@@ -66,6 +66,8 @@
                             } elseif ($user_rol === 'Paciente') {
                                 $redirect_route = 'paciente.dashboard';
                             }
+                            // LÓGICA CLAVE: Asignar el rol activo automáticamente
+                            session(['rol_activo' => $user_rol]);
                         @endphp
                         <script>
                             window.location.href = "{{ route($redirect_route) }}";
