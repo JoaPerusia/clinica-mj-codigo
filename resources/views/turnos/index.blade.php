@@ -8,36 +8,26 @@
 
                 @php
                     $user = Auth::user();
-                    $roles = $user->roles;
-
-                    // LÓGICA DE RESPALDO: Si el rol activo no está en la sesión y el usuario tiene un solo rol, lo asignamos.
-                    if (!session()->has('rol_activo') && $roles->count() === 1) {
-                        session(['rol_activo' => $roles->first()->rol]);
-                    }
-
-                    // Ahora sí, definimos el rol activo a partir de la sesión.
-                    $rolActivo = strtolower(session('rol_activo'));
+                    $rolActivo = session('rol_activo');
+                    $dashboardRoute = 'dashboard'; // Ruta por defecto
 
                     // URLs de los iconos desde un CDN
                     $realizadoIcon = 'https://img.icons8.com/color/48/checked--v1.png';
                     $ausenteIcon = 'https://img.icons8.com/emoji/48/minus-emoji.png';
                     $canceladoIcon = 'https://img.icons8.com/color/48/cancel--v1.png';
-
-                    // Lógica para el botón de Inicio (dinámico por rol)
-                    $dashboardRoute = '';
-                    if ($user->hasRole('Administrador')) {
-                        $dashboardRoute = route('admin.dashboard');
-                    } elseif ($user->hasRole('Medico')) {
-                        $dashboardRoute = route('medico.dashboard');
-                    } elseif ($user->hasRole('Paciente')) {
-                        $dashboardRoute = route('paciente.dashboard');
+                                    
+                    if ($rolActivo === 'Administrador') {
+                        $dashboardRoute = 'admin.dashboard';
+                    } elseif ($rolActivo === 'Medico') {
+                        $dashboardRoute = 'medico.dashboard';
+                    } elseif ($rolActivo === 'Paciente') {
+                        $dashboardRoute = 'paciente.dashboard';
                     }
                 @endphp
-
                 {{-- Botón de Inicio (dinámico por rol) --}}
                 @if($dashboardRoute)
                     <div class="action-buttons-container">
-                        <a href="{{ $dashboardRoute }}" class="btn-secondary">
+                        <a href="{{ route($dashboardRoute) }}" class="btn-secondary">
                             ← Inicio
                         </a>
                     </div>
@@ -150,7 +140,7 @@
                                                         @method('PATCH')
                                                         <input type="hidden" name="estado" value="realizado">
                                                         <button type="submit" class="p-1">
-                                                            <img src="{{ $realizadoIcon }}" alt="Realizado" class="w-9 h-7">
+                                                            <img src="{{ $realizadoIcon }}" alt="Realizado" class="w-7 h-7">
                                                         </button>
                                                     </form>
                                                     <form action="{{ route('admin.turnos.cambiar-estado', $turno->id_turno) }}" method="POST" class="inline-block" title="Marcar como ausente">
@@ -158,7 +148,7 @@
                                                         @method('PATCH')
                                                         <input type="hidden" name="estado" value="ausente">
                                                         <button type="submit" class="p-1">
-                                                            <img src="{{ $ausenteIcon }}" alt="Ausente" class="w-9 h-7">
+                                                            <img src="{{ $ausenteIcon }}" alt="Ausente" class="w-7 h-7">
                                                         </button>
                                                     </form>
                                                     <form action="{{ route('admin.turnos.cambiar-estado', $turno->id_turno) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');" title="Cancelar turno">
@@ -166,37 +156,37 @@
                                                         @method('PATCH')
                                                         <input type="hidden" name="estado" value="cancelado">
                                                         <button type="submit" class="p-1">
-                                                            <img src="{{ $canceladoIcon }}" alt="Cancelar" class="w-9 h-7">
+                                                            <img src="{{ $canceladoIcon }}" alt="Cancelar" class="w-7 h-7">
                                                         </button>
                                                     </form>
                                                 
                                                 {{-- Botones para Médico --}}
                                                 @elseif($user->hasRolActivo('Medico') && $turno->medico && $turno->medico->id_usuario == $user->id_usuario)
-                                                    <form action="{{ route($rolActivo . '.turnos.cambiar-estado', $turno->id_turno) }}" method="POST" class="inline-block" title="Marcar como realizado">
+                                                    <form action="{{ route(strtolower($rolActivo) . '.turnos.cambiar-estado', $turno->id_turno) }}" method="POST" class="inline-block" title="Marcar como realizado">
                                                         @csrf
                                                         @method('PATCH')
                                                         <input type="hidden" name="estado" value="realizado">
                                                         <button type="submit" class="p-1">
-                                                            <img src="{{ $realizadoIcon }}" alt="Realizado" class="w-9 h-7">
+                                                            <img src="{{ $realizadoIcon }}" alt="Realizado" class="w-7 h-7">
                                                         </button>
                                                     </form>
-                                                    <form action="{{ route($rolActivo . '.turnos.cambiar-estado', $turno->id_turno) }}" method="POST" class="inline-block" title="Marcar como ausente">
+                                                    <form action="{{ route(strtolower($rolActivo) . '.turnos.cambiar-estado', $turno->id_turno) }}" method="POST" class="inline-block" title="Marcar como ausente">
                                                         @csrf
                                                         @method('PATCH')
                                                         <input type="hidden" name="estado" value="ausente">
                                                         <button type="submit" class="p-1">
-                                                            <img src="{{ $ausenteIcon }}" alt="Ausente" class="w-9 h-7">
+                                                            <img src="{{ $ausenteIcon }}" alt="Ausente" class="w-7 h-7">
                                                         </button>
                                                     </form>
                                                 
                                                 {{-- Botón de "Cancelar" para Paciente --}}
                                                 @elseif($user->hasRolActivo('Paciente'))
-                                                    <form action="{{ route($rolActivo . '.turnos.cambiar-estado', $turno->id_turno) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');" title="Cancelar turno">
+                                                    <form action="{{ route(strtolower($rolActivo) . '.turnos.cambiar-estado', $turno->id_turno) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');" title="Cancelar turno">
                                                         @csrf
                                                         @method('PATCH')
                                                         <input type="hidden" name="estado" value="cancelado">
                                                         <button type="submit" class="p-1">
-                                                            <img src="{{ $canceladoIcon }}" alt="Cancelar" class="w-9 h-7">
+                                                            <img src="{{ $canceladoIcon }}" alt="Cancelar" class="w-7 h-7">
                                                         </button>
                                                     </form>
                                                 @endif

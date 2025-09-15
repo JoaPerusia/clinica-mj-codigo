@@ -10,16 +10,21 @@
                 @if(auth()->check())
                     <div class="action-buttons-container"> {{-- Usando la nueva clase --}}
                         @php
-                            $dashboardRoute = '';
-                            if (auth()->user()->hasRole('Administrador')) {
-                                $dashboardRoute = route('admin.dashboard');
-                            } elseif (auth()->user()->hasRole('Paciente')) {
-                                $dashboardRoute = route('paciente.dashboard');
+                            $user = Auth::user();
+                            $rolActivo = session('rol_activo');
+                            $dashboardRoute = 'dashboard'; // Ruta por defecto
+
+                            if ($rolActivo === 'Administrador') {
+                                $dashboardRoute = 'admin.dashboard';
+                            } elseif ($rolActivo === 'Medico') {
+                                $dashboardRoute = 'medico.dashboard';
+                            } elseif ($rolActivo === 'Paciente') {
+                                $dashboardRoute = 'paciente.dashboard';
                             }
                         @endphp
 
                         @if($dashboardRoute)
-                            <a href="{{ $dashboardRoute }}" class="btn-secondary">
+                            <a href="{{ route($dashboardRoute) }}" class="btn-secondary">
                                 ← Inicio
                             </a>
                         @endif

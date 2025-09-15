@@ -60,7 +60,7 @@ class MedicoController extends Controller
             'id_usuario' => 'required|exists:usuarios,id_usuario', 
             'especialidades' => 'required|array',
             'especialidades.*' => 'exists:especialidades,id_especialidad',
-            'horarios' => 'required|array',
+            'horarios' => 'nullable|array',
             'horarios.*' => 'array',
             'horarios.*.*.dia_semana' => 'required|string', 
             'horarios.*.*.hora_inicio' => 'required|date_format:H:i',
@@ -91,16 +91,21 @@ class MedicoController extends Controller
 
             $medico->especialidades()->sync($validatedData['especialidades']);
 
-            // Bucle anidado para manejar correctamente la estructura de datos
-            foreach ($validatedData['horarios'] as $dias) {
-                foreach ($dias as $horario) {
-                    $medico->horariosTrabajo()->create($horario);
+            // 2. Lógica para guardar los horarios SÓLO si existen
+            // Utilizamos el método `has` de la request para verificar si el campo `horarios` fue enviado.
+            if ($request->has('horarios')) {
+                // Este bucle ahora solo se ejecuta si hay horarios en el formulario
+                foreach ($validatedData['horarios'] as $dias) {
+                    foreach ($dias as $horario) {
+                        $medico->horariosTrabajo()->create($horario);
+                    }
                 }
             }
 
             DB::commit();
 
             return redirect()->route('admin.medicos.index')->with('success', 'Médico creado y rol asignado correctamente.');
+
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withInput()->with('error', 'Hubo un error al crear el médico: ' . $e->getMessage());

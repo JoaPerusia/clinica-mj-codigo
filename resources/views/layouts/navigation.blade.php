@@ -4,23 +4,19 @@
             <div class="flex">
                 <div class="shrink-0 flex items-center">
                     {{-- Lógica para el botón de Inicio/Dashboard dinámico --}}
-                    @php
-                        $dashboardRoute = '';
-                        if (Auth::check()) {
-                            if (Auth::user()->hasRole('Administrador')) {
-                                $dashboardRoute = route('admin.dashboard');
-                            } elseif (Auth::user()->hasRole('Medico')) {
-                                $dashboardRoute = route('medico.dashboard');
-                            } elseif (Auth::user()->hasRole('Paciente')) {
-                                $dashboardRoute = route('paciente.dashboard');
-                            } else {
-                                $dashboardRoute = route('dashboard');
-                            }
-                        } else {
-                            $dashboardRoute = route('dashboard');
+                   @php
+                        $rolActivo = session('rol_activo');
+                        $dashboardRoute = 'dashboard'; // Ruta por defecto
+
+                        if ($rolActivo === 'Administrador') {
+                            $dashboardRoute = 'admin.dashboard';
+                        } elseif ($rolActivo === 'Medico') {
+                            $dashboardRoute = 'medico.dashboard';
+                        } elseif ($rolActivo === 'Paciente') {
+                            $dashboardRoute = 'paciente.dashboard';
                         }
                     @endphp
-                    <a href="{{ $dashboardRoute }}">
+                    <a href="{{ route($dashboardRoute) }}">
                         <img src="{{ asset('images/logoSinFondo.png') }}" alt="Logo Clínica MJ" class="block h-9 w-auto fill-current text-gray-800 dark:text-gray-200" />
                     </a>
                 </div>
@@ -28,7 +24,7 @@
                 {{-- Opciones de Navegación principales, se ocultan en el dashboard general --}}
                 @if(!request()->routeIs('dashboard'))
                     <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                        <x-nav-link :href="$dashboardRoute" :active="request()->routeIs(['admin.dashboard', 'medico.dashboard', 'paciente.dashboard'])">
+                        <x-nav-link :href="route($dashboardRoute)" :active="request()->routeIs(['admin.dashboard', 'medico.dashboard', 'paciente.dashboard'])">
                             {{ __('Inicio') }}
                         </x-nav-link>
 
@@ -124,7 +120,7 @@
 
     <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
-            <x-responsive-nav-link :href="$dashboardRoute" :active="request()->routeIs(['admin.dashboard', 'medico.dashboard', 'paciente.dashboard'])">
+            <x-responsive-nav-link :href="route($dashboardRoute)" :active="request()->routeIs(['admin.dashboard', 'medico.dashboard', 'paciente.dashboard'])">
                 {{ __('Inicio') }}
             </x-responsive-nav-link>
 
