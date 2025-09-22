@@ -12,6 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Registra tu middleware EnsureRolActivo para que se ejecute en todas las rutas web.
+        $middleware->web(append: [
+            \App\Http\Middleware\EnsureRolActivo::class,
+        ]);
         // Registra el middleware 'role' con su clase correspondiente
         // Esto lo hace disponible para usarlo en tus rutas como 'role:1'
         $middleware->alias([

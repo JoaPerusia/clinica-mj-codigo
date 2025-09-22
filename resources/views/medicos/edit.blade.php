@@ -130,13 +130,55 @@
                     </div>
 
                     {{-- Botones de acción --}}
-                    <div class="form-actions-container">
+                    <div class="form-actions-container mt-9">
                         <button type="submit" class="btn-primary">
                             Actualizar Médico
                         </button>
                         <a href="{{ route('admin.medicos.index') }}" class="btn-secondary ml-2">Cancelar</a>
                     </div>
                 </form>
+                
+                <hr class="my-8">
+
+                {{-- Sección para Bloqueos Existentes --}}
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="page-title">Bloqueos de Agenda</h2>
+                    {{-- Botón para redirigir a la gestión centralizada de bloqueos --}}
+                    <a href="{{ route('admin.bloqueos.index') }}" class="btn-secondary">
+                        Gestionar Bloqueos
+                    </a>
+                </div>
+
+                @if ($bloqueos->isEmpty())
+                    <div class="alert-info text-white">
+                        <p>No hay bloqueos de agenda registrados para este médico.</p>
+                    </div>
+                @else
+                    <div class="overflow-x-auto relative shadow-md sm:rounded-lg">
+                        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                                <tr>
+                                    <th scope="col" class="py-3 px-6">Fecha de Inicio</th>
+                                    <th scope="col" class="py-3 px-6">Fecha de Fin</th>
+                                    <th scope="col" class="py-3 px-6">Hora de Inicio</th>
+                                    <th scope="col" class="py-3 px-6">Hora de Fin</th>
+                                    <th scope="col" class="py-3 px-6">Motivo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($bloqueos as $bloqueo)
+                                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                                        <td class="py-4 px-6">{{ $bloqueo->fecha_inicio->format('d/m/Y') }}</td>
+                                        <td class="py-4 px-6">{{ $bloqueo->fecha_fin->format('d/m/Y') }}</td>
+                                        <td class="py-4 px-6">{{ $bloqueo->hora_inicio ? $bloqueo->hora_inicio->format('H:i') : 'Día Completo' }}</td>
+                                        <td class="py-4 px-6">{{ $bloqueo->hora_fin ? $bloqueo->hora_fin->format('H:i') : '-' }}</td>
+                                        <td class="py-4 px-6">{{ $bloqueo->motivo ?? 'Sin motivo' }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
             </div>
         </div>
     </div>

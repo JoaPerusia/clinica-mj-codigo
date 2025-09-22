@@ -123,37 +123,52 @@ document.addEventListener('DOMContentLoaded', function () {
     /**
      * Función para cargar los horarios disponibles de un médico para una fecha específica.
      */
+    /**
+     * Función para cargar los horarios disponibles de un médico para una fecha específica.
+     */
     async function cargarHorariosDisponibles() {
         const medicoId = medicoSelect.value;
         const fecha = fechaInput.value;
-
+    
         if (!medicoId || !fecha) {
             resetearHorario('Selecciona primero un médico y una fecha');
             return;
         }
-
+    
+        // Deshabilitar el selector de horas mientras se cargan los datos
         horaSelect.disabled = true;
         horaSelect.innerHTML = '<option value="">Cargando horarios...</option>';
-
+    
         try {
-            // AQUI ESTA LA MODIFICACION: Usamos la nueva ruta y pasamos los IDs como query parameters
             const url = currentTurnoId
                 ? `${apiUrlHorariosDisponibles}?id_medico=${medicoId}&fecha=${fecha}&except_turno_id=${currentTurnoId}`
                 : `${apiUrlHorariosDisponibles}?id_medico=${medicoId}&fecha=${fecha}`;
-
+    
             const response = await fetch(url);
             if (!response.ok) {
+                // Si la respuesta no es exitosa, lanza un error
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            const horarios = await response.json();
-
+            const data = await response.json();
+    
+            // Limpiamos el contenido anterior del selector de horas
             horaSelect.innerHTML = '';
-            const defaultOption = document.createElement('option');
-            defaultOption.value = '';
-            defaultOption.textContent = 'Selecciona una hora';
-            horaSelect.appendChild(defaultOption);
-
+            
+            // Si el servidor envía un mensaje, lo mostramos
+            if (data.mensaje) {
+                resetearHorario(data.mensaje);
+                return;
+            }
+    
+            // Si no hay mensaje, procedemos con los horarios
+            const horarios = data.horarios;
+    
             if (horarios.length > 0) {
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = 'Selecciona una hora';
+                horaSelect.appendChild(defaultOption);
+    
                 horarios.forEach(horario => {
                     const option = document.createElement('option');
                     option.value = horario;
@@ -165,7 +180,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
                 horaSelect.disabled = false;
             } else {
-                resetearHorario('No hay horarios disponibles para este día');
+                // Mensaje por defecto cuando no hay horarios disponibles
+                resetearHorario('No hay horarios disponibles para este día.');
             }
         } catch (error) {
             console.error('Error al cargar horarios:', error);

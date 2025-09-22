@@ -39,6 +39,9 @@
                             <x-nav-link :href="route('admin.medicos.index')" :active="request()->routeIs('admin.medicos.*')">
                                 {{ __('Médicos') }}
                             </x-nav-link>
+                            <x-nav-link :href="route('admin.bloqueos.index')" :active="request()->routeIs('admin.bloqueos.*')">
+                                {{ __('Bloqueos de Agenda') }}
+                            </x-nav-link>
                             <x-nav-link :href="route('admin.pacientes.index')" :active="request()->routeIs('admin.pacientes.*')">
                                 {{ __('Pacientes') }}
                             </x-nav-link>
@@ -136,6 +139,9 @@
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('admin.medicos.index')" :active="request()->routeIs('admin.medicos.*')">
                         {{ __('Médicos') }}
+                    </x-responsive-nav-link>
+                    <x-responsive-nav-link :href="route('admin.bloqueos.index')" :active="request()->routeIs('admin.bloqueos.*')">
+                        {{ __('Bloqueos de Agenda') }}
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('admin.pacientes.index')" :active="request()->routeIs('admin.pacientes.*')">
                         {{ __('Pacientes') }}

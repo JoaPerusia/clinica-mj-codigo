@@ -21,6 +21,9 @@
                     <a href="{{ route('admin.medicos.index') }}" class="btn-primary">
                         Gestionar Médicos
                     </a>
+                    <a href="{{ route('admin.bloqueos.index') }}" class="btn-primary">
+                        Gestionar Bloqueos de Agenda
+                    </a>
                     <a href="{{ route('admin.pacientes.index') }}" class="btn-primary">
                         Gestionar Pacientes
                     </a>

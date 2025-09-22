@@ -7,9 +7,14 @@ use App\Models\Medico;
 use App\Models\Especialidad;
 use App\Models\HorarioMedico;
 use App\Models\User;
+use App\Models\Turno;
 use App\Models\Rol;
+use App\Mail\TurnoCanceladoMailable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail; 
+use Illuminate\Support\Facades\Log; 
+use Carbon\Carbon;
 
 class MedicoController extends Controller
 {
@@ -125,12 +130,18 @@ class MedicoController extends Controller
      */
     public function edit(string $id)
     {
-        // Carga el médico y sus relaciones 'especialidades' y 'horariosTrabajo'
+        // Carga el médico y sus relaciones 'especialidades', 'horariosTrabajo' y 'usuario'.
+        // Aquí cargamos 'bloqueos' para que esté disponible en la vista.
         $medico = Medico::with('especialidades', 'horariosTrabajo', 'usuario')->findOrFail($id);
+        
+        // Obtener los bloqueos del médico de forma separada y ordenados para la visualización.
+        $bloqueos = $medico->bloqueos()->orderBy('fecha_inicio', 'desc')->get();
+        
         $especialidades = Especialidad::all();
         $diasSemana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
         
-        return view('medicos.edit', compact('medico', 'especialidades', 'diasSemana'));
+        // Pasar la variable $bloqueos a la vista.
+        return view('medicos.edit', compact('medico', 'especialidades', 'diasSemana', 'bloqueos'));
     }
 
     /**
@@ -147,16 +158,15 @@ class MedicoController extends Controller
             'especialidades.*' => 'exists:especialidades,id_especialidad',
             'horarios' => 'required|array',
             'horarios.*' => 'array',
-            'horarios.*.*.dia_semana' => 'required|string', 
+            'horarios.*.*.dia_semana' => 'required|integer', 
             'horarios.*.*.hora_inicio' => 'required|date_format:H:i',
             'horarios.*.*.hora_fin' => 'required|date_format:H:i|after:horarios.*.*.hora_inicio',
         ]);
 
+        DB::beginTransaction();
         try {
-            DB::beginTransaction();
-
+            // Guardar las especialidades y los horarios del médico
             $medico->especialidades()->sync($validatedData['especialidades']);
-
             $medico->horariosTrabajo()->delete();
             foreach ($validatedData['horarios'] as $dias) {
                 foreach ($dias as $horario) {
@@ -164,9 +174,72 @@ class MedicoController extends Controller
                 }
             }
 
+            // Obtener la colección de los nuevos horarios del médico
+            $nuevosHorarios = collect($validatedData['horarios'])->flatten(1);
+
+            // Lógica de cancelación y notificación de turnos en conflicto
+            $turnosSuperpuestos = Turno::where('id_medico', $medico->id_medico)
+                ->where('estado', 'Pendiente')
+                ->where('fecha', '>=', Carbon::today())
+                ->get();
+            
+            $turnosAfectados = 0;
+            foreach ($turnosSuperpuestos as $turno) {
+                $esValido = false;
+
+                // 1. Validar por especialidad: El turno debe tener una de las nuevas especialidades del médico
+                $especialidadValida = $medico->especialidades()->where('id_especialidad', $turno->id_especialidad)->exists();
+                if (!$especialidadValida) {
+                    $motivo = 'La especialidad del turno ya no corresponde con el médico.';
+                }
+
+                // 2. Validar por horario de trabajo: El turno debe caer en uno de los nuevos horarios del médico
+                if ($especialidadValida) {
+                    $diaSemanaTurno = Carbon::parse($turno->fecha)->dayOfWeek;
+                    $horaTurno = Carbon::parse($turno->hora);
+
+                    foreach ($nuevosHorarios as $nuevoHorario) {
+                        if ($nuevoHorario['dia_semana'] == $diaSemanaTurno) {
+                            $horaInicio = Carbon::parse($nuevoHorario['hora_inicio']);
+                            $horaFin = Carbon::parse($nuevoHorario['hora_fin']);
+
+                            if ($horaTurno->between($horaInicio, $horaFin)) {
+                                $esValido = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!$esValido) {
+                        $motivo = 'El turno ya no coincide con el nuevo horario de trabajo del médico.';
+                    }
+                }
+
+                // Si el turno no es válido por especialidad o por horario, lo cancelamos
+                if (!$esValido) {
+                    $turno->estado = 'Cancelado';
+                    $turno->save();
+                    $turnosAfectados++;
+                    
+                    // Enviar notificación por correo
+                    try {
+                        $turno->load('paciente.usuario', 'medico.usuario');
+                        Mail::to($turno->paciente->usuario->email)
+                            ->send(new TurnoCanceladoMailable($turno, $motivo));
+                    } catch (\Exception $e) {
+                        Log::error('Error al enviar correo de cancelación de turno por edición de médico: ' . $e->getMessage());
+                    }
+                }
+            }
+            
             DB::commit();
 
-            return redirect()->route('admin.medicos.index')->with('success', 'Médico actualizado correctamente.');
+            $mensaje = 'Médico actualizado correctamente.';
+            if ($turnosAfectados > 0) {
+                $mensaje .= " Se han cancelado {$turnosAfectados} turno(s) superpuesto(s) debido a los cambios de agenda.";
+            }
+
+            return redirect()->route('admin.medicos.index')->with('success', $mensaje);
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withInput()->with('error', 'Hubo un error al actualizar el médico: ' . $e->getMessage());

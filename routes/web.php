@@ -10,6 +10,7 @@ use App\Http\Controllers\TurnoController;
 use App\Http\Controllers\PacienteController;
 use App\Http\Controllers\MedicoController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\BloqueoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -52,7 +53,12 @@ Route::middleware(['role:Administrador'])->prefix('admin')->name('admin.')->grou
     Route::resource('pacientes', PacienteController::class);
     Route::resource('especialidades', EspecialidadController::class);
     Route::resource('turnos', TurnoController::class);
+    Route::resource('bloqueos', BloqueoController::class);
     Route::patch('/turnos/{turno}/cambiar-estado', [TurnoController::class, 'cambiarEstado'])->name('turnos.cambiar-estado');
+
+    Route::get('/medicos/{medico}/bloqueos', [BloqueoController::class, 'index'])->name('medicos.bloqueos.index');
+    Route::post('/medicos/{medico}/bloqueos', [BloqueoController::class, 'store'])->name('medicos.bloqueos.store');
+    Route::delete('/medicos/{medico}/bloqueos/{bloqueo}', [BloqueoController::class, 'destroy'])->name('medicos.bloqueos.destroy');
 });
 
 
