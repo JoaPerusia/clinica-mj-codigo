@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Request;
 use App\Models\Medico;
 use App\Models\Especialidad;
@@ -147,8 +148,6 @@ class MedicoController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    // En tu MedicoController.php
-
     public function update(Request $request, string $id)
     {
         $medico = Medico::findOrFail($id);
@@ -158,15 +157,17 @@ class MedicoController extends Controller
             'especialidades.*' => 'exists:especialidades,id_especialidad',
             'horarios' => 'required|array',
             'horarios.*' => 'array',
-            'horarios.*.*.dia_semana' => 'required|integer', 
+            'horarios.*.*.dia_semana' => 'required|string', 
             'horarios.*.*.hora_inicio' => 'required|date_format:H:i',
             'horarios.*.*.hora_fin' => 'required|date_format:H:i|after:horarios.*.*.hora_inicio',
         ]);
 
         DB::beginTransaction();
         try {
-            // Guardar las especialidades y los horarios del médico
+            // 1. Guardar las especialidades y los horarios del médico
             $medico->especialidades()->sync($validatedData['especialidades']);
+
+            // Se eliminan los viejos y se crean los nuevos horarios
             $medico->horariosTrabajo()->delete();
             foreach ($validatedData['horarios'] as $dias) {
                 foreach ($dias as $horario) {
@@ -174,10 +175,10 @@ class MedicoController extends Controller
                 }
             }
 
-            // Obtener la colección de los nuevos horarios del médico
+            // Obtener la colección de los nuevos horarios (plana)
             $nuevosHorarios = collect($validatedData['horarios'])->flatten(1);
 
-            // Lógica de cancelación y notificación de turnos en conflicto
+            // 2. Lógica de cancelación y notificación de turnos en conflicto
             $turnosSuperpuestos = Turno::where('id_medico', $medico->id_medico)
                 ->where('estado', 'Pendiente')
                 ->where('fecha', '>=', Carbon::today())
@@ -186,24 +187,29 @@ class MedicoController extends Controller
             $turnosAfectados = 0;
             foreach ($turnosSuperpuestos as $turno) {
                 $esValido = false;
+                $motivo = '';
 
-                // 1. Validar por especialidad: El turno debe tener una de las nuevas especialidades del médico
-                $especialidadValida = $medico->especialidades()->where('id_especialidad', $turno->id_especialidad)->exists();
+                // 2.1. Validar por especialidad: El turno debe tener una de las nuevas especialidades
+                $especialidadValida = $medico->especialidades()->where('especialidades.id_especialidad', $turno->id_especialidad)->exists();
+                
                 if (!$especialidadValida) {
                     $motivo = 'La especialidad del turno ya no corresponde con el médico.';
                 }
 
-                // 2. Validar por horario de trabajo: El turno debe caer en uno de los nuevos horarios del médico
+                // 2.2. Validar por horario de trabajo (Solo si la especialidad es válida)
                 if ($especialidadValida) {
-                    $diaSemanaTurno = Carbon::parse($turno->fecha)->dayOfWeek;
+                    // Parseamos los datos del turno (Aquí es donde ocurría la falla de Carbon si los datos eran malos)
+                    $diaSemanaTurno = Carbon::parse($turno->fecha)->dayOfWeek; // Es un INT (0-6)
                     $horaTurno = Carbon::parse($turno->hora);
 
                     foreach ($nuevosHorarios as $nuevoHorario) {
-                        if ($nuevoHorario['dia_semana'] == $diaSemanaTurno) {
+                        $diaNuevoHorarioInt = (int)$nuevoHorario['dia_semana'];
+                        
+                        if ($diaNuevoHorarioInt === $diaSemanaTurno) {
                             $horaInicio = Carbon::parse($nuevoHorario['hora_inicio']);
                             $horaFin = Carbon::parse($nuevoHorario['hora_fin']);
 
-                            if ($horaTurno->between($horaInicio, $horaFin)) {
+                            if ($horaTurno->between($horaInicio, $horaFin, true)) { 
                                 $esValido = true;
                                 break;
                             }
@@ -215,19 +221,19 @@ class MedicoController extends Controller
                     }
                 }
 
-                // Si el turno no es válido por especialidad o por horario, lo cancelamos
-                if (!$esValido) {
+                // 3. Si el turno no es válido por especialidad O por horario, lo cancelamos
+                if (!$esValido) { 
                     $turno->estado = 'Cancelado';
                     $turno->save();
                     $turnosAfectados++;
                     
-                    // Enviar notificación por correo
+                    // ... (Bloque try-catch para envío de correo)
                     try {
                         $turno->load('paciente.usuario', 'medico.usuario');
                         Mail::to($turno->paciente->usuario->email)
                             ->send(new TurnoCanceladoMailable($turno, $motivo));
                     } catch (\Exception $e) {
-                        Log::error('Error al enviar correo de cancelación de turno por edición de médico: ' . $e->getMessage());
+                        Log::error("Error al enviar correo de cancelación de turno ID {$turno->id_turno}: " . $e->getMessage());
                     }
                 }
             }
@@ -241,14 +247,13 @@ class MedicoController extends Controller
 
             return redirect()->route('admin.medicos.index')->with('success', $mensaje);
         } catch (\Exception $e) {
+            // Capturamos cualquier otro error, como un fallo de Carbon que no pudimos prever.
             DB::rollBack();
+            Log::error('Error FATAL al actualizar médico y turnos: ' . $e->getMessage());
             return back()->withInput()->with('error', 'Hubo un error al actualizar el médico: ' . $e->getMessage());
         }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
         $medico = Medico::findOrFail($id);

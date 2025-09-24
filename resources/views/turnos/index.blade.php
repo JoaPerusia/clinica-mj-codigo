@@ -130,7 +130,7 @@
                                     <td class="table-data py-4">
                                         {{ ucfirst($turno->estado) }}
                                     </td>
-                                    <td class="table-data py-4">
+                                    <td class="table-data py-4 acciones-fijas-columna">
                                         @if(auth()->check() && $turno->estado == 'pendiente')
                                             <div class="flex justify-center space-x-2">
                                                 {{-- Botones para Administrador --}}
@@ -272,4 +272,13 @@
             });
         });
     </script>
+
+    <style>
+        .acciones-fijas-columna {
+            width: 160px; 
+            min-width: 160px;
+            
+            white-space: nowrap;
+        }
+    </style>
 @endsection
