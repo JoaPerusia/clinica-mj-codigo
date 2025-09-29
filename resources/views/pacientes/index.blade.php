@@ -84,7 +84,6 @@
                             <thead class="bg-gray-50 dark:bg-gray-700">
                                 <tr>
                                     <th scope="col" class="table-header">Nombre</th>
-                                    <th scope="col" class="table-header">Apellido</th>
                                     <th scope="col" class="table-header">DNI</th>
                                     <th scope="col" class="table-header">Fecha Nacimiento</th>
                                     <th scope="col" class="table-header">Teléfono</th>
@@ -96,8 +95,7 @@
                             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                 @forelse($pacientes as $paciente)
                                 <tr>
-                                    <td class="table-data">{{ $paciente->nombre }}</td>
-                                    <td class="table-data">{{ $paciente->apellido }}</td>
+                                    <td class="table-data">{{ $paciente->apellido }}, {{ $paciente->nombre }}</td>
                                     <td class="table-data">{{ $paciente->dni }}</td>
                                     <td class="table-data">{{ \Carbon\Carbon::parse($paciente->fecha_nacimiento)->format('d/m/Y') }}</td> 
                                     <td class="table-data">{{ $paciente->telefono }}</td> 

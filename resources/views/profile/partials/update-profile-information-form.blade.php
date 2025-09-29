@@ -113,7 +113,7 @@
         {{-- Campo Rol (Solo Lectura) --}}
         <div class="mt-4">
             <x-input-label for="rol" :value="__('Rol')" />
-            <x-text-input id="rol" name="rol" type="text" class="mt-1 block w-full" :value="$user->roles->first()->rol ?? 'No definido'" disabled />
+            <x-text-input id="rol" name="rol" type="text" class="mt-1 block w-full" :value="$roles = Auth::user()->roles->pluck('rol')->implode(', ') ?? 'No definido'" disabled />
         </div>
 
         <div class="flex items-center gap-4 mt-4">

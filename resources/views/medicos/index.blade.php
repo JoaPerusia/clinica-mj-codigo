@@ -71,28 +71,28 @@
                                 @endphp
                                 @foreach ($medicos as $medico)
                                 <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                                    <td class="py-4 px-6">{{ $medico->usuario->dni }}</td>
-                                    <td class="py-4 px-6">{{ $medico->usuario->nombre }} {{ $medico->usuario->apellido }}</td>
-                                    <td class="py-4 px-6">
+                                    <td class="py-4 px-6 table-data">{{ $medico->usuario->dni }}</td>
+                                    <td class="py-4 px-6 table-data">{{ $medico->usuario->nombre }} {{ $medico->usuario->apellido }}</td>
+                                    <td class="py-4 px-6 table-data">
                                         @foreach($medico->especialidades as $especialidad)
                                             <span class="badge badge-info">{{ $especialidad->nombre_especialidad }}</span>
                                         @endforeach
                                     </td>
-                                    <td class="py-4 px-6">
+                                    <td class="py-4 px-6 table-data">
                                         @forelse($medico->horariosTrabajo as $horario)
                                             <p>{{ $diasSemana[$horario->dia_semana] ?? 'Día no válido' }}</p>
                                         @empty
                                             <p>No tiene</p>
                                         @endforelse
                                     </td>
-                                    <td class="py-4 px-6">
+                                    <td class="py-4 px-6 table-data">
                                         @forelse($medico->horariosTrabajo as $horario)
                                             <p>{{ \Carbon\Carbon::parse($horario->hora_inicio)->format('H:i') }} - {{ \Carbon\Carbon::parse($horario->hora_fin)->format('H:i') }}</p>
                                         @empty
                                             <p>horarios de trabajo</p>
                                         @endforelse
                                     </td>
-                                    <td class="py-4 px-6">
+                                    <td class="py-4 px-6 table-data">
                                         <a href="{{ route('admin.medicos.edit', $medico->id_medico) }}" class="btn-info table-action-button text-sm px-4 py-2 mt-1">Editar</a>
                                         <form action="{{ route('admin.medicos.destroy', $medico->id_medico) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de eliminar este médico?');">
                                             @csrf

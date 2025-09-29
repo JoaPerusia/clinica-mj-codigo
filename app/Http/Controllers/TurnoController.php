@@ -18,73 +18,97 @@ class TurnoController extends Controller
     /**
      * Display a listing of the resource.
      */
-        public function index(Request $request)
-        {
-            $usuario = Auth::user();
-            $estado_filtro = $request->input('estado_filtro', 'pendiente');
-            $dni_filtro_paciente = $request->input('dni_filtro_paciente');
-            $dni_filtro_medico = $request->input('dni_filtro_medico');
-            $perPage = 10;
+    public function index(Request $request)
+    {
+        $usuario = Auth::user();
+        $estado_filtro = $request->input('estado_filtro', 'pendiente');
+        $dni_filtro_paciente = $request->input('dni_filtro_paciente');
+        $dni_filtro_medico = $request->input('dni_filtro_medico');
+        $fecha_filtro = $request->input('fecha_filtro'); // Nuevo filtro por fecha
+        $perPage = 10;
+        
+        // Consulta base para los turnos
+        $query = Turno::with('paciente', 'medico.usuario');
 
-            // Cargar paciente y médico con su respectivo usuario para acceder al DNI
-            $query = Turno::with('paciente', 'medico.usuario');
-
-            // Aplicar filtro por DNI del paciente si se ha proporcionado (aplica para todos los roles)
-            if ($dni_filtro_paciente) {
-                $query->whereHas('paciente', function ($q) use ($dni_filtro_paciente) {
-                    $q->where('dni', 'like', '%' . $dni_filtro_paciente . '%');
-                });
-            }
-
-            // Aplicar filtro por DNI del médico si se ha proporcionado (aplica para todos los roles)
-            if ($dni_filtro_medico) {
-                $query->whereHas('medico.usuario', function ($q) use ($dni_filtro_medico) {
-                    $q->where('dni', 'like', '%' . $dni_filtro_medico . '%');
-                });
-            }
-
-            // --- Lógica de filtrado por rol (CORREGIDA) ---
-            // Se determina el filtro a aplicar basándose en la ruta accedida
-            if ($request->routeIs('medico.*')) {
-                // Lógica para el rol de Médico
-                $medico = $usuario->medico;
-                if (!$medico) {
-                    return redirect()->route('medico.dashboard')->with('error', 'Tu perfil de médico no está configurado.');
-                }
-                $query->where('id_medico', $medico->id_medico);
-
-            } elseif ($request->routeIs('paciente.*')) {
-                // Lógica para el rol de Paciente
-                $pacientes_ids = $usuario->pacientes->pluck('id_paciente');
-                $query->whereIn('id_paciente', $pacientes_ids);
-
-            } elseif ($usuario->hasRole('Administrador')) {
-                // Admin ve todos los turnos, los filtros anteriores ya se aplican
-                // No se necesita un filtro adicional aquí
-            } else {
-                // Si el rol no está definido o es inesperado
-                $turnos = collect(); // Colección vacía
-                return view('turnos.index', compact('turnos', 'estado_filtro', 'dni_filtro_paciente', 'dni_filtro_medico'));
-            }
-
-            // Aplicar filtro de estado para todos los roles
-            if ($estado_filtro === 'todos') {
-                $query->whereIn('estado', ['realizado', 'atendido', 'pendiente', 'cancelado', 'ausente']);
-            } elseif ($estado_filtro === 'realizado') {
-                $query->whereIn('estado', ['realizado', 'atendido']);
-            } else {
-                $query->where('estado', $estado_filtro);
-            }
-
-            // Ordenar por fecha y hora
-            $turnos = $query->orderBy('fecha', 'asc')
-                            ->orderBy('hora', 'asc')
-                            ->paginate($perPage)
-                            ->withQueryString();
-
-            return view('turnos.index', compact('turnos', 'estado_filtro', 'dni_filtro_paciente', 'dni_filtro_medico'));
+        // Aplicar filtro por DNI (siempre aplica)
+        if ($dni_filtro_paciente) {
+            $query->whereHas('paciente', function ($q) use ($dni_filtro_paciente) {
+                $q->where('dni', 'like', '%' . $dni_filtro_paciente . '%');
+            });
         }
 
+        if ($dni_filtro_medico) {
+            $query->whereHas('medico.usuario', function ($q) use ($dni_filtro_medico) {
+                $q->where('dni', 'like', '%' . $dni_filtro_medico . '%');
+            });
+        }
+
+        // Aplicar filtro de rol (siempre aplica)
+        if ($request->routeIs('medico.*')) {
+            $medico = $usuario->medico;
+            if (!$medico) {
+                return redirect()->route('medico.dashboard')->with('error', 'Tu perfil de médico no está configurado.');
+            }
+            $query->where('id_medico', $medico->id_medico);
+
+        } elseif ($request->routeIs('paciente.*')) {
+            $pacientes_ids = $usuario->pacientes->pluck('id_paciente');
+            $query->whereIn('id_paciente', $pacientes_ids);
+        }
+        
+        // Se inicializan las variables para la vista
+        $turnosHoy = collect();
+        $turnosManana = collect();
+        $turnosProximos = collect();
+        $turnosPaginados = null;
+
+        if ($estado_filtro == 'pendiente' && !$fecha_filtro) {
+            // Lógica para turnos pendientes sin filtro de fecha (agrupados por fecha)
+            $turnos = $query->where('estado', 'pendiente')
+                            ->orderBy('fecha', 'asc')
+                            ->orderBy('hora', 'asc')
+                            ->get();
+            
+            $hoy = Carbon::today();
+            $manana = Carbon::tomorrow();
+
+            $turnosHoy = $turnos->filter(function ($turno) use ($hoy) {
+                return Carbon::parse($turno->fecha)->isSameDay($hoy);
+            });
+            
+            $turnosManana = $turnos->filter(function ($turno) use ($manana) {
+                return Carbon::parse($turno->fecha)->isSameDay($manana);
+            });
+
+            $turnosProximos = $turnos->filter(function ($turno) use ($hoy, $manana) {
+                return Carbon::parse($turno->fecha)->isAfter($manana);
+            });
+            
+        } else {
+            // Lógica para turnos con cualquier estado O con filtro de fecha (paginados)
+            $subquery = clone $query; // Clona la consulta base
+            
+            if ($estado_filtro === 'todos') {
+                $subquery->whereIn('estado', ['realizado', 'atendido', 'pendiente', 'cancelado', 'ausente']);
+            } elseif ($estado_filtro === 'realizado') {
+                $subquery->whereIn('estado', ['realizado', 'atendido']);
+            } else {
+                $subquery->where('estado', $estado_filtro);
+            }
+
+            // Aplicar el filtro de fecha si está presente
+            if ($fecha_filtro) {
+                $subquery->whereDate('fecha', $fecha_filtro);
+            }
+
+            $turnosPaginados = $subquery->orderBy('fecha', 'desc') // Ordenar de más reciente a más antiguo
+                                        ->orderBy('hora', 'desc')
+                                        ->paginate($perPage)
+                                        ->withQueryString();
+        }
+        
+        return view('turnos.index', compact('turnosHoy', 'turnosManana', 'turnosProximos', 'turnosPaginados', 'estado_filtro', 'dni_filtro_paciente', 'dni_filtro_medico', 'fecha_filtro'));
+    }
     /**
      * Show the form for creating a new resource.
      */
@@ -553,7 +577,7 @@ class TurnoController extends Controller
                 $mensaje = "El médico está ausente para esta fecha ({$motivo}).";
             } else {
                 // Si no hay bloqueos, significa que todos los turnos están ocupados
-                $mensaje = 'No hay horarios disponibles para este día.';
+                $mensaje = 'Todos los horarios disponibles para esta fecha fueron ocupados.';
             }
         }
         

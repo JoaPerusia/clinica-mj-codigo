@@ -61,15 +61,15 @@
                             <tbody>
                                 @foreach ($bloqueos as $bloqueo)
                                     <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                                        <td class="py-4 px-6">
+                                        <td class="py-4 px-6 table-data">
                                             {{ $bloqueo->medico->usuario->nombre }} {{ $bloqueo->medico->usuario->apellido }} ({{ $bloqueo->medico->usuario->dni }})
                                         </td>
-                                        <td class="py-4 px-6">{{ $bloqueo->fecha_inicio->format('d/m/Y') }}</td>
-                                        <td class="py-4 px-6">{{ $bloqueo->fecha_fin->format('d/m/Y') }}</td>
-                                        <td class="py-4 px-6">{{ $bloqueo->hora_inicio ? $bloqueo->hora_inicio->format('H:i') : 'Día Completo' }}</td>
-                                        <td class="py-4 px-6">{{ $bloqueo->hora_fin ? $bloqueo->hora_fin->format('H:i') : '-' }}</td>
-                                        <td class="py-4 px-6">{{ $bloqueo->motivo ?? 'Sin motivo' }}</td>
-                                        <td class="py-4 px-6">
+                                        <td class="py-4 px-6 table-data">{{ $bloqueo->fecha_inicio->format('d/m/Y') }}</td>
+                                        <td class="py-4 px-6 table-data">{{ $bloqueo->fecha_fin->format('d/m/Y') }}</td>
+                                        <td class="py-4 px-6 table-data">{{ $bloqueo->hora_inicio ? $bloqueo->hora_inicio->format('H:i') : 'Día Completo' }}</td>
+                                        <td class="py-4 px-6 table-data">{{ $bloqueo->hora_fin ? $bloqueo->hora_fin->format('H:i') : '-' }}</td>
+                                        <td class="py-4 px-6 table-data">{{ $bloqueo->motivo ?? 'Sin motivo' }}</td>
+                                        <td class="py-4 px-6 table-data">
                                             @php
                                                 $fechaFin = \Carbon\Carbon::parse($bloqueo->fecha_fin);
                                                 $horaFin = $bloqueo->hora_fin ? \Carbon\Carbon::parse($bloqueo->hora_fin) : \Carbon\Carbon::now()->endOfDay();

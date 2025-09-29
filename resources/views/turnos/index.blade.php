@@ -64,7 +64,7 @@
                 <div class="mb-4 flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
                     {{-- Filtro por Estado --}}
                     <div class="flex items-center space-x-2">
-                        <label for="estado_filtro" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Filtrar por estado:</label>
+                        <label for="estado_filtro" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Estado:</label>
                         <select id="estado_filtro" name="estado_filtro" class="mt-1 block w-auto pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                             <option value="pendiente" {{ request('estado_filtro', 'pendiente') == 'pendiente' ? 'selected' : '' }}>Pendiente</option>
                             <option value="realizado" {{ request('estado_filtro') == 'realizado' ? 'selected' : '' }}>Realizado</option>
@@ -80,11 +80,25 @@
                         <input type="text" id="dni_filtro_paciente" placeholder="DNI del paciente" value="{{ request('dni_filtro_paciente') }}" class="mt-1 block w-auto pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                     </div>
 
-                    {{-- Buscador por DNI de Médico con el único botón de búsqueda --}}
+                    {{-- Buscador por DNI de Médico --}}
                     <div class="flex items-center space-x-2">
                         <label for="dni_filtro_medico" class="block text-sm font-medium text-gray-700 dark:text-gray-300">DNI Médico:</label>
                         <input type="text" id="dni_filtro_medico" placeholder="DNI del médico" value="{{ request('dni_filtro_medico') }}" class="mt-1 block w-auto pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                        <button id="buscar_filtros_btn" class="btn-primary text-sm px-4 py-2 mt-1">Buscar</button>
+                    </div>
+
+                    {{-- Nuevo filtro por fecha --}}
+                    <div class="flex items-center space-x-2">
+                        <label for="fecha_filtro" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Fecha:</label>
+                        <input type="date" id="fecha_filtro" name="fecha_filtro" value="{{ request('fecha_filtro') }}" class="mt-1 block w-auto pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    </div>
+
+                    {{-- Botones de Búsqueda y Limpiar --}}
+                    <div class="flex items-center space-x-2">
+                        <button id="buscar_filtros_btn" class="btn-primary text-sm px-4 py-2 mt-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                            </svg>
+                        </button>
                         <button id="limpiar_filtros_btn" class="btn-secondary text-sm px-4 py-2 mt-1" style="text-transform: none;" title="Restablecer filtros">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
@@ -93,119 +107,119 @@
                     </div>
                 </div>
 
-                @if($turnos->isEmpty())
-                    <p class="text-white">No tienes turnos registrados para el filtro seleccionado.</p>
-                @else
-                    <div class="table-responsive">
-                        <table class="custom-table">
-                            <thead class="bg-gray-50 dark:bg-gray-700">
-                                <tr>
-                                    <th scope="col" class="table-header py-4">Médico</th>
-                                    <th scope="col" class="table-header py-4">Especialidad</th>
-                                    <th scope="col" class="table-header py-4">Paciente</th>
-                                    <th scope="col" class="table-header py-4">Fecha</th>
-                                    <th scope="col" class="table-header py-4">Horario</th>
-                                    <th scope="col" class="table-header py-4">Estado</th>
-                                    <th scope="col" class="table-header py-4">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                @foreach($turnos as $turno)
-                                <tr>
-                                    <td class="table-data py-4">
-                                        {{ $turno->medico->usuario->nombre }} {{ $turno->medico->usuario->apellido }} - ({{ $turno->medico->usuario->dni ?? 'N/A' }})
-                                    </td>
-                                    <td class="table-data py-4">
-                                        {{ $turno->medico->especialidades->pluck('nombre_especialidad')->implode(', ') }}
-                                    </td>
-                                    <td class="table-data py-4">
-                                        {{ $turno->paciente->nombre }} {{ $turno->paciente->apellido }} - ({{ $turno->paciente->dni ?? 'N/A' }})
-                                    </td>
-                                    <td class="table-data py-4">
-                                        {{ \Carbon\Carbon::parse($turno->fecha)->format('d/m/Y') }}
-                                    </td>
-                                    <td class="table-data py-4">
-                                        {{ \Carbon\Carbon::parse($turno->hora)->format('H:i') }}
-                                    </td>
-                                    <td class="table-data py-4">
-                                        {{ ucfirst($turno->estado) }}
-                                    </td>
-                                    <td class="table-data py-4 acciones-fijas-columna">
-                                        @if(auth()->check() && $turno->estado == 'pendiente')
-                                            <div class="flex justify-center space-x-2">
-                                                {{-- Botones para Administrador --}}
-                                                @if($user->hasRolActivo('Administrador'))
-                                                    <form action="{{ route('admin.turnos.cambiar-estado', $turno->id_turno) }}" method="POST" class="inline-block" title="Marcar como realizado">
-                                                        @csrf
-                                                        @method('PATCH')
-                                                        <input type="hidden" name="estado" value="realizado">
-                                                        <button type="submit" class="p-1">
-                                                            <img src="{{ $realizadoIcon }}" alt="Realizado" class="w-7 h-7">
-                                                        </button>
-                                                    </form>
-                                                    <form action="{{ route('admin.turnos.cambiar-estado', $turno->id_turno) }}" method="POST" class="inline-block" title="Marcar como ausente">
-                                                        @csrf
-                                                        @method('PATCH')
-                                                        <input type="hidden" name="estado" value="ausente">
-                                                        <button type="submit" class="p-1">
-                                                            <img src="{{ $ausenteIcon }}" alt="Ausente" class="w-7 h-7">
-                                                        </button>
-                                                    </form>
-                                                    <form action="{{ route('admin.turnos.cambiar-estado', $turno->id_turno) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');" title="Cancelar turno">
-                                                        @csrf
-                                                        @method('PATCH')
-                                                        <input type="hidden" name="estado" value="cancelado">
-                                                        <button type="submit" class="p-1">
-                                                            <img src="{{ $canceladoIcon }}" alt="Cancelar" class="w-7 h-7">
-                                                        </button>
-                                                    </form>
-                                                
-                                                {{-- Botones para Médico --}}
-                                                @elseif($user->hasRolActivo('Medico') && $turno->medico && $turno->medico->id_usuario == $user->id_usuario)
-                                                    <form action="{{ route(strtolower($rolActivo) . '.turnos.cambiar-estado', $turno->id_turno) }}" method="POST" class="inline-block" title="Marcar como realizado">
-                                                        @csrf
-                                                        @method('PATCH')
-                                                        <input type="hidden" name="estado" value="realizado">
-                                                        <button type="submit" class="p-1">
-                                                            <img src="{{ $realizadoIcon }}" alt="Realizado" class="w-7 h-7">
-                                                        </button>
-                                                    </form>
-                                                    <form action="{{ route(strtolower($rolActivo) . '.turnos.cambiar-estado', $turno->id_turno) }}" method="POST" class="inline-block" title="Marcar como ausente">
-                                                        @csrf
-                                                        @method('PATCH')
-                                                        <input type="hidden" name="estado" value="ausente">
-                                                        <button type="submit" class="p-1">
-                                                            <img src="{{ $ausenteIcon }}" alt="Ausente" class="w-7 h-7">
-                                                        </button>
-                                                    </form>
-                                                
-                                                {{-- Botón de "Cancelar" para Paciente --}}
-                                                @elseif($user->hasRolActivo('Paciente'))
-                                                    <form action="{{ route(strtolower($rolActivo) . '.turnos.cambiar-estado', $turno->id_turno) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');" title="Cancelar turno">
-                                                        @csrf
-                                                        @method('PATCH')
-                                                        <input type="hidden" name="estado" value="cancelado">
-                                                        <button type="submit" class="p-1">
-                                                            <img src="{{ $canceladoIcon }}" alt="Cancelar" class="w-7 h-7">
-                                                        </button>
-                                                    </form>
-                                                @endif
-                                            </div>
-                                        @else
-                                            <span class="text-gray-500 dark:text-gray-400">-</span>
-                                        @endif
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="table-responsive">
+                    {{-- Condicional para mostrar la vista de turnos pendientes (Hoy, Mañana, Próximos) --}}
+                    @if ($estado_filtro == 'pendiente' && !$fecha_filtro)
+                        @if($turnosHoy->isEmpty() && $turnosManana->isEmpty() && $turnosProximos->isEmpty())
+                            <p class="text-white">No tienes turnos pendientes para el filtro seleccionado.</p>
+                        @else
+                            {{-- Sección de "Hoy" --}}
+                            @if ($turnosHoy->isNotEmpty())
+                                <h2 class="sub-title text-2xl text-white">Hoy</h2>
+                                <table class="custom-table">
+                                    <thead class="bg-gray-50 dark:bg-gray-700">
+                                        <tr>
+                                            <th scope="col" class="table-header py-4">Médico</th>
+                                            <th scope="col" class="table-header py-4">Especialidad</th>
+                                            <th scope="col" class="table-header py-4">Paciente</th>
+                                            <th scope="col" class="table-header py-4">Fecha</th>
+                                            <th scope="col" class="table-header py-4">Horario</th>
+                                            <th scope="col" class="table-header py-4">Estado</th>
+                                            <th scope="col" class="table-header py-4">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                        @foreach($turnosHoy as $turno)
+                                            @include('turnos.partials.turno_row', ['turno' => $turno])
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            @endif
 
-                    {{-- Enlaces de paginación --}}
-                    <div class="mt-4">
-                        {{ $turnos->links() }}
-                    </div>
-                @endif
+                            @if ($turnosHoy->isNotEmpty() && ($turnosManana->isNotEmpty() || $turnosProximos->isNotEmpty()))
+                                <hr class="my-6 border-gray-300 dark:border-gray-600">
+                            @endif
+
+                            {{-- Sección de "Mañana" --}}
+                            @if ($turnosManana->isNotEmpty())
+                                <h2 class="sub-title text-2xl text-white">Mañana</h2>
+                                <table class="custom-table">
+                                    <thead class="bg-gray-50 dark:bg-gray-700">
+                                        <tr>
+                                            <th scope="col" class="table-header py-4">Médico</th>
+                                            <th scope="col" class="table-header py-4">Especialidad</th>
+                                            <th scope="col" class="table-header py-4">Paciente</th>
+                                            <th scope="col" class="table-header py-4">Fecha</th>
+                                            <th scope="col" class="table-header py-4">Horario</th>
+                                            <th scope="col" class="table-header py-4">Estado</th>
+                                            <th scope="col" class="table-header py-4">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                        @foreach($turnosManana as $turno)
+                                            @include('turnos.partials.turno_row', ['turno' => $turno])
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            @endif
+
+                            @if ($turnosManana->isNotEmpty() && $turnosProximos->isNotEmpty())
+                                <hr class="my-6 border-gray-300 dark:border-gray-600">
+                            @endif
+
+                            {{-- Sección de "Próximos" --}}
+                            @if ($turnosProximos->isNotEmpty())
+                                <h2 class="sub-title text-2xl text-white">Próximos</h2>
+                                <table class="custom-table">
+                                    <thead class="bg-gray-50 dark:bg-gray-700">
+                                        <tr>
+                                            <th scope="col" class="table-header py-4">Médico</th>
+                                            <th scope="col" class="table-header py-4">Especialidad</th>
+                                            <th scope="col" class="table-header py-4">Paciente</th>
+                                            <th scope="col" class="table-header py-4">Fecha</th>
+                                            <th scope="col" class="table-header py-4">Horario</th>
+                                            <th scope="col" class="table-header py-4">Estado</th>
+                                            <th scope="col" class="table-header py-4">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                        @foreach($turnosProximos as $turno)
+                                            @include('turnos.partials.turno_row', ['turno' => $turno])
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            @endif
+                        @endif
+                    @else
+                        {{-- Condicional para mostrar la vista de turnos paginados (realizados, ausentes, etc.) --}}
+                        @if ($turnosPaginados->isEmpty())
+                            <p class="text-white">No tienes turnos con este estado para el filtro seleccionado.</p>
+                        @else
+                            <table class="custom-table">
+                                <thead class="bg-gray-50 dark:bg-gray-700">
+                                    <tr>
+                                        <th scope="col" class="table-header py-4">Médico</th>
+                                        <th scope="col" class="table-header py-4">Especialidad</th>
+                                        <th scope="col" class="table-header py-4">Paciente</th>
+                                        <th scope="col" class="table-header py-4">Fecha</th>
+                                        <th scope="col" class="table-header py-4">Horario</th>
+                                        <th scope="col" class="table-header py-4">Estado</th>
+                                        <th scope="col" class="table-header py-4">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                    @foreach($turnosPaginados as $turno)
+                                        @include('turnos.partials.turno_row', ['turno' => $turno])
+                                    @endforeach
+                                </tbody>
+                            </table>
+                            
+                            <div class="mt-8">
+                                {{ $turnosPaginados->links() }}
+                            </div>
+                        @endif
+                    @endif
+                </div>
             </div>
         </div>
     </div>
