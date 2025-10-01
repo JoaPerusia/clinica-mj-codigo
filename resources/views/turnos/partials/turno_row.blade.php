@@ -1,12 +1,20 @@
 <tr>
     <td class="table-data py-4">
         {{ $turno->medico->usuario->nombre }} {{ $turno->medico->usuario->apellido }} ({{ $turno->medico->usuario->dni ?? 'N/A' }})
+        @if($turno->medico->deleted_at)
+            <span class="text-red-500 ml-1">(eliminado)</span>
+        @endif
     </td>
     <td class="table-data py-4">
         {{ $turno->medico->especialidades->pluck('nombre_especialidad')->implode(', ') }}
     </td>
     <td class="table-data py-4">
         {{ $turno->paciente->nombre }} {{ $turno->paciente->apellido }} ({{ $turno->paciente->dni ?? 'N/A' }})
+        @if($turno->paciente->deleted_at)
+            <span class="text-red-500 ml-1">(eliminado)</span>
+        @endif
+    </td>
+
     </td>
     <td class="table-data py-4">
         {{ \Carbon\Carbon::parse($turno->fecha)->format('d/m/Y') }}

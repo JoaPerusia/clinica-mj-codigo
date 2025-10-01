@@ -157,108 +157,176 @@ class MedicoController extends Controller
             'especialidades.*' => 'exists:especialidades,id_especialidad',
             'horarios' => 'required|array',
             'horarios.*' => 'array',
-            'horarios.*.*.dia_semana' => 'required|string', 
+            'horarios.*.*.dia_semana'  => 'required',
             'horarios.*.*.hora_inicio' => 'required|date_format:H:i',
-            'horarios.*.*.hora_fin' => 'required|date_format:H:i|after:horarios.*.*.hora_inicio',
+            'horarios.*.*.hora_fin'    => 'required|date_format:H:i|after:horarios.*.*.hora_inicio',
         ]);
 
         DB::beginTransaction();
+
         try {
-            // 1. Guardar las especialidades y los horarios del médico
-            $medico->especialidades()->sync($validatedData['especialidades']);
+            // Normalizar horarios
+            $rawHorarios = collect($validatedData['horarios'])->flatten(1)->values();
 
-            // Se eliminan los viejos y se crean los nuevos horarios
-            $medico->horariosTrabajo()->delete();
-            foreach ($validatedData['horarios'] as $dias) {
-                foreach ($dias as $horario) {
-                    $medico->horariosTrabajo()->create($horario);
+            $toDayIndex = function ($val) {
+                if (is_numeric($val)) {
+                    $n = (int) $val;
+                    if ($n >= 0 && $n <= 6) return $n;
+                    if ($n >= 1 && $n <= 7) return $n % 7;
                 }
-            }
+                $map = [
+                    'domingo' => 0, 'lunes' => 1, 'martes' => 2,
+                    'miercoles' => 3, 'miércoles' => 3,
+                    'jueves' => 4, 'viernes' => 5,
+                    'sabado' => 6, 'sábado' => 6,
+                ];
+                return $map[mb_strtolower(trim($val))] ?? null;
+            };
 
-            // Obtener la colección de los nuevos horarios (plana)
-            $nuevosHorarios = collect($validatedData['horarios'])->flatten(1);
+            $nuevosHorarios = $rawHorarios->map(fn($h) => [
+                    'dia_semana'  => $toDayIndex($h['dia_semana'] ?? null),
+                    'hora_inicio' => $h['hora_inicio'],
+                    'hora_fin'    => $h['hora_fin'],
+                ])
+                ->filter(fn($h) => $h['dia_semana'] !== null)
+                ->values();
 
-            // 2. Lógica de cancelación y notificación de turnos en conflicto
-            $turnosSuperpuestos = Turno::where('id_medico', $medico->id_medico)
+            // Normalizar especialidades a ints y detectar cambio
+            $nuevasEspecialidades = collect($validatedData['especialidades'])
+                ->map(fn($id) => (int) $id)
+                ->sort()
+                ->values()
+                ->toArray();
+
+            $especialidadesOriginales = $medico->especialidades
+                ->pluck('id_especialidad')
+                ->sort()
+                ->values()
+                ->toArray();
+
+            $especialidadesCambiaron = $especialidadesOriginales !== $nuevasEspecialidades;
+
+            // Traer turnos pendientes
+            $turnosPendientes = $medico->turnos()
                 ->where('estado', 'Pendiente')
                 ->where('fecha', '>=', Carbon::today())
                 ->get();
-            
+
             $turnosAfectados = 0;
-            foreach ($turnosSuperpuestos as $turno) {
-                $esValido = false;
+
+            // Validar cada turno
+            foreach ($turnosPendientes as $turno) {
+                $esValido = true;
                 $motivo = '';
 
-                // 2.1. Validar por especialidad: El turno debe tener una de las nuevas especialidades
-                $especialidadValida = $medico->especialidades()->where('especialidades.id_especialidad', $turno->id_especialidad)->exists();
-                
-                if (!$especialidadValida) {
-                    $motivo = 'La especialidad del turno ya no corresponde con el médico.';
+                // 1) Si cambiaron especialidades, cancelo todos
+                if ($especialidadesCambiaron) {
+                    $esValido = false;
+                    $motivo  = 'El médico cambió sus especialidades.';
                 }
 
-                // 2.2. Validar por horario de trabajo (Solo si la especialidad es válida)
-                if ($especialidadValida) {
-                    // Parseamos los datos del turno (Aquí es donde ocurría la falla de Carbon si los datos eran malos)
-                    $diaSemanaTurno = Carbon::parse($turno->fecha)->dayOfWeek; // Es un INT (0-6)
-                    $horaTurno = Carbon::parse($turno->hora);
+                // 2) Si no, chequear horarios
+                if ($esValido) {
+                    $fechaTurno = Carbon::parse($turno->fecha);
+                    $horaTurno  = Carbon::parse($turno->hora)
+                        ->setDate($fechaTurno->year, $fechaTurno->month, $fechaTurno->day);
 
-                    foreach ($nuevosHorarios as $nuevoHorario) {
-                        $diaNuevoHorarioInt = (int)$nuevoHorario['dia_semana'];
-                        
-                        if ($diaNuevoHorarioInt === $diaSemanaTurno) {
-                            $horaInicio = Carbon::parse($nuevoHorario['hora_inicio']);
-                            $horaFin = Carbon::parse($nuevoHorario['hora_fin']);
+                    $coincide = false;
+                    foreach ($nuevosHorarios as $nh) {
+                        if ($nh['dia_semana'] === $fechaTurno->dayOfWeek) {
+                            $inicio = Carbon::createFromFormat('H:i', $nh['hora_inicio'])
+                                ->setDate($fechaTurno->year, $fechaTurno->month, $fechaTurno->day);
+                            $fin = Carbon::createFromFormat('H:i', $nh['hora_fin'])
+                                ->setDate($fechaTurno->year, $fechaTurno->month, $fechaTurno->day);
 
-                            if ($horaTurno->between($horaInicio, $horaFin, true)) { 
-                                $esValido = true;
+                            if ($horaTurno->between($inicio, $fin, true)) {
+                                $coincide = true;
                                 break;
                             }
                         }
                     }
 
-                    if (!$esValido) {
-                        $motivo = 'El turno ya no coincide con el nuevo horario de trabajo del médico.';
+                    if (! $coincide) {
+                        $esValido = false;
+                        $motivo  = 'El turno ya no coincide con el nuevo horario del médico.';
                     }
                 }
 
-                // 3. Si el turno no es válido por especialidad O por horario, lo cancelamos
-                if (!$esValido) { 
+                // 3) Cancelar si corresponde
+                if (! $esValido) {
                     $turno->estado = 'Cancelado';
                     $turno->save();
                     $turnosAfectados++;
-                    
-                    // ... (Bloque try-catch para envío de correo)
+
                     try {
                         $turno->load('paciente.usuario', 'medico.usuario');
                         Mail::to($turno->paciente->usuario->email)
                             ->send(new TurnoCanceladoMailable($turno, $motivo));
                     } catch (\Exception $e) {
-                        Log::error("Error al enviar correo de cancelación de turno ID {$turno->id_turno}: " . $e->getMessage());
+                        Log::error("Error al enviar correo de cancelación turno ID {$turno->id_turno}: {$e->getMessage()}");
                     }
                 }
             }
-            
+
+            // 4) Solo después sincronizar y recrear horarios
+            $medico->especialidades()->sync($nuevasEspecialidades);
+            $medico->horariosTrabajo()->delete();
+            foreach ($nuevosHorarios as $h) {
+                $medico->horariosTrabajo()->create($h);
+            }
+
             DB::commit();
 
             $mensaje = 'Médico actualizado correctamente.';
             if ($turnosAfectados > 0) {
-                $mensaje .= " Se han cancelado {$turnosAfectados} turno(s) superpuesto(s) debido a los cambios de agenda.";
+                $mensaje .= " Se han cancelado {$turnosAfectados} turno(s) debido a los cambios.";
             }
 
-            return redirect()->route('admin.medicos.index')->with('success', $mensaje);
+            return redirect()
+                ->route('admin.medicos.index')
+                ->with('success', $mensaje);
+
         } catch (\Exception $e) {
-            // Capturamos cualquier otro error, como un fallo de Carbon que no pudimos prever.
             DB::rollBack();
             Log::error('Error FATAL al actualizar médico y turnos: ' . $e->getMessage());
-            return back()->withInput()->with('error', 'Hubo un error al actualizar el médico: ' . $e->getMessage());
+            return back()
+                ->withInput()
+                ->with('error', 'Hubo un error al actualizar el médico: ' . $e->getMessage());
         }
     }
+
 
     public function destroy(string $id)
     {
         $medico = Medico::findOrFail($id);
-        $medico->delete();
 
-        return redirect()->route('admin.medicos.index')->with('success', 'Médico eliminado correctamente.');
+        DB::beginTransaction();
+        try {
+            // 1) Cancelar sus turnos pendientes o futuros y contar cuántos
+            $turnosCancelados = $medico->turnos()
+                ->where('estado', 'Pendiente')
+                ->where('fecha', '>=', Carbon::today())
+                ->update(['estado' => 'Cancelado']);
+
+            // 2) Soft delete del médico
+            $medico->delete();
+
+            DB::commit();
+
+            // 3) Armar mensaje dinámico
+            $mensaje = 'Médico eliminado correctamente.';
+            if ($turnosCancelados > 0) {
+                $mensaje .= " Se han cancelado {$turnosCancelados} turno(s) futuros.";
+            }
+
+            return redirect()
+                ->route('admin.medicos.index')
+                ->with('success', $mensaje);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()
+                ->with('error', 'No se pudo eliminar el médico: ' . $e->getMessage());
+        }
     }
+
 }

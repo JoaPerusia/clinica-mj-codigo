@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Paciente;
 use App\Models\User; 
 use Illuminate\Validation\ValidationException;
+use Carbon\Carbon;
 
 class PacienteController extends Controller
 {
@@ -184,6 +185,7 @@ class PacienteController extends Controller
         $paciente = Paciente::findOrFail($id);
         $usuario = Auth::user();
 
+        // Lógica de autorización
         if (!$usuario->hasRole('Administrador') && $paciente->id_usuario != $usuario->id_usuario) {
             $redirectRoute = '';
             if ($usuario->hasRole('Administrador')) {
@@ -196,8 +198,21 @@ class PacienteController extends Controller
             return redirect()->route($redirectRoute)->with('warning', 'No tenés permiso para eliminar este paciente.');
         }
 
+        // 1. Encontrar y cancelar los turnos futuros del paciente
+        $turnosPendientes = $paciente->turnos()
+                                    ->where('estado', 'pendiente')
+                                    ->where('fecha', '>=', now()->toDateString())
+                                    ->get();
+        
+        foreach ($turnosPendientes as $turno) {
+            $turno->estado = 'cancelado';
+            $turno->save();
+        }
+
+        // 2. Realizar la eliminación suave del paciente
         $paciente->delete();
 
+        // Lógica de redirección
         $redirectRoute = '';
         if ($usuario->hasRole('Administrador')) {
             $redirectRoute = 'admin.pacientes.index';
@@ -207,6 +222,6 @@ class PacienteController extends Controller
             $redirectRoute = 'dashboard';
         }
 
-        return redirect()->route($redirectRoute)->with('success', 'Paciente eliminado correctamente.');
+        return redirect()->route($redirectRoute)->with('success', 'Paciente y sus turnos futuros han sido cancelados.');
     }
 }
