@@ -8,26 +8,30 @@ use Illuminate\Support\Facades\Session;
 
 class RoleController extends Controller
 {
+    /**
+     * Acción de setear el rol activo tras la selección.
+     */
     public function setRolActivo(Request $request)
     {
-        $rol = $request->input('rol');
+        $user = Auth::user();
+        $rol  = $request->input('rol');
 
-        // Verifica que el usuario realmente tiene el rol que está seleccionando
-        if (Auth::user()->hasRole($rol)) {
-            // Guarda el nombre del rol en la sesión
-            Session::put('rol_activo', $rol);
+        // Obtengo solo los roles “vivos” del usuario
+        $allowed = $user->active_roles->pluck('rol')->contains($rol);
 
-            // Redirige al dashboard del rol seleccionado
-            if ($rol === 'Administrador') {
-                return redirect()->route('admin.dashboard');
-            } elseif ($rol === 'Medico') {
-                return redirect()->route('medico.dashboard');
-            } elseif ($rol === 'Paciente') {
-                return redirect()->route('paciente.dashboard');
-            }
+        if (! $allowed) {
+            return redirect()->route('dashboard')
+                             ->with('error', 'No podés ingresar con ese rol.');
         }
 
-        // Si el rol no es válido, redirige a la pantalla de selección de rol
-        return redirect()->route('rol.cambiar')->with('error', 'Rol inválido.');
+        // Guardo en sesión el rol activo
+        Session::put('rol_activo', $rol);
+
+        // Redirijo al dashboard correspondiente
+        return match($rol) {
+            'Administrador' => redirect()->route('admin.dashboard'),
+            'Medico'        => redirect()->route('medico.dashboard'),
+            'Paciente'      => redirect()->route('paciente.dashboard'),
+        };
     }
 }

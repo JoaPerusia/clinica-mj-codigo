@@ -6,14 +6,19 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('sessions', function (Blueprint $table) {
+            // PK sobre el ID de sesión
             $table->string('id')->primary();
-            $table->foreignId('user_id')->nullable()->index();
+
+            // FK a usuarios.id_usuario, permite nulo y setea a null al borrar el usuario
+            $table->unsignedBigInteger('user_id')->nullable()->index();
+            $table->foreign('user_id')
+                  ->references('id_usuario')
+                  ->on('usuarios')
+                  ->onDelete('set null');
+
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->longText('payload');
@@ -21,9 +26,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('sessions');

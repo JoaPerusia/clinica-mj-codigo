@@ -6,30 +6,30 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('pacientes', function (Blueprint $table) {
-            $table->bigIncrements('id_paciente'); 
+            $table->bigIncrements('id_paciente');
+
             $table->string('nombre');
             $table->string('apellido');
-            $table->string('dni')->unique(); 
+            $table->string('dni')->unique();
             $table->date('fecha_nacimiento')->nullable();
-            $table->string('obra_social')->nullable(); 
+            $table->string('telefono', 20)->nullable();
+            $table->string('obra_social')->nullable();
 
-            // Clave foránea a la tabla de usuarios
-            $table->unsignedBigInteger('id_usuario'); // Un paciente está asociado a UN usuario, y un usuario puede "contener" varios pacientes
-            $table->foreign('id_usuario')->references('id_usuario')->on('usuarios')->onDelete('cascade');
+            // Relación con usuarios: si se borra el usuario, pasa a id_usuario = 1 (administración)
+            $table->unsignedBigInteger('id_usuario')->default(1);
+            $table->foreign('id_usuario')
+                  ->references('id_usuario')
+                  ->on('usuarios')
+                  ->onDelete('set default');
 
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('pacientes');

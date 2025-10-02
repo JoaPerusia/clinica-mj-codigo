@@ -2,89 +2,87 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Rol;
 use App\Models\User;
 use App\Models\Paciente;
-use Carbon\Carbon;
 
 class PacienteSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
+        // 1. Buscamos el rol Paciente
         $pacienteRol = Rol::where('rol', 'Paciente')->first();
-
-        if (!$pacienteRol) {
-            $this->command->info('El rol \"Paciente\" no fue encontrado. Asegúrate de que RolSeeder se ejecute primero.');
+        if (! $pacienteRol) {
+            $this->command->info('❌ Falta el rol Paciente. Ejecuta RolSeeder primero.');
             return;
         }
 
-        $pacientesData = [
+        // 2. Definimos el array con los pacientes de ejemplo
+        $pacientes = [
             [
-                'nombre' => 'María',
-                'apellido' => 'González',
-                'dni' => '20111222',
+                'nombre'           => 'María',
+                'apellido'         => 'González',
+                'dni'              => '20111222',
                 'fecha_nacimiento' => '1990-05-15',
-                'obra_social' => 'Osde',
-                'email' => 'maria.gonzalez@example.com',
-                'telefono' => '1133445566',
+                'obra_social'      => 'Osde',
+                'email'            => 'maria.gonzalez@example.com',
+                'telefono'         => '1133445566',
             ],
             [
-                'nombre' => 'Carlos',
-                'apellido' => 'Rodríguez',
-                'dni' => '25333444',
+                'nombre'           => 'Carlos',
+                'apellido'         => 'Rodríguez',
+                'dni'              => '25333444',
                 'fecha_nacimiento' => '1985-11-22',
-                'obra_social' => 'Swiss Medical',
-                'email' => 'carlos.rodriguez@example.com',
-                'telefono' => '1166778899',
+                'obra_social'      => 'Swiss Medical',
+                'email'            => 'carlos.rodriguez@example.com',
+                'telefono'         => '1166778899',
             ],
             [
-                'nombre' => 'Laura',
-                'apellido' => 'Fernandez',
-                'dni' => '30555666',
+                'nombre'           => 'Laura',
+                'apellido'         => 'Fernandez',
+                'dni'              => '30555666',
                 'fecha_nacimiento' => '1995-09-30',
-                'obra_social' => 'Galeno',
-                'email' => 'laura.fernandez@example.com',
-                'telefono' => '1199887766',
+                'obra_social'      => 'Galeno',
+                'email'            => 'laura.fernandez@example.com',
+                'telefono'         => '1199887766',
             ],
         ];
 
-        foreach ($pacientesData as $data) {
-            $user = User::firstOrCreate(
+        // 3. Recorremos cada paciente y lo creamos/actualizamos
+        foreach ($pacientes as $data) {
+            // Crear o actualizar usuario
+            $user = User::updateOrCreate(
                 ['email' => $data['email']],
                 [
-                    'nombre' => $data['nombre'],
-                    'apellido' => $data['apellido'],
-                    'dni' => $data['dni'],
+                    'nombre'           => $data['nombre'],
+                    'apellido'         => $data['apellido'],
+                    'dni'              => $data['dni'],
                     'fecha_nacimiento' => $data['fecha_nacimiento'],
-                    'obra_social' => $data['obra_social'],
-                    'telefono' => $data['telefono'],
-                    'password' => Hash::make('password'),
+                    'obra_social'      => $data['obra_social'],
+                    'telefono'         => $data['telefono'],
+                    'password'         => Hash::make('password'),
                 ]
             );
 
-            // Usa la relación muchos a muchos para adjuntar el rol.
+            // Asignar rol Paciente
             $user->roles()->syncWithoutDetaching([$pacienteRol->id_rol]);
 
-            Paciente::firstOrCreate(
+            // Crear o actualizar perfil en la tabla pacientes
+            Paciente::updateOrCreate(
                 ['id_usuario' => $user->id_usuario],
                 [
-                    'nombre' => $data['nombre'],
-                    'apellido' => $data['apellido'],
-                    'dni' => $data['dni'],
+                    'nombre'           => $data['nombre'],
+                    'apellido'         => $data['apellido'],
+                    'dni'              => $data['dni'],
                     'fecha_nacimiento' => $data['fecha_nacimiento'],
-                    'obra_social' => $data['obra_social'],
-                    'telefono' => $data['telefono'],
+                    'obra_social'      => $data['obra_social'],
+                    'telefono'         => $data['telefono'],
                 ]
             );
-        }
 
-        $this->command->info('Pacientes de prueba creados exitosamente.');
+            $this->command->info("✅ Paciente {$data['nombre']} {$data['apellido']} seedado.");
+        }
     }
 }

@@ -6,27 +6,33 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('bloqueos', function (Blueprint $table) {
-            $table->bigIncrements('id_bloqueo'); 
-            $table->date('fecha');
-            $table->string('motivo')->nullable(); // 'vacaciones', 'congreso', 'permiso'
+            $table->bigIncrements('id_bloqueo');
 
-            // Clave foránea
+            // Rango de fechas
+            $table->date('fecha_inicio');
+            $table->date('fecha_fin');
+
+            // Horarios opcionales
+            $table->time('hora_inicio')->nullable();
+            $table->time('hora_fin')->nullable();
+
+            // Motivo del bloqueo
+            $table->string('motivo')->nullable(); // vacaciones, congreso, permiso, etc.
+
+            // Relación con médico
             $table->unsignedBigInteger('id_medico');
-            $table->foreign('id_medico')->references('id_medico')->on('medicos')->onDelete('cascade');
+            $table->foreign('id_medico')
+                  ->references('id_medico')
+                  ->on('medicos')
+                  ->onDelete('cascade');
 
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('bloqueos');

@@ -6,28 +6,28 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('usuarios', function (Blueprint $table) {
             $table->bigIncrements('id_usuario');
 
             $table->string('nombre');
+            $table->string('apellido')->nullable(); // si lo usás en tu modelo
+            $table->string('dni')->unique();        // ya definido como NOT NULL + único
+            $table->date('fecha_nacimiento')->nullable();
+            $table->string('obra_social')->nullable();
+
             $table->string('email')->unique();
             $table->string('password');
-            $table->string('telefono')->nullable();
+            $table->string('telefono', 20)->nullable();
 
             $table->timestamp('email_verified_at')->nullable();
             $table->rememberToken();
             $table->timestamps();
+            $table->softDeletes(); // agregado para permitir borrado suave
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('usuarios');

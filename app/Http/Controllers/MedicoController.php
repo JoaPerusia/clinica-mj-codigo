@@ -78,29 +78,51 @@ class MedicoController extends Controller
 
             $usuario = User::findOrFail($validatedData['id_usuario']);
 
-            if ($usuario->hasRole('Medico')) {
-                return back()->withInput()->with('error', 'El usuario seleccionado ya es un médico.');
+            // Buscar médico incluso si está soft-deleted
+            $medicoExistente = Medico::withTrashed()
+                ->where('id_usuario', $usuario->id_usuario)
+                ->first();
+
+            if ($medicoExistente) {
+                if ($medicoExistente->trashed()) {
+                    $medicoExistente->restore();
+                    $medicoExistente->especialidades()->sync($validatedData['especialidades']);
+
+                    if ($request->has('horarios')) {
+                        $medicoExistente->horariosTrabajo()->delete(); // limpiar anteriores
+                        foreach ($validatedData['horarios'] as $dias) {
+                            foreach ($dias as $horario) {
+                                $medicoExistente->horariosTrabajo()->create($horario);
+                            }
+                        }
+                    }
+
+                    // Asegurar que tenga el rol
+                    if (!$usuario->hasRole('Medico')) {
+                        $medicoRol = Rol::where('rol', 'Medico')->first();
+                        if (!$medicoRol) {
+                            DB::rollBack();
+                            return back()->withInput()->with('error', 'El rol "Medico" no fue encontrado.');
+                        }
+                        $usuario->roles()->attach($medicoRol->id_rol);
+                    }
+
+                    DB::commit();
+                    return redirect()->route('admin.medicos.index')->with('success', 'Médico restaurado y actualizado correctamente.');
+                }
+
+                // Si ya existe activo
+                return back()->withInput()->with('error', 'El usuario ya está registrado como médico.');
             }
 
-            $medicoRol = Rol::where('rol', 'Medico')->first();
-
-            if (!$medicoRol) {
-                DB::rollBack();
-                return back()->withInput()->with('error', 'El rol "Medico" no fue encontrado.');
-            }
-
-            $usuario->roles()->attach($medicoRol->id_rol);
-
+            // Crear nuevo médico
             $medico = Medico::create([
                 'id_usuario' => $usuario->id_usuario,
             ]);
 
             $medico->especialidades()->sync($validatedData['especialidades']);
 
-            // 2. Lógica para guardar los horarios SÓLO si existen
-            // Utilizamos el método `has` de la request para verificar si el campo `horarios` fue enviado.
             if ($request->has('horarios')) {
-                // Este bucle ahora solo se ejecuta si hay horarios en el formulario
                 foreach ($validatedData['horarios'] as $dias) {
                     foreach ($dias as $horario) {
                         $medico->horariosTrabajo()->create($horario);
@@ -108,8 +130,17 @@ class MedicoController extends Controller
                 }
             }
 
-            DB::commit();
+            // Asignar rol si no lo tiene
+            if (!$usuario->hasRole('Medico')) {
+                $medicoRol = Rol::where('rol', 'Medico')->first();
+                if (!$medicoRol) {
+                    DB::rollBack();
+                    return back()->withInput()->with('error', 'El rol "Medico" no fue encontrado.');
+                }
+                $usuario->roles()->attach($medicoRol->id_rol);
+            }
 
+            DB::commit();
             return redirect()->route('admin.medicos.index')->with('success', 'Médico creado y rol asignado correctamente.');
 
         } catch (\Exception $e) {
