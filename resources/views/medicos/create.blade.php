@@ -107,7 +107,7 @@
                         @endforeach
                     </div>
                     
-                    <button type="submit" class="btn-primary mt-4">Guardar Médico</button>
+                    <button type="submit" class="btn-primary mt-4">Crear Médico</button>
                     <a href="{{ route('admin.medicos.index') }}" class="btn-secondary ml-2">Cancelar</a>
                 </form>
             </div>

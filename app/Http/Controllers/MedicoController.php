@@ -329,7 +329,7 @@ class MedicoController extends Controller
 
     public function destroy(string $id)
     {
-        $medico = Medico::findOrFail($id);
+        $medico = Medico::with('usuario')->findOrFail($id);
 
         DB::beginTransaction();
         try {
@@ -342,9 +342,15 @@ class MedicoController extends Controller
             // 2) Soft delete del médico
             $medico->delete();
 
+            // 3) Quitar el rol “Medico” del usuario
+            $rolMedico = Rol::where('rol', 'Medico')->first();
+            if ($rolMedico) {
+                $medico->usuario->roles()->detach($rolMedico->id_rol);
+            }
+
             DB::commit();
 
-            // 3) Armar mensaje dinámico
+            // 4) Armar mensaje dinámico
             $mensaje = 'Médico eliminado correctamente.';
             if ($turnosCancelados > 0) {
                 $mensaje .= " Se han cancelado {$turnosCancelados} turno(s) futuros.";
@@ -353,6 +359,7 @@ class MedicoController extends Controller
             return redirect()
                 ->route('admin.medicos.index')
                 ->with('success', $mensaje);
+
         } catch (\Exception $e) {
             DB::rollBack();
             return back()

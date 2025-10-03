@@ -20,35 +20,36 @@ class TurnoController extends Controller
      */
     public function index(Request $request)
     {
-        $usuario = Auth::user();
-        $estado_filtro = $request->input('estado_filtro', 'pendiente');
-        $dni_filtro_paciente = $request->input('dni_filtro_paciente');
-        $dni_filtro_medico = $request->input('dni_filtro_medico');
-        $fecha_filtro = $request->input('fecha_filtro'); // Nuevo filtro por fecha
-        $perPage = 10;
-        
-        // Consulta base para los turnos
+        $usuario              = Auth::user();
+        $estado_filtro        = $request->input('estado_filtro', 'pendiente');
+        $dni_filtro_paciente  = $request->input('dni_filtro_paciente');
+        $dni_filtro_medico    = $request->input('dni_filtro_medico');
+        $fecha_filtro         = $request->input('fecha_filtro');      // Fecha única
+        $fecha_inicio         = $request->input('fecha_inicio');      // Rango: desde
+        $fecha_fin            = $request->input('fecha_fin');         // Rango: hasta
+        $especialidad_filtro  = $request->input('especialidad_filtro');
+        $nombre_filtro        = $request->input('nombre_filtro');
+        $perPage              = 10;
+        $especialidades = Especialidad::orderBy('nombre_especialidad')->get();
+
+        // Consulta base
         $query = Turno::with([
-            'paciente' => function ($q) {
-                $q->withTrashed();
-            },
-            'medico' => function ($q) {
-                $q->withTrashed();
-            },
-            'medico.usuario'
+            'paciente' => function ($q) { $q->withTrashed(); },
+            'medico'   => function ($q) { $q->withTrashed(); },
+            'medico.usuario',
+            'medico.especialidades',
         ]);
 
-
-        // Aplicar filtro por DNI (siempre aplica)
-        if ($dni_filtro_paciente) {
+        // Filtro por DNI (paciente)
+        if (!empty($dni_filtro_paciente)) {
             $query->whereHas('paciente', function ($q) use ($dni_filtro_paciente) {
                 $q->withTrashed()
                 ->where('dni', 'like', '%' . $dni_filtro_paciente . '%');
             });
         }
 
-
-        if ($dni_filtro_medico) {
+        // Filtro por DNI (médico → usuario)
+        if (!empty($dni_filtro_medico)) {
             $query->whereHas('medico', function ($q) use ($dni_filtro_medico) {
                 $q->withTrashed()
                 ->whereHas('usuario', function ($u) use ($dni_filtro_medico) {
@@ -57,11 +58,40 @@ class TurnoController extends Controller
             });
         }
 
-        // Aplicar filtro de rol (siempre aplica)
+        // Filtro por especialidad (id_especialidad)
+        if (!empty($especialidad_filtro)) {
+            $query->whereHas('medico.especialidades', function ($q) use ($especialidad_filtro) {
+                $q->where('id_especialidad', $especialidad_filtro);
+            });
+        }
+
+        // Filtro por nombre (paciente o médico)
+        if (!empty($nombre_filtro)) {
+            $query->where(function ($outer) use ($nombre_filtro) {
+                // Paciente: nombre o apellido
+                $outer->whereHas('paciente', function ($q) use ($nombre_filtro) {
+                    $q->withTrashed()
+                    ->where(function ($w) use ($nombre_filtro) {
+                        $w->where('nombre', 'like', '%' . $nombre_filtro . '%')
+                            ->orWhere('apellido', 'like', '%' . $nombre_filtro . '%');
+                    });
+                })
+                // Médico (usuario): nombre o apellido
+                ->orWhereHas('medico.usuario', function ($u) use ($nombre_filtro) {
+                    $u->where(function ($w) use ($nombre_filtro) {
+                        $w->where('nombre', 'like', '%' . $nombre_filtro . '%')
+                        ->orWhere('apellido', 'like', '%' . $nombre_filtro . '%');
+                    });
+                });
+            });
+        }
+
+        // Filtro por rol en ruta
         if ($request->routeIs('medico.*')) {
             $medico = $usuario->medico;
             if (!$medico) {
-                return redirect()->route('medico.dashboard')->with('error', 'Tu perfil de médico no está configurado.');
+                return redirect()->route('medico.dashboard')
+                    ->with('error', 'Tu perfil de médico no está configurado.');
             }
             $query->where('id_medico', $medico->id_medico);
 
@@ -69,39 +99,35 @@ class TurnoController extends Controller
             $pacientes_ids = $usuario->pacientes->pluck('id_paciente');
             $query->whereIn('id_paciente', $pacientes_ids);
         }
-        
-        // Se inicializan las variables para la vista
-        $turnosHoy = collect();
-        $turnosManana = collect();
-        $turnosProximos = collect();
-        $turnosPaginados = null;
 
-        if ($estado_filtro == 'pendiente' && !$fecha_filtro) {
-            // Lógica para turnos pendientes sin filtro de fecha (agrupados por fecha)
+        // Variables para la vista
+        $turnosHoy        = collect();
+        $turnosManana     = collect();
+        $turnosProximos   = collect();
+        $turnosPaginados  = null;
+
+        // Decisión de agrupado vs. paginado:
+        // Agrupamos solo si es estado pendiente y NO hay filtros de fecha (ni única ni rango)
+        $hayRangoFechas = !empty($fecha_inicio) || !empty($fecha_fin);
+        if ($estado_filtro === 'pendiente' && empty($fecha_filtro) && !$hayRangoFechas) {
+            // Pendientes agrupados por hoy/mañana/próximos
             $turnos = $query->where('estado', 'pendiente')
                             ->orderBy('fecha', 'asc')
                             ->orderBy('hora', 'asc')
                             ->get();
-            
-            $hoy = Carbon::today();
+
+            $hoy    = Carbon::today();
             $manana = Carbon::tomorrow();
 
-            $turnosHoy = $turnos->filter(function ($turno) use ($hoy) {
-                return Carbon::parse($turno->fecha)->isSameDay($hoy);
-            });
-            
-            $turnosManana = $turnos->filter(function ($turno) use ($manana) {
-                return Carbon::parse($turno->fecha)->isSameDay($manana);
-            });
+            $turnosHoy = $turnos->filter(fn($t) => Carbon::parse($t->fecha)->isSameDay($hoy));
+            $turnosManana = $turnos->filter(fn($t) => Carbon::parse($t->fecha)->isSameDay($manana));
+            $turnosProximos = $turnos->filter(fn($t) => Carbon::parse($t->fecha)->isAfter($manana));
 
-            $turnosProximos = $turnos->filter(function ($turno) use ($hoy, $manana) {
-                return Carbon::parse($turno->fecha)->isAfter($manana);
-            });
-            
         } else {
-            // Lógica para turnos con cualquier estado O con filtro de fecha (paginados)
-            $subquery = clone $query; // Clona la consulta base
-            
+            // Paginado con estado + filtros (incluye fecha única o rango)
+            $subquery = clone $query;
+
+            // Estado
             if ($estado_filtro === 'todos') {
                 $subquery->whereIn('estado', ['realizado', 'atendido', 'pendiente', 'cancelado', 'ausente']);
             } elseif ($estado_filtro === 'realizado') {
@@ -110,18 +136,40 @@ class TurnoController extends Controller
                 $subquery->where('estado', $estado_filtro);
             }
 
-            // Aplicar el filtro de fecha si está presente
-            if ($fecha_filtro) {
+            // Fecha única tiene prioridad sobre rango si ambos vienen
+            if (!empty($fecha_filtro)) {
                 $subquery->whereDate('fecha', $fecha_filtro);
+            } else {
+                if (!empty($fecha_inicio) && !empty($fecha_fin)) {
+                    $subquery->whereBetween('fecha', [$fecha_inicio, $fecha_fin]);
+                } elseif (!empty($fecha_inicio)) {
+                    $subquery->whereDate('fecha', '>=', $fecha_inicio);
+                } elseif (!empty($fecha_fin)) {
+                    $subquery->whereDate('fecha', '<=', $fecha_fin);
+                }
             }
 
-            $turnosPaginados = $subquery->orderBy('fecha', 'desc') // Ordenar de más reciente a más antiguo
+            $turnosPaginados = $subquery->orderBy('fecha', 'desc')
                                         ->orderBy('hora', 'desc')
                                         ->paginate($perPage)
                                         ->withQueryString();
         }
-        
-        return view('turnos.index', compact('turnosHoy', 'turnosManana', 'turnosProximos', 'turnosPaginados', 'estado_filtro', 'dni_filtro_paciente', 'dni_filtro_medico', 'fecha_filtro'));
+
+        return view('turnos.index', [
+            'turnosHoy'           => $turnosHoy,
+            'turnosManana'        => $turnosManana,
+            'turnosProximos'      => $turnosProximos,
+            'turnosPaginados'     => $turnosPaginados,
+            'estado_filtro'       => $estado_filtro,
+            'dni_filtro_paciente' => $dni_filtro_paciente,
+            'dni_filtro_medico'   => $dni_filtro_medico,
+            'fecha_filtro'        => $fecha_filtro,
+            'fecha_inicio'        => $fecha_inicio,
+            'fecha_fin'           => $fecha_fin,
+            'especialidad_filtro' => $especialidad_filtro,
+            'nombre_filtro'       => $nombre_filtro,
+            'especialidades'      => $especialidades,
+        ]);
     }
 
     /**
