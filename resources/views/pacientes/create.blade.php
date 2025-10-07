@@ -79,11 +79,35 @@
                         <input type="text" name="obra_social" id="obra_social" value="{{ old('obra_social') }}" class="form-input">
                     </div>
 
-                    {{-- Campo para id_usuario (solo visible para admin, oculto para paciente) --}}
-                    @if(auth()->check() && auth()->user()->hasRole('Administrador'))
+                    @if(auth()->user()->hasRole('Administrador'))
                         <div class="form-group">
-                            <label for="id_usuario" class="form-label">Usuario Asociado (ID):</label>
-                            <input type="number" name="id_usuario" id="id_usuario" value="{{ old('id_usuario') }}" required class="form-input">
+                            <label for="usuario_input" class="form-label">Usuario (Paciente):</label>
+                            <input
+                                type="text"
+                                id="usuario_input"
+                                class="form-input"
+                                placeholder="Buscar por nombre o DNI..."
+                                list="usuarios_list"
+                                value="{{ old('usuario_input') }}"
+                                required
+                            >
+
+                            <datalist id="usuarios_list">
+                                @foreach($usuarios as $u)
+                                    <option
+                                        value="{{ $u->nombre }} {{ $u->apellido }} (DNI: {{ $u->dni }})"
+                                        data-id="{{ $u->id_usuario }}"
+                                    ></option>
+                                @endforeach
+                            </datalist>
+
+                            {{-- Este hidden envía el id al store --}}
+                            <input
+                                type="hidden"
+                                name="id_usuario"
+                                id="id_usuario_hidden"
+                                value="{{ old('id_usuario') }}"
+                            >
                         </div>
                     @endif
 
@@ -103,4 +127,29 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const usuarioInput = document.getElementById('usuario_input');
+            const usuariosList = document.getElementById('usuarios_list');
+            const idHidden     = document.getElementById('id_usuario_hidden');
+
+            usuarioInput.addEventListener('input', function () {
+                const texto = this.value;
+                let encontrado = false;
+
+                for (let opt of usuariosList.options) {
+                    if (opt.value === texto) {
+                        idHidden.value = opt.dataset.id;
+                        encontrado = true;
+                        break;
+                    }
+                }
+
+                if (!encontrado) {
+                    idHidden.value = '';
+                }
+            });
+        });
+    </script>
 @endsection

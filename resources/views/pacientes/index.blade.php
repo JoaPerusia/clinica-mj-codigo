@@ -45,7 +45,7 @@
 
                         @if($createPacienteRoute)
                             <a href="{{ $createPacienteRoute }}" class="btn-primary">
-                                Crear Nuevo Paciente
+                                Agregar Paciente
                             </a>
                         @endif
                     </div>

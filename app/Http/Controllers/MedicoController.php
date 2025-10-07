@@ -52,7 +52,7 @@ class MedicoController extends Controller
         $usuarios = User::whereHas('roles', function ($query) {
             $query->where('rol', 'Paciente');
         })->get();
-        $diasSemana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+        $diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
         
         return view('medicos.create', compact('especialidades', 'usuarios', 'diasSemana'));
     }

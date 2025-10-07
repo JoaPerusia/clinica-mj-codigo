@@ -28,7 +28,7 @@
                 @endif
 
                 <div class="action-buttons-container mb-6"> {{-- Usando la nueva clase, y mb-6 para más separación de la tabla --}}
-                    <a href="{{ route('admin.especialidades.create') }}" class="btn-primary">Crear Nueva Especialidad</a>
+                    <a href="{{ route('admin.especialidades.create') }}" class="btn-primary">Agregar Especialidad</a>
                 </div>
 
                 @if ($especialidades->isEmpty())

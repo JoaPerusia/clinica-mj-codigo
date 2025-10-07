@@ -39,17 +39,24 @@ class PacienteController extends Controller
         return view('pacientes.index', compact('pacientes'));
     }
 
+
     public function create()
     {
         $usuario = Auth::user();
 
         if ($usuario->hasRole('Administrador') || $usuario->hasRole('Paciente')) {
-            return view('pacientes.create');
+            // Solo para el admin: traemos la lista de usuarios
+            $usuarios = $usuario->hasRole('Administrador')
+                ? User::orderBy('nombre')->get()
+                : null;
+
+            return view('pacientes.create', compact('usuarios'));
         }
 
         abort(403, 'Acceso no autorizado para crear pacientes.');
     }
 
+    
     public function store(Request $request)
     {
         $usuario = Auth::user();

@@ -4,7 +4,7 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="content-wrapper"> 
-                <h1 class="page-title">Crear Nueva Especialidad</h1> 
+                <h1 class="page-title">Agregar Especialidad</h1> 
 
                 {{-- Botón de Inicio para Admin --}}
                 @if(auth()->check() && auth()->user()->hasRole('Administrador'))

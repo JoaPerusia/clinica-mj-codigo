@@ -72,10 +72,12 @@
                     <div id="filtros_container" class="mt-4 hidden border border-gray-400 p-4 rounded-md bg-gray-50 dark:bg-gray-800">
                         <div class="flex flex-col sm:flex-row flex-wrap gap-4">
 
-                            {{-- Filtro por Estado --}}
+                            {{-- Estado --}}
                             <div class="flex items-center space-x-2">
                                 <label for="estado_filtro" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Estado:</label>
-                                <select id="estado_filtro" name="estado_filtro" class="form-select">
+                                <select id="estado_filtro" name="estado_filtro"
+                                    class="mt-1 block w-auto pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md
+                                        bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                                     <option value="pendiente" {{ request('estado_filtro', 'pendiente') == 'pendiente' ? 'selected' : '' }}>Pendiente</option>
                                     <option value="realizado" {{ request('estado_filtro') == 'realizado' ? 'selected' : '' }}>Realizado</option>
                                     <option value="cancelado" {{ request('estado_filtro') == 'cancelado' ? 'selected' : '' }}>Cancelado</option>
@@ -113,7 +115,9 @@
                             {{-- Especialidad --}}
                             <div class="flex items-center space-x-2">
                                 <label for="especialidad_filtro" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Especialidad:</label>
-                                <select id="especialidad_filtro" name="especialidad_filtro" class="form-select">
+                                <select id="especialidad_filtro" name="especialidad_filtro"
+                                    class="mt-1 block w-auto pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md
+                                        bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                                     <option value="">Todas</option>
                                     @foreach($especialidades as $esp)
                                         <option value="{{ $esp->id_especialidad }}" {{ request('especialidad_filtro') == $esp->id_especialidad ? 'selected' : '' }}>
@@ -160,24 +164,24 @@
                 </div>
 
                 <div class="table-responsive">
-                    {{-- Condicional para mostrar la vista de turnos pendientes (Hoy, Mañana, Próximos) --}}
-                    @if ($estado_filtro == 'pendiente' && !$fecha_filtro)
+                    {{-- Vista de turnos pendientes agrupados --}}
+                    @if ($estado_filtro == 'pendiente' && !$fecha_filtro && !$fecha_inicio && !$fecha_fin)
                         @if($turnosHoy->isEmpty() && $turnosManana->isEmpty() && $turnosProximos->isEmpty())
                             <p class="text-white">No tienes turnos pendientes para el filtro seleccionado.</p>
                         @else
                             {{-- Sección de "Hoy" --}}
-                            @if ($turnosHoy->isNotEmpty())
+                            @if ($turnosHoy->count())
                                 <h2 class="sub-title text-2xl text-white">Hoy</h2>
                                 <table class="custom-table">
                                     <thead class="bg-gray-50 dark:bg-gray-700">
                                         <tr>
-                                            <th scope="col" class="table-header py-4">Médico</th>
-                                            <th scope="col" class="table-header py-4">Especialidad</th>
-                                            <th scope="col" class="table-header py-4">Paciente</th>
-                                            <th scope="col" class="table-header py-4">Fecha</th>
-                                            <th scope="col" class="table-header py-4">Horario</th>
-                                            <th scope="col" class="table-header py-4">Estado</th>
-                                            <th scope="col" class="table-header py-4">Acciones</th>
+                                            <th class="table-header py-4">Médico</th>
+                                            <th class="table-header py-4">Especialidad</th>
+                                            <th class="table-header py-4">Paciente</th>
+                                            <th class="table-header py-4">Fecha</th>
+                                            <th class="table-header py-4">Horario</th>
+                                            <th class="table-header py-4">Estado</th>
+                                            <th class="table-header py-4">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -186,25 +190,24 @@
                                         @endforeach
                                     </tbody>
                                 </table>
-                            @endif
-
-                            @if ($turnosHoy->isNotEmpty() && ($turnosManana->isNotEmpty() || $turnosProximos->isNotEmpty()))
-                                <hr class="my-6 border-gray-300 dark:border-gray-600">
+                                <div class="mt-4">
+                                    {{ $turnosHoy->links() }}
+                                </div>
                             @endif
 
                             {{-- Sección de "Mañana" --}}
-                            @if ($turnosManana->isNotEmpty())
-                                <h2 class="sub-title text-2xl text-white">Mañana</h2>
+                            @if ($turnosManana->count())
+                                <h2 class="sub-title text-2xl text-white mt-8">Mañana</h2>
                                 <table class="custom-table">
                                     <thead class="bg-gray-50 dark:bg-gray-700">
                                         <tr>
-                                            <th scope="col" class="table-header py-4">Médico</th>
-                                            <th scope="col" class="table-header py-4">Especialidad</th>
-                                            <th scope="col" class="table-header py-4">Paciente</th>
-                                            <th scope="col" class="table-header py-4">Fecha</th>
-                                            <th scope="col" class="table-header py-4">Horario</th>
-                                            <th scope="col" class="table-header py-4">Estado</th>
-                                            <th scope="col" class="table-header py-4">Acciones</th>
+                                            <th class="table-header py-4">Médico</th>
+                                            <th class="table-header py-4">Especialidad</th>
+                                            <th class="table-header py-4">Paciente</th>
+                                            <th class="table-header py-4">Fecha</th>
+                                            <th class="table-header py-4">Horario</th>
+                                            <th class="table-header py-4">Estado</th>
+                                            <th class="table-header py-4">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -213,25 +216,24 @@
                                         @endforeach
                                     </tbody>
                                 </table>
-                            @endif
-
-                            @if ($turnosManana->isNotEmpty() && $turnosProximos->isNotEmpty())
-                                <hr class="my-6 border-gray-300 dark:border-gray-600">
+                                <div class="mt-4">
+                                    {{ $turnosManana->links() }}
+                                </div>
                             @endif
 
                             {{-- Sección de "Próximos" --}}
-                            @if ($turnosProximos->isNotEmpty())
-                                <h2 class="sub-title text-2xl text-white">Próximos</h2>
+                            @if ($turnosProximos->count())
+                                <h2 class="sub-title text-2xl text-white mt-8">Próximos</h2>
                                 <table class="custom-table">
                                     <thead class="bg-gray-50 dark:bg-gray-700">
                                         <tr>
-                                            <th scope="col" class="table-header py-4">Médico</th>
-                                            <th scope="col" class="table-header py-4">Especialidad</th>
-                                            <th scope="col" class="table-header py-4">Paciente</th>
-                                            <th scope="col" class="table-header py-4">Fecha</th>
-                                            <th scope="col" class="table-header py-4">Horario</th>
-                                            <th scope="col" class="table-header py-4">Estado</th>
-                                            <th scope="col" class="table-header py-4">Acciones</th>
+                                            <th class="table-header py-4">Médico</th>
+                                            <th class="table-header py-4">Especialidad</th>
+                                            <th class="table-header py-4">Paciente</th>
+                                            <th class="table-header py-4">Fecha</th>
+                                            <th class="table-header py-4">Horario</th>
+                                            <th class="table-header py-4">Estado</th>
+                                            <th class="table-header py-4">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -240,23 +242,26 @@
                                         @endforeach
                                     </tbody>
                                 </table>
+                                <div class="mt-4">
+                                    {{ $turnosProximos->links() }}
+                                </div>
                             @endif
                         @endif
                     @else
-                        {{-- Condicional para mostrar la vista de turnos paginados (realizados, ausentes, etc.) --}}
+                        {{-- Vista de turnos paginados (otros estados o con filtros de fecha) --}}
                         @if ($turnosPaginados->isEmpty())
                             <p class="text-white">No tienes turnos con este estado para el filtro seleccionado.</p>
                         @else
                             <table class="custom-table">
                                 <thead class="bg-gray-50 dark:bg-gray-700">
                                     <tr>
-                                        <th scope="col" class="table-header py-4">Médico</th>
-                                        <th scope="col" class="table-header py-4">Especialidad</th>
-                                        <th scope="col" class="table-header py-4">Paciente</th>
-                                        <th scope="col" class="table-header py-4">Fecha</th>
-                                        <th scope="col" class="table-header py-4">Horario</th>
-                                        <th scope="col" class="table-header py-4">Estado</th>
-                                        <th scope="col" class="table-header py-4">Acciones</th>
+                                        <th class="table-header py-4">Médico</th>
+                                        <th class="table-header py-4">Especialidad</th>
+                                        <th class="table-header py-4">Paciente</th>
+                                        <th class="table-header py-4">Fecha</th>
+                                        <th class="table-header py-4">Horario</th>
+                                        <th class="table-header py-4">Estado</th>
+                                        <th class="table-header py-4">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -265,7 +270,6 @@
                                     @endforeach
                                 </tbody>
                             </table>
-                            
                             <div class="mt-8">
                                 {{ $turnosPaginados->links() }}
                             </div>
@@ -372,13 +376,6 @@
             currentUrl.searchParams.set('page', 1);
             window.location.href = currentUrl.toString();
         }
-
-        // Listeners de cambio
-        if (estadoFiltroSelect)  estadoFiltroSelect.addEventListener('change', updateUrlAndRedirect);
-        if (fechaFiltroInput)    fechaFiltroInput.addEventListener('change', updateUrlAndRedirect);
-        if (fechaInicioInput)    fechaInicioInput.addEventListener('change', updateUrlAndRedirect);
-        if (fechaFinInput)       fechaFinInput.addEventListener('change', updateUrlAndRedirect);
-        if (especialidadSelect)  especialidadSelect.addEventListener('change', updateUrlAndRedirect);
 
         // Enter en inputs de texto
         if (dniFiltroPacienteInput) {
