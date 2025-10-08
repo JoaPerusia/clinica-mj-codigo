@@ -15,7 +15,7 @@ class PacienteController extends Controller
     {
         $perPage = 10;
         $usuario = Auth::user();
-        $dni_filtro = $request->input('dni_filtro');
+        $filtro  = $request->input('dni_filtro'); // ahora sirve para DNI, nombre o apellido
 
         $query = Paciente::query();
 
@@ -29,9 +29,13 @@ class PacienteController extends Controller
             abort(403, 'Acceso no autorizado.');
         }
 
-        // Aplicar filtro por DNI si se ha proporcionado
-        if ($dni_filtro) {
-            $query->where('dni', 'like', '%' . $dni_filtro . '%');
+        // 🔎 Aplicar filtro por DNI, nombre o apellido
+        if (!empty($filtro)) {
+            $query->where(function ($q) use ($filtro) {
+                $q->where('dni', 'like', "%{$filtro}%")
+                ->orWhere('nombre', 'like', "%{$filtro}%")
+                ->orWhere('apellido', 'like', "%{$filtro}%");
+            });
         }
 
         $pacientes = $query->paginate($perPage)->withQueryString();

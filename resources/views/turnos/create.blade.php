@@ -51,15 +51,24 @@
 
                     {{-- seleccionar paciente --}}
                     <div class="form-group">
-                        <label for="id_paciente" class="form-label">Paciente:</label>
-                        <select name="id_paciente" id="id_paciente" required class="form-input">
-                            <option value="">Selecciona un paciente</option>
+                        <label for="paciente_input" class="form-label">Paciente:</label>
+                        <input type="text"
+                            id="paciente_input"
+                            list="pacientes_list"
+                            class="form-input"
+                            placeholder="Buscar por nombre, apellido o DNI..."
+                            autocomplete="off"
+                            required>
+
+                        <datalist id="pacientes_list">
                             @foreach($pacientes as $paciente)
-                                <option value="{{ $paciente->id_paciente }}">
-                                    {{ $paciente->nombre }} {{ $paciente->apellido }} (DNI: {{ $paciente->dni }}) 
-                                </option>
+                                <option value="{{ $paciente->nombre }} {{ $paciente->apellido }} (DNI: {{ $paciente->dni }})"
+                                        data-id="{{ $paciente->id_paciente }}">
                             @endforeach
-                        </select>
+                        </datalist>
+
+                        {{-- Campo oculto que se envía al store --}}
+                        <input type="hidden" name="id_paciente" id="id_paciente_hidden" value="{{ old('id_paciente') }}">
                     </div>
 
                     {{-- seleccionar especialidad --}}
@@ -129,4 +138,30 @@
             </div>
         </div>
     </div>
+    
+    {{-- Script para manejar la selección del paciente --}}
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const pacienteInput = document.getElementById('paciente_input');
+        const pacientesList = document.getElementById('pacientes_list');
+        const idHidden      = document.getElementById('id_paciente_hidden');
+
+        pacienteInput.addEventListener('input', function () {
+            const texto = this.value;
+            let encontrado = false;
+
+            for (let opt of pacientesList.options) {
+                if (opt.value === texto) {
+                    idHidden.value = opt.dataset.id;
+                    encontrado = true;
+                    break;
+                }
+            }
+
+            if (!encontrado) {
+                idHidden.value = '';
+            }
+        });
+    });
+    </script>
 @endsection

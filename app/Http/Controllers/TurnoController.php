@@ -24,17 +24,14 @@ class TurnoController extends Controller
         $estado_filtro        = $request->input('estado_filtro', 'pendiente');
         $dni_filtro_paciente  = $request->input('dni_filtro_paciente');
         $dni_filtro_medico    = $request->input('dni_filtro_medico');
-        $fecha_filtro         = $request->input('fecha_filtro');      // Fecha única
-        $fecha_inicio         = $request->input('fecha_inicio');      // Rango: desde
-        $fecha_fin            = $request->input('fecha_fin');         // Rango: hasta
+        $fecha_filtro         = $request->input('fecha_filtro');
+        $fecha_inicio         = $request->input('fecha_inicio');
+        $fecha_fin            = $request->input('fecha_fin');
         $especialidad_filtro  = $request->input('especialidad_filtro');
-        $nombre_filtro        = $request->input('nombre_filtro');
         $perPage              = 10;
 
-        // Para el select de especialidades en la vista
         $especialidades = Especialidad::orderBy('nombre_especialidad')->get();
 
-        // Consulta base
         $query = Turno::with([
             'paciente'              => fn($q) => $q->withTrashed(),
             'medico'                => fn($q) => $q->withTrashed(),
@@ -42,48 +39,36 @@ class TurnoController extends Controller
             'medico.especialidades',
         ]);
 
-        // Filtro por DNI del paciente
+        // 🔎 Filtro por paciente (dni, nombre o apellido)
         if (!empty($dni_filtro_paciente)) {
             $query->whereHas('paciente', function ($q) use ($dni_filtro_paciente) {
                 $q->withTrashed()
-                ->where('dni', 'like', "%{$dni_filtro_paciente}%");
-            });
-        }
-
-        // Filtro por DNI del médico (a través de usuario)
-        if (!empty($dni_filtro_medico)) {
-            $query->whereHas('medico', function ($q) use ($dni_filtro_medico) {
-                $q->withTrashed()
-                ->whereHas('usuario', function ($u) use ($dni_filtro_medico) {
-                    $u->where('dni', 'like', "%{$dni_filtro_medico}%");
+                ->where(function ($w) use ($dni_filtro_paciente) {
+                    $w->where('pacientes.dni', 'like', "%{$dni_filtro_paciente}%")
+                        ->orWhere('pacientes.nombre', 'like', "%{$dni_filtro_paciente}%")
+                        ->orWhere('pacientes.apellido', 'like', "%{$dni_filtro_paciente}%");
                 });
             });
         }
 
-        // Filtro por especialidad (evita ambigüedad cualificando la tabla)
-        if (!empty($especialidad_filtro)) {
-            $query->whereHas('medico.especialidades', function ($q) use ($especialidad_filtro) {
-                $q->where('especialidades.id_especialidad', $especialidad_filtro);
+        // 🔎 Filtro por médico (dni, nombre o apellido → en usuario)
+        if (!empty($dni_filtro_medico)) {
+            $query->whereHas('medico', function ($q) use ($dni_filtro_medico) {
+                $q->withTrashed()
+                ->whereHas('usuario', function ($u) use ($dni_filtro_medico) {
+                    $u->where(function ($w) use ($dni_filtro_medico) {
+                        $w->where('usuarios.dni', 'like', "%{$dni_filtro_medico}%")
+                            ->orWhere('usuarios.nombre', 'like', "%{$dni_filtro_medico}%")
+                            ->orWhere('usuarios.apellido', 'like', "%{$dni_filtro_medico}%");
+                    });
+                });
             });
         }
 
-        // Filtro por nombre (paciente o médico.usuario)
-        if (!empty($nombre_filtro)) {
-            $query->where(function ($outer) use ($nombre_filtro) {
-                $outer
-                    ->whereHas('paciente', function ($q) use ($nombre_filtro) {
-                        $q->withTrashed()
-                        ->where(function ($w) use ($nombre_filtro) {
-                            $w->where('pacientes.nombre', 'like', "%{$nombre_filtro}%")
-                                ->orWhere('pacientes.apellido', 'like', "%{$nombre_filtro}%");
-                        });
-                    })
-                    ->orWhereHas('medico.usuario', function ($u) use ($nombre_filtro) {
-                        $u->where(function ($w) use ($nombre_filtro) {
-                            $w->where('usuarios.nombre', 'like', "%{$nombre_filtro}%")
-                            ->orWhere('usuarios.apellido', 'like', "%{$nombre_filtro}%");
-                        });
-                    });
+        // Filtro por especialidad
+        if (!empty($especialidad_filtro)) {
+            $query->whereHas('medico.especialidades', function ($q) use ($especialidad_filtro) {
+                $q->where('especialidades.id_especialidad', $especialidad_filtro);
             });
         }
 
@@ -184,7 +169,6 @@ class TurnoController extends Controller
             'fecha_inicio'        => $fecha_inicio,
             'fecha_fin'           => $fecha_fin,
             'especialidad_filtro' => $especialidad_filtro,
-            'nombre_filtro'       => $nombre_filtro,
             'especialidades'      => $especialidades,
         ]);
     }
@@ -195,21 +179,22 @@ class TurnoController extends Controller
     public function create()
     {
         $usuario = auth()->user();
-        $pacientes = collect(); // Inicializa como colección vacía
-        $medicos = Medico::with('especialidades')->get(); // Carga los médicos con sus especialidades
-        $especialidades = Especialidad::all(); // Carga todas las especialidades
 
-        // Si es admin, ve todos los pacientes
+        $medicos = Medico::with('especialidades')->get(); // médicos con especialidades
+        $especialidades = Especialidad::all();            // todas las especialidades
+        $pacientes = collect();                           // inicializa vacío
+
         if ($usuario->hasRole('Administrador')) {
-            $pacientes = Paciente::all();
-        }
-        // Si es paciente, solo ve los que registró él mismo
-        elseif ($usuario->hasRole('Paciente')) {
+            // Admin ve todos los pacientes
+            $pacientes = Paciente::orderBy('apellido')->orderBy('nombre')->get();
+        } elseif ($usuario->hasRole('Paciente')) {
+            // Paciente solo ve los que registró él mismo
             $pacientes = $usuario->pacientes;
-        }
-        // Los médicos no pueden crear turnos a través de este flujo (a menos que la lógica lo permita)
-        else {
-            return redirect()->route('turnos.index')->with('warning', 'Solo administradores y pacientes pueden crear turnos.');
+        } else {
+            // Médicos no pueden crear turnos desde aquí
+            return redirect()
+                ->route('turnos.index')
+                ->with('warning', 'Solo administradores y pacientes pueden crear turnos.');
         }
 
         return view('turnos.create', compact('pacientes', 'medicos', 'especialidades'));

@@ -27,16 +27,18 @@ class MedicoController extends Controller
         $dni_filtro = $request->input('dni_filtro');
         $perPage = 10;
 
-        // Cargar paciente y médico, además de las especialidades del médico
         $query = Medico::with('especialidades', 'horariosTrabajo', 'usuario');
 
-        // Aplicar filtro por DNI si se ha proporcionado
-        if ($dni_filtro) {
+        if (!empty($dni_filtro)) {
             $query->whereHas('usuario', function ($q) use ($dni_filtro) {
-                $q->where('dni', 'like', '%' . $dni_filtro . '%');
+                $q->where(function ($w) use ($dni_filtro) {
+                    $w->where('usuarios.dni', 'like', "%{$dni_filtro}%")
+                    ->orWhere('usuarios.nombre', 'like', "%{$dni_filtro}%")
+                    ->orWhere('usuarios.apellido', 'like', "%{$dni_filtro}%");
+                });
             });
         }
-        
+
         $medicos = $query->paginate($perPage)->withQueryString();
 
         return view('medicos.index', compact('medicos'));

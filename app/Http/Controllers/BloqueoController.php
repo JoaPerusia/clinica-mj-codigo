@@ -22,24 +22,27 @@ class BloqueoController extends Controller
      */
     public function index(Request $request)
     {
-        // Iniciar la consulta con la relación 'medico.usuario' para cargar los datos necesarios
-        $query = Bloqueo::with('medico.usuario')->orderBy('fecha_inicio', 'desc');
+        $query = Bloqueo::with('medico.usuario')
+            ->orderBy('fecha_inicio', 'desc');
 
-        // Lógica para el filtro por DNI del médico
-        if ($request->has('dni_filtro') && !empty($request->dni_filtro)) {
-            $dniFiltro = $request->dni_filtro;
-            
-            // Unir la tabla de médicos y usuarios para filtrar por DNI
-            $query->whereHas('medico.usuario', function ($q) use ($dniFiltro) {
-                $q->where('dni', 'like', '%' . $dniFiltro . '%');
+        // Filtro por médico: DNI, nombre o apellido (en usuarios)
+        if ($request->filled('dni_filtro')) {
+            $filtro = $request->input('dni_filtro');
+
+            $query->whereHas('medico.usuario', function ($q) use ($filtro) {
+                $q->where(function ($w) use ($filtro) {
+                    $w->where('usuarios.dni', 'like', "%{$filtro}%")
+                    ->orWhere('usuarios.nombre', 'like', "%{$filtro}%")
+                    ->orWhere('usuarios.apellido', 'like', "%{$filtro}%");
+                });
             });
         }
 
-        $bloqueos = $query->paginate(10); // Paginar los resultados
+        $bloqueos = $query->paginate(10)->withQueryString();
 
         return view('admin.bloqueos.index', compact('bloqueos'));
     }
-
+    
     /**
      * Muestra el formulario para crear un nuevo bloqueo.
      */

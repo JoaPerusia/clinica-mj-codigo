@@ -86,16 +86,26 @@
                                 </select>
                             </div>
 
-                            {{-- DNI Paciente --}}
+                            {{-- Paciente --}}
                             <div class="flex items-center space-x-2">
-                                <label for="dni_filtro_paciente" class="block text-sm font-medium text-gray-700 dark:text-gray-300">DNI Paciente:</label>
-                                <input type="text" id="dni_filtro_paciente" placeholder="DNI del paciente" value="{{ request('dni_filtro_paciente') }}" class="form-input">
+                                <label for="dni_filtro_paciente" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Paciente:
+                                </label>
+                                <input type="text" id="dni_filtro_paciente" name="dni_filtro_paciente"
+                                    placeholder="DNI, nombre o apellido"
+                                    value="{{ request('dni_filtro_paciente') }}"
+                                    autocomplete="off" class="form-input">
                             </div>
 
-                            {{-- DNI Médico --}}
+                            {{-- Médico --}}
                             <div class="flex items-center space-x-2">
-                                <label for="dni_filtro_medico" class="block text-sm font-medium text-gray-700 dark:text-gray-300">DNI Médico:</label>
-                                <input type="text" id="dni_filtro_medico" placeholder="DNI del médico" value="{{ request('dni_filtro_medico') }}" class="form-input">
+                                <label for="dni_filtro_medico" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Médico:
+                                </label>
+                                <input type="text" id="dni_filtro_medico" name="dni_filtro_medico"
+                                    placeholder="DNI, nombre o apellido"
+                                    value="{{ request('dni_filtro_medico') }}"
+                                    autocomplete="off" class="form-input">
                             </div>
 
                             {{-- Fecha única --}}
@@ -125,12 +135,6 @@
                                         </option>
                                     @endforeach
                                 </select>
-                            </div>
-
-                            {{-- Nombre Paciente/Médico --}}
-                            <div class="flex items-center space-x-2">
-                                <label for="nombre_filtro" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nombre:</label>
-                                <input type="text" id="nombre_filtro" placeholder="Nombre" value="{{ request('nombre_filtro') }}" class="form-input">
                             </div>
 
                             {{-- Botones --}}
@@ -289,7 +293,6 @@
         const fechaInicioInput       = document.getElementById('fecha_inicio');
         const fechaFinInput          = document.getElementById('fecha_fin');
         const especialidadSelect     = document.getElementById('especialidad_filtro');
-        const nombreFiltroInput      = document.getElementById('nombre_filtro');
         const buscarFiltrosBtn       = document.getElementById('buscar_filtros_btn');
         const limpiarFiltrosBtn      = document.getElementById('limpiar_filtros_btn');
         const toggleFiltrosBtn       = document.getElementById('toggle_filtros_btn');
@@ -350,13 +353,6 @@
                     : currentUrl.searchParams.delete('especialidad_filtro');
             }
 
-            // Nombre
-            if (nombreFiltroInput) {
-                const v = nombreFiltroInput.value.trim();
-                v ? currentUrl.searchParams.set('nombre_filtro', v)
-                : currentUrl.searchParams.delete('nombre_filtro');
-            }
-
             currentUrl.searchParams.set('page', 1);
             window.location.href = currentUrl.toString();
         }
@@ -371,7 +367,6 @@
                 'fecha_inicio',
                 'fecha_fin',
                 'especialidad_filtro',
-                'nombre_filtro'
             ].forEach(param => currentUrl.searchParams.delete(param));
             currentUrl.searchParams.set('page', 1);
             window.location.href = currentUrl.toString();
@@ -388,14 +383,6 @@
         }
         if (dniFiltroMedicoInput) {
             dniFiltroMedicoInput.addEventListener('keydown', function (e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    updateUrlAndRedirect();
-                }
-            });
-        }
-        if (nombreFiltroInput) {
-            nombreFiltroInput.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     updateUrlAndRedirect();
