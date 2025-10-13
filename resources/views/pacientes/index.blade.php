@@ -65,6 +65,7 @@
                             class="mt-1 inline-block w-auto pl-3 pr-10 py-2 text-base border-gray-300
                                     focus:outline-none focus:ring-indigo-500 focus:border-indigo-500
                                     sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <button id="buscar_dni_btn" class="btn-primary text-sm px-4 py-2 mt-1" title="Buscar">
                             <svg xmlns="http://www.w3.org/2000/svg" 
                                 fill="none" viewBox="0 0 24 24" stroke-width="1.5" 
                                 stroke="currentColor" class="w-5 h-5">
