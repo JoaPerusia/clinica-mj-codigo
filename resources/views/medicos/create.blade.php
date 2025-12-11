@@ -65,9 +65,11 @@
                             </div>
                         </div>
                         
+                        <!--
                         <button type="button" id="add-specialty-btn" class="inline-flex items-center px-3 py-1 text-sm font-semibold rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 mt-2">
                             + Agregar Especialidad
                         </button>
+                        -->
                     </div>
 
                     {{-- Horarios de Trabajo --}}
