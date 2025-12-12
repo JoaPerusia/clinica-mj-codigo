@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Http\Requests\StoreTurnoRequest;
 use App\Models\Turno;
 use App\Models\Paciente;
 use App\Models\Medico;
@@ -12,6 +13,7 @@ use App\Models\Especialidad;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log; // Para depuración si es necesario
 use Carbon\Carbon; // Para trabajar con fechas y horas
+use App\Services\AgendaService;
 
 class TurnoController extends Controller
 {
@@ -21,6 +23,8 @@ class TurnoController extends Controller
     public function index(Request $request)
     {
         $usuario              = Auth::user();
+        
+        // Parámetros de filtro
         $estado_filtro        = $request->input('estado_filtro', 'pendiente');
         $dni_filtro_paciente  = $request->input('dni_filtro_paciente');
         $dni_filtro_medico    = $request->input('dni_filtro_medico');
@@ -28,149 +32,69 @@ class TurnoController extends Controller
         $fecha_inicio         = $request->input('fecha_inicio');
         $fecha_fin            = $request->input('fecha_fin');
         $especialidad_filtro  = $request->input('especialidad_filtro');
-        $perPage              = 10;
-
+        
+        $perPage = 10;
         $especialidades = Especialidad::orderBy('nombre_especialidad')->get();
 
+        // 1. Iniciar Query Base
         $query = Turno::with([
-            'paciente'              => fn($q) => $q->withTrashed(),
-            'medico'                => fn($q) => $q->withTrashed(),
+            'paciente' => fn($q) => $q->withTrashed(),
+            'medico'   => fn($q) => $q->withTrashed(),
             'medico.usuario',
             'medico.especialidades',
         ]);
 
-        // 🔎 Filtro por paciente (dni, nombre o apellido)
-        if (!empty($dni_filtro_paciente)) {
-            $query->whereHas('paciente', function ($q) use ($dni_filtro_paciente) {
-                $q->withTrashed()
-                ->where(function ($w) use ($dni_filtro_paciente) {
-                    $w->where('pacientes.dni', 'like', "%{$dni_filtro_paciente}%")
-                        ->orWhere('pacientes.nombre', 'like', "%{$dni_filtro_paciente}%")
-                        ->orWhere('pacientes.apellido', 'like', "%{$dni_filtro_paciente}%");
-                });
-            });
-        }
+        // 2. Aplicar Filtros (Usando los Scopes que creamos)
+        $query->filtrarPorPaciente($dni_filtro_paciente)
+              ->filtrarPorMedico($dni_filtro_medico)
+              ->filtrarPorEspecialidad($especialidad_filtro);
 
-        // 🔎 Filtro por médico (dni, nombre o apellido → en usuario)
-        if (!empty($dni_filtro_medico)) {
-            $query->whereHas('medico', function ($q) use ($dni_filtro_medico) {
-                $q->withTrashed()
-                ->whereHas('usuario', function ($u) use ($dni_filtro_medico) {
-                    $u->where(function ($w) use ($dni_filtro_medico) {
-                        $w->where('usuarios.dni', 'like', "%{$dni_filtro_medico}%")
-                            ->orWhere('usuarios.nombre', 'like', "%{$dni_filtro_medico}%")
-                            ->orWhere('usuarios.apellido', 'like', "%{$dni_filtro_medico}%");
-                    });
-                });
-            });
-        }
-
-        // Filtro por especialidad
-        if (!empty($especialidad_filtro)) {
-            $query->whereHas('medico.especialidades', function ($q) use ($especialidad_filtro) {
-                $q->where('especialidades.id_especialidad', $especialidad_filtro);
-            });
-        }
-
-        // Filtrado según rol y ruta
+        // 3. Restricciones por Rol (Seguridad)
         if ($request->routeIs('medico.*')) {
-            $medico = $usuario->medico;
-            if (!$medico) {
-                return redirect()
-                    ->route('medico.dashboard')
-                    ->with('error', 'Tu perfil de médico no está configurado.');
+            if (!$usuario->medico) {
+                return redirect()->route('medico.dashboard')->with('error', 'Perfil de médico no encontrado.');
             }
-            $query->where('id_medico', $medico->id_medico);
+            $query->where('id_medico', $usuario->medico->id_medico);
 
         } elseif ($request->routeIs('paciente.*')) {
             $pacientes_ids = $usuario->pacientes->pluck('id_paciente');
             $query->whereIn('id_paciente', $pacientes_ids);
         }
 
-        // Variables para la vista
-        $turnosHoy       = collect();
-        $turnosManana    = collect();
-        $turnosProximos  = collect();
+        // 4. Lógica de Vistas (Tableros vs Listados)
+        $hayRangoFechas = !empty($fecha_inicio) || !empty($fecha_fin);
+        $esVistaDefault = ($estado_filtro === 'pendiente' && empty($fecha_filtro) && !$hayRangoFechas);
+
+        $turnosHoy = collect();
+        $turnosManana = collect();
+        $turnosProximos = collect();
         $turnosPaginados = null;
 
-        // Determina si hay rango de fechas activo
-        $hayRangoFechas = !empty($fecha_inicio) || !empty($fecha_fin);
+        if ($esVistaDefault) {
+            // VISTA DE TABLERO (Hoy, Mañana, Próximos)
+            $turnosHoy = (clone $query)->where('estado', 'pendiente')
+                ->whereDate('fecha', Carbon::today())->orderBy('hora')->paginate($perPage, ['*'], 'page_hoy')->withQueryString();
 
-        // Agrupado para pendientes sin filtros de fecha
-        if ($estado_filtro === 'pendiente' && empty($fecha_filtro) && !$hayRangoFechas) {
-            // Turnos de hoy
-            $turnosHoy = (clone $query)
-                ->where('estado', 'pendiente')
-                ->whereDate('fecha', Carbon::today())
-                ->orderBy('hora', 'asc')
-                ->paginate($perPage, ['*'], 'page_hoy')
-                ->withQueryString();
+            $turnosManana = (clone $query)->where('estado', 'pendiente')
+                ->whereDate('fecha', Carbon::tomorrow())->orderBy('hora')->paginate($perPage, ['*'], 'page_manana')->withQueryString();
 
-            // Turnos de mañana
-            $turnosManana = (clone $query)
-                ->where('estado', 'pendiente')
-                ->whereDate('fecha', Carbon::tomorrow())
-                ->orderBy('hora', 'asc')
-                ->paginate($perPage, ['*'], 'page_manana')
-                ->withQueryString();
-
-            // Turnos próximos (después de mañana)
-            $turnosProximos = (clone $query)
-                ->where('estado', 'pendiente')
-                ->whereDate('fecha', '>', Carbon::tomorrow())
-                ->orderBy('fecha', 'asc')
-                ->orderBy('hora', 'asc')
-                ->paginate($perPage, ['*'], 'page_proximos')
-                ->withQueryString();
-
-            $turnosPaginados = null; // no usamos el paginador general
+            $turnosProximos = (clone $query)->where('estado', 'pendiente')
+                ->whereDate('fecha', '>', Carbon::tomorrow())->orderBy('fecha')->orderBy('hora')
+                ->paginate($perPage, ['*'], 'page_proximos')->withQueryString();
         } else {
-            // Paginado con estado y cualquier filtro
-            $subquery = clone $query;
-
-            // Estado
-            if ($estado_filtro === 'todos') {
-                $subquery->whereIn('estado', ['realizado','atendido','pendiente','cancelado','ausente']);
-            } elseif ($estado_filtro === 'realizado') {
-                $subquery->whereIn('estado', ['realizado','atendido']);
-            } else {
-                $subquery->where('estado', $estado_filtro);
-            }
-
-            // Fecha única o rango
-            if (!empty($fecha_filtro)) {
-                $subquery->whereDate('fecha', $fecha_filtro);
-            } else {
-                if (!empty($fecha_inicio) && !empty($fecha_fin)) {
-                    $subquery->whereBetween('fecha', [$fecha_inicio, $fecha_fin]);
-                } elseif (!empty($fecha_inicio)) {
-                    $subquery->whereDate('fecha', '>=', $fecha_inicio);
-                } elseif (!empty($fecha_fin)) {
-                    $subquery->whereDate('fecha', '<=', $fecha_fin);
-                }
-            }
-
-            $turnosPaginados = $subquery
-                ->orderBy('fecha', 'desc')
-                ->orderBy('hora', 'desc')
-                ->paginate($perPage)
-                ->withQueryString();
+            // VISTA DE LISTADO (Búsquedas y filtros específicos)
+            $turnosPaginados = $query
+                ->filtrarPorEstado($estado_filtro) // Usamos el Scope de estado
+                ->filtrarPorFecha($fecha_filtro, $fecha_inicio, $fecha_fin) // Usamos el Scope de fecha
+                ->orderBy('fecha', 'desc')->orderBy('hora', 'desc')
+                ->paginate($perPage)->withQueryString();
         }
 
-        return view('turnos.index', [
-            'turnosHoy'           => $turnosHoy,
-            'turnosManana'        => $turnosManana,
-            'turnosProximos'      => $turnosProximos,
-            'turnosPaginados'     => $turnosPaginados,
-            'estado_filtro'       => $estado_filtro,
-            'dni_filtro_paciente' => $dni_filtro_paciente,
-            'dni_filtro_medico'   => $dni_filtro_medico,
-            'fecha_filtro'        => $fecha_filtro,
-            'fecha_inicio'        => $fecha_inicio,
-            'fecha_fin'           => $fecha_fin,
-            'especialidad_filtro' => $especialidad_filtro,
-            'especialidades'      => $especialidades,
-        ]);
+        return view('turnos.index', compact(
+            'turnosHoy', 'turnosManana', 'turnosProximos', 'turnosPaginados',
+            'estado_filtro', 'dni_filtro_paciente', 'dni_filtro_medico',
+            'fecha_filtro', 'fecha_inicio', 'fecha_fin', 'especialidad_filtro', 'especialidades'
+        ));
     }
 
     /**
@@ -203,33 +127,19 @@ class TurnoController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreTurnoRequest $request) // <--- ¡Mira el cambio aquí!
     {
         $usuario = Auth::user();
 
-        // Validar las reglas comunes a todos los roles que pueden crear turnos
-        $rules = [
-            'id_paciente' => ['required', 'exists:pacientes,id_paciente', function ($attribute, $value, $fail) use ($usuario) {
-                // Si el usuario es un paciente, verificar que el id_paciente seleccionado le pertenezca
-                if ($usuario->hasRole('Paciente')) {
-                    if (!$usuario->pacientes->contains('id_paciente', $value)) {
-                        $fail('El paciente seleccionado no te pertenece.');
-                    }
-                }
-            }],
-            'id_medico' => 'required|exists:medicos,id_medico',
-            'fecha' => 'required|date|after_or_equal:today', // La fecha no puede ser en el pasado
-            'hora' => 'required|date_format:H:i', // Formato de hora HH:MM
-            'estado' => 'nullable|in:pendiente,realizado,cancelado,ausente', // Añadido 'ausente' aquí también
-        ];
+        // --- AQUÍ BORRAMOS LA VALIDACIÓN MANUAL ---
+        // Laravel ya validó todo gracias a StoreTurnoRequest.
+        // Si algo falla, ni siquiera entra a esta función.
 
-        $request->validate($rules);
-
-        $fecha = Carbon::parse($request->fecha); // Ahora es un objeto Carbon
-        $hora = $request->hora; // String HH:MM
+        $fecha = Carbon::parse($request->fecha);
+        $hora = $request->hora; 
         $id_medico = $request->id_medico;
 
-        // Cargar el médico con sus horarios de trabajo para la validación
+        // Cargar el médico con sus horarios de trabajo para la validación lógica
         $medico = Medico::with('horariosTrabajo', 'bloqueos')->find($id_medico);
         if (!$medico) {
             return back()->withInput()->withErrors(['id_medico' => 'Médico no encontrado.']);
@@ -278,7 +188,7 @@ class TurnoController extends Controller
             $bloqueo_hora_inicio_carbon = Carbon::parse($bloqueo->hora_inicio);
             $bloqueo_hora_fin_carbon = Carbon::parse($bloqueo->hora_fin);
 
-            $turno_fin_carbon = (clone $turno_hora_carbon)->addMinutes(30); // Asumiendo 30 minutos de duración del turno
+            $turno_fin_carbon = (clone $turno_hora_carbon)->addMinutes(30); 
 
             if (
                 ($turno_hora_carbon->gte($bloqueo_hora_inicio_carbon) && $turno_hora_carbon->lt($bloqueo_hora_fin_carbon)) ||
@@ -298,7 +208,7 @@ class TurnoController extends Controller
 
         // 4. Verificar si ya existe un turno a esa hora para ese médico
         $turnoExistente = Turno::where('id_medico', $id_medico)
-                               ->where('fecha', $fecha->toDateString()) // Usar toDateString() para la comparación
+                               ->where('fecha', $fecha->toDateString())
                                ->where('hora', $hora)
                                ->whereIn('estado', ['pendiente', 'realizado'])
                                ->first();
@@ -311,17 +221,17 @@ class TurnoController extends Controller
         $turno = Turno::create([
             'id_paciente' => $request->id_paciente,
             'id_medico' => $request->id_medico,
-            'fecha' => $fecha->toDateString(), // Guardar como string YYYY-MM-DD
+            'fecha' => $fecha->toDateString(), 
             'hora' => $hora,
-            'estado' => $request->estado ?? 'pendiente', // Por defecto 'pendiente'
+            'estado' => $request->estado ?? 'pendiente',
         ]);
 
-        // Redireccionamiento dinámico basado en el rol del usuario
-        if ($usuario->hasRole('Administrador')) { // Administrador
+        // Redireccionamiento dinámico
+        if ($usuario->hasRole('Administrador')) {
             return redirect()->route('admin.turnos.index')->with('success', 'Turno agendado con éxito por el administrador.');
-        } elseif ($usuario->hasRole('Paciente')) { // Paciente
+        } elseif ($usuario->hasRole('Paciente')) {
             return redirect()->route('paciente.turnos.index')->with('success', 'Turno agendado con éxito.');
-        } else { // Otros roles (aunque ya filtramos en create(), por seguridad)
+        } else {
             return redirect()->route('dashboard')->with('success', 'Turno agendado con éxito.');
         }
     }
@@ -509,128 +419,27 @@ class TurnoController extends Controller
     }
 
     /**
-     * Obtiene los horarios disponibles de un médico para una fecha específica.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\JsonResponse
+     * Obtiene los horarios disponibles delegando la lógica al AgendaService.
      */
-    public function getHorariosDisponibles(Request $request)
+    public function getHorariosDisponibles(Request $request, AgendaService $agendaService)
     {
-        $id_medico    = $request->input('id_medico');
-        $fecha_str    = $request->input('fecha');
-        $except_id    = $request->input('except_turno_id');
-        $intervalo    = 30; // minutos por turno
+        $id_medico = $request->input('id_medico');
+        $fecha     = $request->input('fecha');
+        $except_id = $request->input('except_turno_id');
 
-        if (! $id_medico || ! $fecha_str) {
+        // Validación básica
+        if (!$id_medico || !$fecha) {
             return response()->json([
                 'horarios' => [],
-                'mensaje'  => 'Selecciona un médico y una fecha.'
+                'mensaje'  => 'Faltan datos para consultar la agenda.'
             ]);
         }
 
-        $fecha = Carbon::parse($fecha_str);
-        $dia   = $fecha->dayOfWeek;
+        $resultado = $agendaService->obtenerHorariosDisponibles($id_medico, $fecha, $except_id);
 
-        // 1) bloqueo full-day
-        $bloqueoDia = Bloqueo::where('id_medico', $id_medico)
-            ->where('fecha_inicio','<=',$fecha)
-            ->where('fecha_fin','>=',$fecha)
-            ->whereNull('hora_inicio')
-            ->whereNull('hora_fin')
-            ->first();
-
-        if ($bloqueoDia) {
-            $motivo = $bloqueoDia->motivo ?: 'Bloqueo';
-            return response()->json([
-                'horarios' => [],
-                'mensaje'  => "El médico está ausente para esta fecha ({$motivo})."
-            ]);
-        }
-
-        // 2) traigo todos los bloques de trabajo para ese día
-        $bloquesTrabajo = HorarioMedico::where('id_medico', $id_medico)
-            ->where('dia_semana', $dia)
-            ->get();
-
-        if ($bloquesTrabajo->isEmpty()) {
-            return response()->json([
-                'horarios' => [],
-                'mensaje'  => 'El médico no trabaja en la fecha seleccionada.'
-            ]);
-        }
-
-        // 3) turnos ya ocupados
-        $turnosOcupados = Turno::where('id_medico', $id_medico)
-            ->where('fecha', $fecha)
-            ->where('estado', '!=', 'Cancelado')
-            ->when($except_id, fn($q) => $q->where('id_turno','!=',$except_id))
-            ->pluck('hora')
-            ->map(fn($h) => Carbon::parse($h)->format('H:i'))
-            ->toArray();
-
-        // 4) bloqueos parciales (por horas)
-        $bloqueosHoras = Bloqueo::where('id_medico',$id_medico)
-            ->where('fecha_inicio','<=',$fecha)
-            ->where('fecha_fin','>=',$fecha)
-            ->whereNotNull('hora_inicio')
-            ->whereNotNull('hora_fin')
-            ->get();
-
-        $horariosDisponibles = [];
-
-        // 5) para cada bloque de trabajo genero sus slots
-        foreach ($bloquesTrabajo as $bloque) {
-            $inicio = Carbon::parse($bloque->hora_inicio);
-            $fin    = Carbon::parse($bloque->hora_fin);
-
-            for ($hora = $inicio->copy(); $hora->lt($fin); $hora->addMinutes($intervalo)) {
-                $slot = $hora->format('H:i');
-
-                // 5.1) salto si ya está ocupado
-                if (in_array($slot, $turnosOcupados)) {
-                    continue;
-                }
-
-                // 5.2) salto si entra en un bloqueo parcial
-                $enBloqueo = $bloqueosHoras->contains(fn($b) => 
-                    Carbon::parse($slot)->between(
-                        Carbon::parse($b->hora_inicio),
-                        Carbon::parse($b->hora_fin)
-                    )
-                );
-                if ($enBloqueo) {
-                    continue;
-                }
-
-                // 5.3) salto si es hoy y ya pasó la hora
-                if ($fecha->isToday() && $hora->lt(Carbon::now())) {
-                    continue;
-                }
-
-                $horariosDisponibles[] = $slot;
-            }
-        }
-
-        // 6) limpio duplicados y ordeno ascendente
-        $horariosDisponibles = array_unique($horariosDisponibles);
-        sort($horariosDisponibles);
-
-        // 7) mensaje si quedó vacío
-        $mensaje = null;
-        if (empty($horariosDisponibles)) {
-            if ($bloqueosHoras->isNotEmpty()) {
-                $motivo = $bloqueosHoras->first()->motivo ?: 'Bloqueo';
-                $mensaje = "El médico está ausente para esta fecha ({$motivo}).";
-            } else {
-                $mensaje = 'Todos los horarios disponibles para esta fecha fueron ocupados.';
-            }
-        }
-
-        return response()->json([
-            'horarios' => $horariosDisponibles,
-            'mensaje'  => $mensaje
-        ]);
+        return response()->json($resultado);
     }
+
 
     public function cambiarEstado(Request $request, Turno $turno)
     {
