@@ -33,7 +33,7 @@ class StoreTurnoRequest extends FormRequest
                 function ($attribute, $value, $fail) use ($usuario) {
                     // Si el usuario es un paciente, verificar que el id_paciente seleccionado le pertenezca
                     // Usamos la relación 'pacientes' que ya tienes definida en tu modelo User
-                    if ($usuario->hasRole('Paciente')) {
+                    if ($usuario->hasRole(Rol::PACIENTE)) {
                         if (!$usuario->pacientes->contains('id_paciente', $value)) {
                             $fail('El paciente seleccionado no te pertenece.');
                         }

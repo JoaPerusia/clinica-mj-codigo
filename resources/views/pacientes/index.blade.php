@@ -1,3 +1,4 @@
+@inject('Rol', 'App\Models\Rol')
 @extends('layouts.app')
 
 @section('content')
@@ -14,11 +15,11 @@
                             $rolActivo = session('rol_activo');
                             $dashboardRoute = 'dashboard'; // Ruta por defecto
 
-                            if ($rolActivo === 'Administrador') {
+                            if ($rolActivo === $Rol::ADMINISTRADOR) {
                                 $dashboardRoute = 'admin.dashboard';
-                            } elseif ($rolActivo === 'Medico') {
+                            } elseif ($rolActivo === $Rol::MEDICO) {
                                 $dashboardRoute = 'medico.dashboard';
-                            } elseif ($rolActivo === 'Paciente') {
+                            } elseif ($rolActivo === $Rol::PACIENTE) {
                                 $dashboardRoute = 'paciente.dashboard';
                             }
                         @endphp
@@ -32,13 +33,13 @@
                 @endif
 
                 {{-- Botón para Crear Nuevo Paciente (dinámico por rol) --}}
-                @if(auth()->check() && (auth()->user()->hasRole('Administrador') || auth()->user()->hasRole('Paciente')))
+                @if(auth()->check() && (auth()->user()->hasRole($Rol::ADMINISTRADOR) || auth()->user()->hasRole($Rol::PACIENTE)))
                     <div class="action-buttons-container mb-6"> {{-- Usando la nueva clase, y mb-6 para más separación de la tabla --}}
                         @php
                             $createPacienteRoute = '';
-                            if (auth()->user()->hasRole('Administrador')) {
+                            if (auth()->user()->hasRole($Rol::ADMINISTRADOR)) {
                                 $createPacienteRoute = route('admin.pacientes.create');
-                            } elseif (auth()->user()->hasRole('Paciente')) {
+                            } elseif (auth()->user()->hasRole($Rol::PACIENTE)) {
                                 $createPacienteRoute = route('paciente.pacientes.create');
                             }
                         @endphp
@@ -122,14 +123,14 @@
                                     <td class="table-data">{{ $paciente->usuario ? $paciente->usuario->nombre . ' (' . $paciente->usuario->id_usuario . ')' : 'N/A' }}</td>
                                     <td class="table-actions"> 
                                         @if(auth()->check())
-                                            @if(auth()->user()->hasRole('Administrador'))
+                                            @if(auth()->user()->hasRole($Rol::ADMINISTRADOR))
                                                 <a href="{{ route('admin.pacientes.edit', $paciente->id_paciente) }}" class="btn-info table-action-button text-sm px-4 py-2 mt-1">Editar</a>
                                                 <form action="{{ route('admin.pacientes.destroy', $paciente->id_paciente) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de eliminar este paciente?');">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn-danger text-sm px-4 py-2 mt-1">Eliminar</button>
                                                 </form>
-                                            @elseif(auth()->user()->hasRole('Paciente') && $paciente->id_usuario == auth()->user()->id_usuario)
+                                            @elseif(auth()->user()->hasRole($Rol::PACIENTE) && $paciente->id_usuario == auth()->user()->id_usuario)
                                                 <a href="{{ route('paciente.pacientes.edit', $paciente->id_paciente) }}" class="btn-info table-action-button text-sm px-4 py-2 mt-1">Editar</a>
                                                 <form action="{{ route('paciente.pacientes.destroy', $paciente->id_paciente) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de eliminar este paciente?');">
                                                     @csrf

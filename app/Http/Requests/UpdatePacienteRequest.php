@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Models\Rol;
 
 class UpdatePacienteRequest extends FormRequest
 {
@@ -17,9 +18,9 @@ class UpdatePacienteRequest extends FormRequest
     public function rules(): array
     {
         // Reglas para el Administrador (Todo editable)
-        if ($this->user()->hasRole('Administrador')) {
+        if ($this->user()->hasRole(Rol::ADMINISTRADOR)) {
             // Obtenemos el ID del paciente de la ruta para ignorar su propio DNI en la validación unique
-            $id = $this->route('paciente'); // Asegúrate que en la ruta se llame 'paciente'
+            $id = $this->route(Rol::PACIENTE); // Asegúrate que en la ruta se llame 'paciente'
 
             return [
                 'nombre'           => 'required|string|max:255',

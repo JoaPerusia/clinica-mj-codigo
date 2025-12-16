@@ -52,8 +52,8 @@ class MedicoService
             }
 
             // 4. Asegurar Rol
-            if (!$usuario->hasRole('Medico')) {
-                $medicoRol = Rol::where('rol', 'Medico')->firstOrFail();
+            if (!$usuario->hasRole(Rol::MEDICO)) {
+                $medicoRol = Rol::where('rol', Rol::MEDICO)->firstOrFail();
                 $usuario->roles()->attach($medicoRol->id_rol);
             }
 
@@ -106,7 +106,7 @@ class MedicoService
             $medico->delete();
 
             // 3. Quitar rol de usuario
-            $rolMedico = Rol::where('rol', 'Medico')->first();
+            $rolMedico = Rol::where('rol', Rol::MEDICO)->first();
             if ($rolMedico) {
                 $medico->usuario->roles()->detach($rolMedico->id_rol);
             }

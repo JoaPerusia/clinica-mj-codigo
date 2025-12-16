@@ -1,3 +1,5 @@
+@inject('Rol', 'App\Models\Rol')
+
 <tr>
     <td class="table-data py-4">
         {{ $turno->medico->usuario->nombre }} {{ $turno->medico->usuario->apellido }} ({{ $turno->medico->usuario->dni ?? 'N/A' }})
@@ -29,7 +31,7 @@
         @if(auth()->check() && $turno->estado == 'pendiente')
             <div class="flex justify-center space-x-2">
                 {{-- Botones para Administrador --}}
-                @if(auth()->user()->hasRolActivo('Administrador'))
+                @if(auth()->user()->hasRolActivo($Rol::ADMINISTRADOR))
                     <form action="{{ route('admin.turnos.cambiar-estado', $turno->id_turno) }}" method="POST" class="inline-block" title="Marcar como realizado">
                         @csrf
                         @method('PATCH')
@@ -55,7 +57,7 @@
                         </button>
                     </form>
                 {{-- Botones para Médico --}}
-                @elseif(auth()->user()->hasRolActivo('Medico') && $turno->medico && $turno->medico->id_usuario == auth()->user()->id_usuario)
+                @elseif(auth()->user()->hasRolActivo($Rol::MEDICO) && $turno->medico && $turno->medico->id_usuario == auth()->user()->id_usuario)
                     <form action="{{ route(strtolower($rolActivo) . '.turnos.cambiar-estado', $turno->id_turno) }}" method="POST" class="inline-block" title="Marcar como realizado">
                         @csrf
                         @method('PATCH')
@@ -73,7 +75,7 @@
                         </button>
                     </form>
                 {{-- Botón de "Cancelar" para Paciente --}}
-                @elseif(auth()->user()->hasRolActivo('Paciente'))
+                @elseif(auth()->user()->hasRolActivo($Rol::PACIENTE))
                     <form action="{{ route(strtolower($rolActivo) . '.turnos.cambiar-estado', $turno->id_turno) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');" title="Cancelar turno">
                         @csrf
                         @method('PATCH')

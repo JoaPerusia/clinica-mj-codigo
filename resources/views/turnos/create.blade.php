@@ -1,3 +1,4 @@
+@inject('Rol', 'App\Models\Rol')
 @extends('layouts.app')
 
 @section('content')
@@ -11,9 +12,9 @@
                     <div class="action-buttons-container"> 
                         @php
                             $dashboardRoute = '';
-                            if (auth()->user()->hasRole('Administrador')) {
+                            if (auth()->user()->hasRole($Rol::ADMINISTRADOR)) {
                                 $dashboardRoute = route('admin.turnos.index');
-                            } elseif (auth()->user()->hasRole('Paciente')) {
+                            } elseif (auth()->user()->hasRole($Rol::PACIENTE)) {
                                 $dashboardRoute = route('paciente.turnos.index');
                             }
                         @endphp
@@ -28,9 +29,9 @@
 
                 {{-- Determinar la ruta de almacenamiento dinámicamente según el rol --}}
                 <form method="POST" action="
-                    @if(auth()->check() && auth()->user()->hasRole('Administrador'))
+                    @if(auth()->check() && auth()->user()->hasRole($Rol::ADMINISTRADOR))
                         {{ route('admin.turnos.store') }}
-                    @elseif(auth()->check() && auth()->user()->hasRole('Medico'))
+                    @elseif(auth()->check() && auth()->user()->hasRole($Rol::MEDICO))
                         {{-- Los médicos no deberían crear turnos desde aquí, pero por si acaso --}}
                         {{ route('medico.turnos.store') }}
                     @else {{-- Asumiendo que es paciente (id_rol 3) o cualquier otro rol --}}
@@ -114,9 +115,9 @@
                     <button type="submit" class="btn-primary mt-4">Confirmar turno</button>
                     @php
                         $cancelRoute = '';
-                        if (auth()->check() && auth()->user()->hasRole('Administrador')) {
+                        if (auth()->check() && auth()->user()->hasRole($Rol::ADMINISTRADOR)) {
                             $cancelRoute = route('admin.turnos.index');
-                        } elseif (auth()->check() && auth()->user()->hasRole('Paciente')) {
+                        } elseif (auth()->check() && auth()->user()->hasRole($Rol::PACIENTE)) {
                             $cancelRoute = route('paciente.turnos.index');
                         }
                     @endphp
@@ -128,7 +129,7 @@
                 {{-- Incluye el script de JavaScript para cargar horarios --}}
                 <script>
                     // Definimos estas variables para que sean accesibles desde el script externo
-                    const apiUrlBase = @json(Auth::check() ? (Auth::user()->hasRole('Administrador') ? '/admin/turnos' : (Auth::user()->hasRole('Medico') ? '/medico/turnos' : '/paciente/turnos')) : '/paciente/turnos');
+                    const apiUrlBase = @json(Auth::check() ? (Auth::user()->hasRole($Rol::ADMINISTRADOR) ? '/admin/turnos' : (Auth::user()->hasRole($Rol::MEDICO) ? '/medico/turnos' : '/paciente/turnos')) : '/paciente/turnos');
                     const apiUrlMedicosBase = '{{ route('api.medicos.by-especialidad') }}';
                     const apiUrlHorariosDisponibles = '{{ route('api.turnos.disponibles') }}'; 
                     const currentTurnoId = null;

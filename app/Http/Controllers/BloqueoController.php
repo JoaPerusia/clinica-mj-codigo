@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Bloqueo;
 use App\Models\Medico;
 use App\Models\Turno;
+use App\Models\Rol;
 use App\Mail\TurnoCanceladoMailable;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -99,7 +100,7 @@ class BloqueoController extends Controller
                 
                 // Enviar notificación (Mantenemos tu lógica de email)
                 try {
-                    if (!$turno->relationLoaded('paciente')) {
+                    if (!$turno->relationLoaded(Rol::PACIENTE)) {
                         $turno->load('paciente.usuario');
                     }
                     Mail::to($turno->paciente->usuario->email)

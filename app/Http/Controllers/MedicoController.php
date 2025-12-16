@@ -8,6 +8,7 @@ use App\Services\MedicoService;
 use App\Models\Medico;
 use App\Models\Especialidad;
 use App\Models\User;
+use App\Models\Rol;
 use Illuminate\Http\Request;
 
 class MedicoController extends Controller
@@ -43,7 +44,7 @@ class MedicoController extends Controller
         $especialidades = Especialidad::all();
         // Usuarios 'Paciente' candidatos a ser médico
         $usuarios = User::whereHas('roles', function ($q) {
-            $q->where('rol', 'Paciente');
+            $q->where('rol', Rol::PACIENTE);
         })->get();
         
         $diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
@@ -70,7 +71,7 @@ class MedicoController extends Controller
         $especialidades = Especialidad::all();
         $diasSemana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
         
-        return view('medicos.edit', compact('medico', 'especialidades', 'diasSemana', 'bloqueos'));
+        return view('medicos.edit', compact(Rol::MEDICO, 'especialidades', 'diasSemana', 'bloqueos'));
     }
 
     public function update(UpdateMedicoRequest $request, $id)

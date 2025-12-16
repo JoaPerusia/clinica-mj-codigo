@@ -3,13 +3,14 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Models\Rol;
 
 class StorePacienteRequest extends FormRequest
 {
     public function authorize(): bool
     {
         // Admin o Paciente pueden crear (el Paciente crea familiares)
-        return $this->user()->hasRole('Administrador') || $this->user()->hasRole('Paciente');
+        return $this->user()->hasRole(Rol::ADMINISTRADOR) || $this->user()->hasRole(Rol::PACIENTE);
     }
 
     public function rules(): array
@@ -24,7 +25,7 @@ class StorePacienteRequest extends FormRequest
         ];
 
         // Si es Admin, el ID de usuario es obligatorio (lo selecciona de una lista)
-        if ($this->user()->hasRole('Administrador')) {
+        if ($this->user()->hasRole(Rol::ADMINISTRADOR)) {
             $rules['id_usuario'] = 'required|exists:usuarios,id_usuario';
         }
 

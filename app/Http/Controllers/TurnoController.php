@@ -10,6 +10,7 @@ use App\Models\Medico;
 use App\Models\Bloqueo;
 use App\Models\HorarioMedico;
 use App\Models\Especialidad;
+use App\Models\Rol;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log; // Para depuración si es necesario
 use Carbon\Carbon; // Para trabajar con fechas y horas
@@ -38,8 +39,8 @@ class TurnoController extends Controller
 
         // 1. Iniciar Query Base
         $query = Turno::with([
-            'paciente' => fn($q) => $q->withTrashed(),
-            'medico'   => fn($q) => $q->withTrashed(),
+            Rol::PACIENTE => fn($q) => $q->withTrashed(),
+            Rol::MEDICO   => fn($q) => $q->withTrashed(),
             'medico.usuario',
             'medico.especialidades',
         ]);
@@ -108,10 +109,10 @@ class TurnoController extends Controller
         $especialidades = Especialidad::all();            // todas las especialidades
         $pacientes = collect();                           // inicializa vacío
 
-        if ($usuario->hasRole('Administrador')) {
+        if ($usuario->hasRole(Rol::ADMINISTRADOR)) {
             // Admin ve todos los pacientes
             $pacientes = Paciente::orderBy('apellido')->orderBy('nombre')->get();
-        } elseif ($usuario->hasRole('Paciente')) {
+        } elseif ($usuario->hasRole(Rol::PACIENTE)) {
             // Paciente solo ve los que registró él mismo
             $pacientes = $usuario->pacientes;
         } else {
@@ -227,9 +228,9 @@ class TurnoController extends Controller
         ]);
 
         // Redireccionamiento dinámico
-        if ($usuario->hasRole('Administrador')) {
+        if ($usuario->hasRole(Rol::ADMINISTRADOR)) {
             return redirect()->route('admin.turnos.index')->with('success', 'Turno agendado con éxito por el administrador.');
-        } elseif ($usuario->hasRole('Paciente')) {
+        } elseif ($usuario->hasRole(Rol::PACIENTE)) {
             return redirect()->route('paciente.turnos.index')->with('success', 'Turno agendado con éxito.');
         } else {
             return redirect()->route('dashboard')->with('success', 'Turno agendado con éxito.');
@@ -241,13 +242,13 @@ class TurnoController extends Controller
      */
     public function show($id)
     {
-        $turno = Turno::with('paciente', 'medico')->findOrFail($id);
+        $turno = Turno::with(Rol::PACIENTE, Rol::MEDICO)->findOrFail($id);
 
         // Asegurar que solo el admin o el paciente/médico asociado puedan ver el turno
         $usuario = Auth::user();
-        if ($usuario->hasRole('Administrador') ||
-            ($usuario->hasRole('Paciente') && $turno->paciente && $turno->paciente->id_usuario == $usuario->id_usuario) ||
-            ($usuario->hasRole('Medico') && $turno->medico && $turno->medico->id_usuario == $usuario->id_usuario)) {
+        if ($usuario->hasRole(Rol::ADMINISTRADOR) ||
+            ($usuario->hasRole(Rol::PACIENTE) && $turno->paciente && $turno->paciente->id_usuario == $usuario->id_usuario) ||
+            ($usuario->hasRole(Rol::MEDICO) && $turno->medico && $turno->medico->id_usuario == $usuario->id_usuario)) {
             return view('turnos.show', compact('turno'));
         }
 
@@ -259,15 +260,15 @@ class TurnoController extends Controller
      */
     public function edit($id)
     {
-        $turno = Turno::with('paciente', 'medico')->findOrFail($id);
+        $turno = Turno::with(Rol::PACIENTE, Rol::MEDICO)->findOrFail($id);
         $usuario = Auth::user();
 
         // Solo admin, o el paciente dueño, o el médico del turno pueden editar
-        if ($usuario->hasRole('Administrador') ||
-            ($usuario->hasRole('Paciente') && $turno->paciente && $turno->paciente->id_usuario == $usuario->id_usuario) ||
-            ($usuario->hasRole('Medico') && $turno->medico && $turno->medico->id_usuario == $usuario->id_usuario)) {
+        if ($usuario->hasRole(Rol::ADMINISTRADOR) ||
+            ($usuario->hasRole(Rol::PACIENTE) && $turno->paciente && $turno->paciente->id_usuario == $usuario->id_usuario) ||
+            ($usuario->hasRole(Rol::MEDICO) && $turno->medico && $turno->medico->id_usuario == $usuario->id_usuario)) {
 
-            $pacientes = ($usuario->hasRole('Administrador')) ? Paciente::all() : $usuario->pacientes;
+            $pacientes = ($usuario->hasRole(Rol::ADMINISTRADOR)) ? Paciente::all() : $usuario->pacientes;
             $medicos = Medico::all(); // Puedes cargar solo los médicos relevantes si quieres
 
             return view('turnos.edit', compact('turno', 'pacientes', 'medicos'));
@@ -285,9 +286,9 @@ class TurnoController extends Controller
 
         // Validar que el usuario tiene permiso para editar este turno
         if (
-            ($usuario->hasRole('Administrador')) || // Administrador
-            ($usuario->hasRole('Medico') && $turno->id_medico == $usuario->medico->id_medico) || // Médico
-            ($usuario->hasRole('Paciente') && $turno->id_paciente == $usuario->paciente->id_paciente) // Paciente
+            ($usuario->hasRole(Rol::ADMINISTRADOR)) || // Administrador
+            ($usuario->hasRole(Rol::MEDICO) && $turno->id_medico == $usuario->medico->id_medico) || // Médico
+            ($usuario->hasRole(Rol::PACIENTE) && $turno->id_paciente == $usuario->paciente->id_paciente) // Paciente
         ) {
             // Solo validamos el campo 'estado'. Otros campos no serán modificables.
             $rules = [
@@ -320,11 +321,11 @@ class TurnoController extends Controller
             ]);
 
             // Redireccionamiento dinámico basado en el rol del usuario
-            if ($usuario->hasRole('Administrador')) { // Administrador
+            if ($usuario->hasRole(Rol::ADMINISTRADOR)) { // Administrador
                 return redirect()->route('admin.turnos.index')->with('success', 'Estado del turno actualizado con éxito por el administrador.');
-            } elseif ($usuario->hasRole('Medico')) { // Médico
+            } elseif ($usuario->hasRole(Rol::MEDICO)) { // Médico
                 return redirect()->route('medico.turnos.index')->with('success', 'Estado de tu turno ha sido actualizado con éxito.');
-            } else { // Paciente (hasRole('Paciente'))
+            } else { // Paciente (hasRole(Rol::PACIENTE))
                 return redirect()->route('paciente.turnos.index')->with('success', 'Estado del turno actualizado con éxito.');
             }
         }
@@ -341,13 +342,13 @@ class TurnoController extends Controller
         $user = auth()->user();
 
         // Admin puede cancelar cualquier turno
-        if ($user->hasRole('Administrador')) {
+        if ($user->hasRole(Rol::ADMINISTRADOR)) {
             $turno->update(['estado' => 'cancelado']); // Lo marcamos como cancelado en lugar de borrarlo
             return redirect()->route('admin.turnos.index')->with('success', 'Turno cancelado con éxito por el administrador.');
         }
 
         // Paciente solo puede cancelar sus propios turnos
-        if ($user->hasRole('Paciente') && $turno->paciente && $turno->paciente->id_usuario == $user->id_usuario) {
+        if ($user->hasRole(Rol::PACIENTE) && $turno->paciente && $turno->paciente->id_usuario == $user->id_usuario) {
             $turno->update(['estado' => 'cancelado']); // Lo marcamos como cancelado
             return redirect()->route('paciente.turnos.index')->with('success', 'Turno cancelado con éxito.');
         }
@@ -356,14 +357,14 @@ class TurnoController extends Controller
         // Según nuestra discusión, el médico NO debería cancelar directamente, solo editar estado.
         // Si quieres que el médico pueda cancelar, descomenta y ajusta esta lógica.
         /*
-        if ($user->hasRole('Medico') && $turno->medico && $turno->medico->id_usuario == $user->id_usuario) {
+        if ($user->hasRole(Rol::MEDICO) && $turno->medico && $turno->medico->id_usuario == $user->id_usuario) {
             $turno->update(['estado' => 'cancelado']);
             return redirect()->route('medico.turnos.index')->with('success', 'Tu turno ha sido cancelado con éxito.');
         }
         */
 
         // Si el usuario es médico y no tiene permiso para cancelar, o si es un rol no manejado
-        if ($user->hasRole('Medico')) {
+        if ($user->hasRole(Rol::MEDICO)) {
              return redirect()->route('medico.turnos.index')->with('error', 'No tienes permiso para cancelar este turno. Solo puedes cambiar su estado.');
         }
 
@@ -452,9 +453,9 @@ class TurnoController extends Controller
         }
 
         // Autorización y lógica de actualización por rol
-        if ($usuario->hasRolActivo('Administrador')) {
+        if ($usuario->hasRolActivo(Rol::ADMINISTRADOR)) {
             $turno->estado = $nuevoEstado;
-        } elseif ($usuario->hasRolActivo('Medico')) {
+        } elseif ($usuario->hasRolActivo(Rol::MEDICO)) {
             // Un médico solo puede cambiar el estado de sus propios turnos
             if ($turno->id_medico !== $usuario->medico->id_medico) {
                 return back()->with('error', 'No tienes permiso para modificar este turno.');
@@ -465,7 +466,7 @@ class TurnoController extends Controller
             } else {
                 return back()->with('error', 'No tienes permiso para realizar esta acción.');
             }
-        } elseif ($usuario->hasRolActivo('Paciente')) {
+        } elseif ($usuario->hasRolActivo(Rol::PACIENTE)) {
             // Un paciente solo puede cancelar sus propios turnos
             $paciente = $usuario->pacientes()->where('id_paciente', $turno->id_paciente)->first();
             if (!$paciente) {

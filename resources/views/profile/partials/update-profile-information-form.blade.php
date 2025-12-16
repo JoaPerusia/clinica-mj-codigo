@@ -1,3 +1,5 @@
+@inject('Rol', 'App\Models\Rol')
+
 <section>
     <header>
         <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
@@ -17,7 +19,7 @@
         @csrf
         @method('patch')
 
-        @if(auth()->user()->hasRole('Administrador'))
+        @if(auth()->user()->hasRole($Rol::ADMINISTRADOR))
             {{-- Campos para Administrador (Todos editables) --}}
             <div>
                 <x-input-label for="nombre" :value="__('Nombre')" />

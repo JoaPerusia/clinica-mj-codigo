@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory; 
+use App\Models\Rol;
 
 class Turno extends Model
 {
@@ -37,7 +38,7 @@ class Turno extends Model
     {
         if (empty($busqueda)) return $query;
 
-        return $query->whereHas('paciente', function ($q) use ($busqueda) {
+        return $query->whereHas(Rol::PACIENTE, function ($q) use ($busqueda) {
             $q->withTrashed()
               ->where(function ($w) use ($busqueda) {
                   $w->where('dni', 'like', "%{$busqueda}%")

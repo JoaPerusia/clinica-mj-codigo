@@ -69,8 +69,8 @@ class User extends Authenticatable
     {
         return $this->roles->filter(function($r) {
             return match($r->rol) {
-                'Medico'    => $this->medico()->whereNull('deleted_at')->exists(),
-                'Paciente'  => $this->pacientes()->whereNull('deleted_at')->exists(),
+                Rol::MEDICO    => $this->medico()->whereNull('deleted_at')->exists(),
+                Rol::PACIENTE  => $this->pacientes()->whereNull('deleted_at')->exists(),
                 default     => true,
             };
         });
@@ -91,9 +91,9 @@ class User extends Authenticatable
         }
 
         return match($roles->first()->rol) {
-            'Administrador' => 'admin.dashboard',
-            'Medico'        => 'medico.dashboard',
-            'Paciente'      => 'paciente.dashboard',
+            Rol::ADMINISTRADOR => 'admin.dashboard',
+            Rol::MEDICO        => 'medico.dashboard',
+            Rol::PACIENTE      => 'paciente.dashboard',
             default         => 'dashboard',
         };
     }

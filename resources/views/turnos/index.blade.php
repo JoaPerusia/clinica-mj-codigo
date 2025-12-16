@@ -1,3 +1,4 @@
+@inject('Rol', 'App\Models\Rol')
 @extends('layouts.app')
 
 @section('content')
@@ -16,11 +17,11 @@
                     $ausenteIcon = 'https://img.icons8.com/emoji/48/minus-emoji.png';
                     $canceladoIcon = 'https://img.icons8.com/color/48/cancel--v1.png';
                                     
-                    if ($rolActivo === 'Administrador') {
+                    if ($rolActivo === $Rol::ADMINISTRADOR) {
                         $dashboardRoute = 'admin.dashboard';
-                    } elseif ($rolActivo === 'Medico') {
+                    } elseif ($rolActivo === $Rol::MEDICO) {
                         $dashboardRoute = 'medico.dashboard';
-                    } elseif ($rolActivo === 'Paciente') {
+                    } elseif ($rolActivo === $Rol::PACIENTE) {
                         $dashboardRoute = 'paciente.dashboard';
                     }
                 @endphp
@@ -34,13 +35,13 @@
                 @endif
 
                 {{-- Ajuste de la ruta para crear turno según el rol --}}
-                @if(auth()->check() && (auth()->user()->hasRolActivo('Administrador') || auth()->user()->hasRolActivo('Paciente')))
+                @if(auth()->check() && (auth()->user()->hasRolActivo($Rol::ADMINISTRADOR) || auth()->user()->hasRolActivo($Rol::PACIENTE)))
                     <div class="action-buttons-container mb-6">
-                        @if(auth()->user()->hasRolActivo('Administrador'))
+                        @if(auth()->user()->hasRolActivo($Rol::ADMINISTRADOR))
                             <a href="{{ route('admin.turnos.create') }}" class="btn-primary">
                                 Reservar Turno
                             </a>
-                        @elseif(auth()->user()->hasRolActivo('Paciente'))
+                        @elseif(auth()->user()->hasRolActivo($Rol::PACIENTE))
                             <a href="{{ route('paciente.turnos.create') }}" class="btn-primary">
                                 Reservar Turno
                             </a>

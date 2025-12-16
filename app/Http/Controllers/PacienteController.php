@@ -8,6 +8,7 @@ use App\Models\Paciente;
 use App\Models\User; 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Rol;
 
 class PacienteController extends Controller
 {
@@ -18,9 +19,9 @@ class PacienteController extends Controller
 
         $query = Paciente::query();
 
-        if ($usuario->hasRole('Paciente')) {
+        if ($usuario->hasRole(Rol::PACIENTE)) {
             $query->where('id_usuario', $usuario->id_usuario);
-        } elseif (!$usuario->hasRole('Administrador')) {
+        } elseif (!$usuario->hasRole(Rol::ADMINISTRADOR)) {
             abort(403, 'Acceso no autorizado.');
         }
 
@@ -41,8 +42,8 @@ class PacienteController extends Controller
     {
         $usuario = Auth::user();
 
-        if ($usuario->hasRole('Administrador') || $usuario->hasRole('Paciente')) {
-            $usuarios = $usuario->hasRole('Administrador') ? User::orderBy('nombre')->get() : null;
+        if ($usuario->hasRole(Rol::ADMINISTRADOR) || $usuario->hasRole(Rol::PACIENTE)) {
+            $usuarios = $usuario->hasRole(Rol::ADMINISTRADOR) ? User::orderBy('nombre')->get() : null;
             return view('pacientes.create', compact('usuarios'));
         }
 
@@ -55,14 +56,14 @@ class PacienteController extends Controller
         $data = $request->validated();
 
         // Si es Paciente, forzamos su ID
-        if ($usuario->hasRole('Paciente')) {
+        if ($usuario->hasRole(Rol::PACIENTE)) {
             $data['id_usuario'] = $usuario->id_usuario;
         }
 
         Paciente::create($data);
 
         // Redirección inteligente
-        $route = $usuario->hasRole('Administrador') ? 'admin.pacientes.index' : 'paciente.pacientes.index';
+        $route = $usuario->hasRole(Rol::ADMINISTRADOR) ? 'admin.pacientes.index' : 'paciente.pacientes.index';
         return redirect()->route($route)->with('success', 'Paciente creado con éxito.');
     }
 
@@ -71,8 +72,8 @@ class PacienteController extends Controller
         $paciente = Paciente::findOrFail($id);
         $usuario = Auth::user();
 
-        if ($usuario->hasRole('Administrador') || ($usuario->hasRole('Paciente') && $paciente->id_usuario == $usuario->id_usuario)) {
-            return view('pacientes.edit', compact('paciente'));
+        if ($usuario->hasRole(Rol::ADMINISTRADOR) || ($usuario->hasRole(Rol::PACIENTE) && $paciente->id_usuario == $usuario->id_usuario)) {
+            return view('pacientes.edit', compact(Rol::PACIENTE));
         }
 
         abort(403, 'Acceso no autorizado.');
@@ -84,14 +85,14 @@ class PacienteController extends Controller
         $usuario = Auth::user();
 
         // Autorización de propiedad
-        if (!$usuario->hasRole('Administrador') && $paciente->id_usuario != $usuario->id_usuario) {
+        if (!$usuario->hasRole(Rol::ADMINISTRADOR) && $paciente->id_usuario != $usuario->id_usuario) {
             abort(403, 'No tienes permiso para editar este paciente.');
         }
 
         // Actualización (Las reglas ya se validaron en el Request según el rol)
         $paciente->update($request->validated());
 
-        $route = $usuario->hasRole('Administrador') ? 'admin.pacientes.index' : 'paciente.pacientes.index';
+        $route = $usuario->hasRole(Rol::ADMINISTRADOR) ? 'admin.pacientes.index' : 'paciente.pacientes.index';
         return redirect()->route($route)->with('success', 'Paciente actualizado correctamente.');
     }
 
@@ -100,7 +101,7 @@ class PacienteController extends Controller
         $paciente = Paciente::findOrFail($id);
         $usuario = Auth::user();
 
-        if (!$usuario->hasRole('Administrador') && $paciente->id_usuario != $usuario->id_usuario) {
+        if (!$usuario->hasRole(Rol::ADMINISTRADOR) && $paciente->id_usuario != $usuario->id_usuario) {
              abort(403, 'No tienes permiso para eliminar este paciente.');
         }
 
@@ -112,13 +113,13 @@ class PacienteController extends Controller
 
         $paciente->delete();
 
-        $route = $usuario->hasRole('Administrador') ? 'admin.pacientes.index' : 'paciente.pacientes.index';
+        $route = $usuario->hasRole(Rol::ADMINISTRADOR) ? 'admin.pacientes.index' : 'paciente.pacientes.index';
         return redirect()->route($route)->with('success', 'Paciente eliminado y turnos cancelados.');
     }
     
     // show no parece usarse mucho en tu código actual o es igual a edit, lo simplifico o lo quito si no lo usas
     public function show(string $id) {
          $paciente = Paciente::findOrFail($id);
-         return view('pacientes.show', compact('paciente'));
+         return view('pacientes.show', compact(Rol::PACIENTE));
     }
 }

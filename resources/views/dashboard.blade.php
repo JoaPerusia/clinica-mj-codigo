@@ -1,3 +1,4 @@
+@inject('Rol', 'App\Models\Rol')
 @extends('layouts.app')
 
 @section('header')
@@ -52,9 +53,9 @@
             $solo = $roles->first()->rol;
             session(['rol_activo' => $solo]);
             $ruta = match($solo) {
-                'Administrador' => 'admin.dashboard',
-                'Medico'        => 'medico.dashboard',
-                'Paciente'      => 'paciente.dashboard',
+                $Rol::ADMINISTRADOR => 'admin.dashboard',
+                $Rol::MEDICO        => 'medico.dashboard',
+                $Rol::PACIENTE      => 'paciente.dashboard',
             };
         @endphp
         <script>window.location.href = "{{ route($ruta) }}";</script>

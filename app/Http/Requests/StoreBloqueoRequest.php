@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Models\Rol;
 
 class StoreBloqueoRequest extends FormRequest
 {
@@ -13,7 +14,7 @@ class StoreBloqueoRequest extends FormRequest
     {
         // Solo los administradores pueden crear bloqueos. 
         // Esto ya lo protege el Middleware en la ruta, pero por seguridad doble:
-        return $this->user()->hasRole('Administrador');
+        return $this->user()->hasRole(Rol::ADMINISTRADOR);
     }
 
     /**
