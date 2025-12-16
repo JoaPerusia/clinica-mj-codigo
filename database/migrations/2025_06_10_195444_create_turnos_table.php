@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use App\Models\Turno;
 
 return new class extends Migration
 {
@@ -15,7 +16,7 @@ return new class extends Migration
             $table->bigIncrements('id_turno'); 
             $table->date('fecha');
             $table->time('hora');
-            $table->string('estado')->default('pendiente'); // 'pendiente', 'confirmado', 'cancelado', 'atendido'
+            $table->string('estado')->default(Turno::PENDIENTE); // 'pendiente', 'confirmado', Turno::CANCELADO, 'atendido'
 
             // Claves foráneas
             $table->unsignedBigInteger('id_paciente');

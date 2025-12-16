@@ -22,6 +22,13 @@ class Turno extends Model
         'id_medico',
     ];
 
+    // --- CONSTANTES DE ESTADO ---
+    public const PENDIENTE = 'pendiente';
+    public const REALIZADO = 'realizado';
+    public const CANCELADO = 'cancelado';
+    public const AUSENTE   = 'ausente';
+    public const ATENDIDO  = 'atendido';
+
     public function paciente()
     {
         return $this->belongsTo(Paciente::class, 'id_paciente', 'id_paciente'); 
@@ -90,10 +97,10 @@ class Turno extends Model
     public function scopeFiltrarPorEstado($query, $estado)
     {
         if ($estado === 'todos') {
-            return $query->whereIn('estado', ['realizado', 'atendido', 'pendiente', 'cancelado', 'ausente']);
+            return $query->whereIn('estado', [Turno::REALIZADO, 'atendido', Turno::PENDIENTE, Turno::CANCELADO, 'ausente']);
         }
-        if ($estado === 'realizado') {
-            return $query->whereIn('estado', ['realizado', 'atendido']);
+        if ($estado === Turno::REALIZADO) {
+            return $query->whereIn('estado', [Turno::REALIZADO, 'atendido']);
         }
         
         // Si no es un filtro especial, filtra directo por la columna (ej: 'pendiente')

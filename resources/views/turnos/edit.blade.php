@@ -1,5 +1,6 @@
 {{-- Asumiendo que este es el contenido de tu archivo turnos/edit.blade.php --}}
 @inject('Rol', 'App\Models\Rol')
+@inject('Turno', 'App\Models\Turno')
 @extends('layouts.app')
 
 @section('content')
@@ -84,7 +85,7 @@
                     {{-- Campo Estado (condicionalmente habilitado/deshabilitado) --}}
                     @php
                         $estadoActual = $turno->estado;
-                        $isDisabled = in_array($estadoActual, ['realizado', 'cancelado', 'ausente']);
+                        $isDisabled = in_array($estadoActual, [$Turno::REALIZADO, $Turno::CANCELADO, 'ausente']);
                         // Solo el médico y el admin pueden cambiar el estado
                         $isMedico = Auth::user()->hasRole($Rol::MEDICO);
                         $isAdmin = Auth::user()->hasRole($Rol::ADMINISTRADOR);
@@ -99,8 +100,8 @@
                                     <option value="{{ $estadoActual }}" selected>{{ ucfirst($estadoActual) }}</option>
                                 @else
                                     {{-- Si el estado es pendiente, permite cambiar a cualquier otro --}}
-                                    <option value="pendiente" {{ $estadoActual == 'pendiente' ? 'selected' : '' }}>Pendiente</option>
-                                    <option value="realizado" {{ $estadoActual == 'realizado' ? 'selected' : '' }}>Realizado</option>
+                                    <option value="pendiente" {{ $estadoActual == $Turno::PENDIENTE ? 'selected' : '' }}>Pendiente</option>
+                                    <option value="realizado" {{ $estadoActual == $Turno::REALIZADO ? 'selected' : '' }}>Realizado</option>
                                     <option value="ausente" {{ $estadoActual == 'ausente' ? 'selected' : '' }}>Ausente</option>
                                 @endif
                             </select>

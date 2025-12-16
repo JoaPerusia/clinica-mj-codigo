@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Rol;
+use App\Models\Turno;
 
 class PacienteController extends Controller
 {
@@ -107,9 +108,9 @@ class PacienteController extends Controller
 
         // Cancelar turnos futuros
         $paciente->turnos()
-            ->where('estado', 'pendiente')
+            ->where('estado', Turno::PENDIENTE)
             ->where('fecha', '>=', now()->toDateString())
-            ->update(['estado' => 'cancelado']);
+            ->update(['estado' => Turno::CANCELADO]);
 
         $paciente->delete();
 

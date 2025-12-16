@@ -26,7 +26,7 @@ class TurnoController extends Controller
         $usuario              = Auth::user();
         
         // Parámetros de filtro
-        $estado_filtro        = $request->input('estado_filtro', 'pendiente');
+        $estado_filtro        = $request->input('estado_filtro', Turno::PENDIENTE);
         $dni_filtro_paciente  = $request->input('dni_filtro_paciente');
         $dni_filtro_medico    = $request->input('dni_filtro_medico');
         $fecha_filtro         = $request->input('fecha_filtro');
@@ -64,7 +64,7 @@ class TurnoController extends Controller
 
         // 4. Lógica de Vistas (Tableros vs Listados)
         $hayRangoFechas = !empty($fecha_inicio) || !empty($fecha_fin);
-        $esVistaDefault = ($estado_filtro === 'pendiente' && empty($fecha_filtro) && !$hayRangoFechas);
+        $esVistaDefault = ($estado_filtro === Turno::PENDIENTE && empty($fecha_filtro) && !$hayRangoFechas);
 
         $turnosHoy = collect();
         $turnosManana = collect();
@@ -73,13 +73,13 @@ class TurnoController extends Controller
 
         if ($esVistaDefault) {
             // VISTA DE TABLERO (Hoy, Mañana, Próximos)
-            $turnosHoy = (clone $query)->where('estado', 'pendiente')
+            $turnosHoy = (clone $query)->where('estado', Turno::PENDIENTE)
                 ->whereDate('fecha', Carbon::today())->orderBy('hora')->paginate($perPage, ['*'], 'page_hoy')->withQueryString();
 
-            $turnosManana = (clone $query)->where('estado', 'pendiente')
+            $turnosManana = (clone $query)->where('estado', Turno::PENDIENTE)
                 ->whereDate('fecha', Carbon::tomorrow())->orderBy('hora')->paginate($perPage, ['*'], 'page_manana')->withQueryString();
 
-            $turnosProximos = (clone $query)->where('estado', 'pendiente')
+            $turnosProximos = (clone $query)->where('estado', Turno::PENDIENTE)
                 ->whereDate('fecha', '>', Carbon::tomorrow())->orderBy('fecha')->orderBy('hora')
                 ->paginate($perPage, ['*'], 'page_proximos')->withQueryString();
         } else {
@@ -211,7 +211,7 @@ class TurnoController extends Controller
         $turnoExistente = Turno::where('id_medico', $id_medico)
                                ->where('fecha', $fecha->toDateString())
                                ->where('hora', $hora)
-                               ->whereIn('estado', ['pendiente', 'realizado'])
+                               ->whereIn('estado', [Turno::PENDIENTE, Turno::REALIZADO])
                                ->first();
 
         if ($turnoExistente) {
@@ -224,7 +224,7 @@ class TurnoController extends Controller
             'id_medico' => $request->id_medico,
             'fecha' => $fecha->toDateString(), 
             'hora' => $hora,
-            'estado' => $request->estado ?? 'pendiente',
+            'estado' => $request->estado ?? Turno::PENDIENTE,
         ]);
 
         // Redireccionamiento dinámico
@@ -302,7 +302,7 @@ class TurnoController extends Controller
             $estado_actual = $turno->estado;
 
             // Estados finales que no deberían ser modificables
-            $estados_finales = ['realizado', 'cancelado', 'ausente'];
+            $estados_finales = [Turno::REALIZADO, Turno::CANCELADO, 'ausente'];
 
             // Si el turno ya está en un estado final y se intenta cambiar el estado,
             // o si se intenta cambiar de un estado final a 'pendiente', se rechaza.
@@ -310,7 +310,7 @@ class TurnoController extends Controller
                 return back()->withInput()->withErrors(['estado' => 'No se puede cambiar el estado de un turno que ya está ' . $estado_actual . '.']);
             }
             // Si el turno no está pendiente y se intenta cambiar a pendiente, se rechaza
-            if ($estado_actual !== 'pendiente' && $estado_solicitado === 'pendiente') {
+            if ($estado_actual !== Turno::PENDIENTE && $estado_solicitado === Turno::PENDIENTE) {
                 return back()->withInput()->withErrors(['estado' => 'No se puede revertir un turno a "Pendiente" desde su estado actual de "' . $estado_actual . '".']);
             }
             // --- FIN Lógica para controlar el cambio de estado ---
@@ -343,13 +343,13 @@ class TurnoController extends Controller
 
         // Admin puede cancelar cualquier turno
         if ($user->hasRole(Rol::ADMINISTRADOR)) {
-            $turno->update(['estado' => 'cancelado']); // Lo marcamos como cancelado en lugar de borrarlo
+            $turno->update(['estado' => Turno::CANCELADO]); // Lo marcamos como cancelado en lugar de borrarlo
             return redirect()->route('admin.turnos.index')->with('success', 'Turno cancelado con éxito por el administrador.');
         }
 
         // Paciente solo puede cancelar sus propios turnos
         if ($user->hasRole(Rol::PACIENTE) && $turno->paciente && $turno->paciente->id_usuario == $user->id_usuario) {
-            $turno->update(['estado' => 'cancelado']); // Lo marcamos como cancelado
+            $turno->update(['estado' => Turno::CANCELADO]); // Lo marcamos como cancelado
             return redirect()->route('paciente.turnos.index')->with('success', 'Turno cancelado con éxito.');
         }
 
@@ -358,7 +358,7 @@ class TurnoController extends Controller
         // Si quieres que el médico pueda cancelar, descomenta y ajusta esta lógica.
         /*
         if ($user->hasRole(Rol::MEDICO) && $turno->medico && $turno->medico->id_usuario == $user->id_usuario) {
-            $turno->update(['estado' => 'cancelado']);
+            $turno->update(['estado' => Turno::CANCELADO]);
             return redirect()->route('medico.turnos.index')->with('success', 'Tu turno ha sido cancelado con éxito.');
         }
         */
@@ -448,7 +448,7 @@ class TurnoController extends Controller
         $nuevoEstado = $request->input('estado');
 
         // Validar el nuevo estado
-        if (!in_array($nuevoEstado, ['realizado', 'ausente', 'cancelado'])) {
+        if (!in_array($nuevoEstado, [Turno::REALIZADO, 'ausente', Turno::CANCELADO])) {
             return back()->with('error', 'Estado de turno inválido.');
         }
 
@@ -461,7 +461,7 @@ class TurnoController extends Controller
                 return back()->with('error', 'No tienes permiso para modificar este turno.');
             }
 
-            if ($nuevoEstado === 'realizado' || $nuevoEstado === 'ausente') {
+            if ($nuevoEstado === Turno::REALIZADO || $nuevoEstado === 'ausente') {
                 $turno->estado = $nuevoEstado;
             } else {
                 return back()->with('error', 'No tienes permiso para realizar esta acción.');
@@ -473,7 +473,7 @@ class TurnoController extends Controller
                 return back()->with('error', 'No tienes permiso para cancelar este turno.');
             }
 
-            if ($nuevoEstado === 'cancelado') {
+            if ($nuevoEstado === Turno::CANCELADO) {
                 $turno->estado = $nuevoEstado;
             } else {
                 return back()->with('error', 'No tienes permiso para realizar esta acción.');

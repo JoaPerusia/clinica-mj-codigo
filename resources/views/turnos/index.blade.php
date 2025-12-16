@@ -1,4 +1,5 @@
 @inject('Rol', 'App\Models\Rol')
+@inject('Turno', 'App\Models\Turno')
 @extends('layouts.app')
 
 @section('content')
@@ -79,9 +80,9 @@
                                 <select id="estado_filtro" name="estado_filtro"
                                     class="mt-1 block w-auto pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md
                                         bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                                    <option value="pendiente" {{ request('estado_filtro', 'pendiente') == 'pendiente' ? 'selected' : '' }}>Pendiente</option>
-                                    <option value="realizado" {{ request('estado_filtro') == 'realizado' ? 'selected' : '' }}>Realizado</option>
-                                    <option value="cancelado" {{ request('estado_filtro') == 'cancelado' ? 'selected' : '' }}>Cancelado</option>
+                                    <option value="pendiente" {{ request('estado_filtro', $Turno::PENDIENTE) == $Turno::PENDIENTE ? 'selected' : '' }}>Pendiente</option>
+                                    <option value="realizado" {{ request('estado_filtro') == $Turno::REALIZADO ? 'selected' : '' }}>Realizado</option>
+                                    <option value="cancelado" {{ request('estado_filtro') == $Turno::CANCELADO ? 'selected' : '' }}>Cancelado</option>
                                     <option value="ausente" {{ request('estado_filtro') == 'ausente' ? 'selected' : '' }}>Ausente</option>
                                     <option value="todos" {{ request('estado_filtro') == 'todos' ? 'selected' : '' }}>Todos</option>
                                 </select>
@@ -170,7 +171,7 @@
 
                 <div class="table-responsive">
                     {{-- Vista de turnos pendientes agrupados --}}
-                    @if ($estado_filtro == 'pendiente' && !$fecha_filtro && !$fecha_inicio && !$fecha_fin)
+                    @if ($estado_filtro == $Turno::PENDIENTE && !$fecha_filtro && !$fecha_inicio && !$fecha_fin)
                         @if($turnosHoy->isEmpty() && $turnosManana->isEmpty() && $turnosProximos->isEmpty())
                             <p class="text-white">No tienes turnos pendientes para el filtro seleccionado.</p>
                         @else

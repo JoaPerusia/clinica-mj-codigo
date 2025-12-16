@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Medico;
 use App\Models\User;
 use App\Models\Rol;
+use App\Models\Turno;
 use App\Mail\TurnoCanceladoMailable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -98,9 +99,9 @@ class MedicoService
         return DB::transaction(function () use ($medico) {
             // 1. Cancelar turnos pendientes
             $turnosCancelados = $medico->turnos()
-                ->where('estado', 'Pendiente')
+                ->where('estado', Turno::PENDIENTE)
                 ->where('fecha', '>=', Carbon::today())
-                ->update(['estado' => 'cancelado']);
+                ->update(['estado' => Turno::CANCELADO]);
 
             // 2. Eliminar médico (Soft Delete)
             $medico->delete();
@@ -140,7 +141,7 @@ class MedicoService
     private function gestionarConflictosTurnos(Medico $medico, $nuevosHorarios, bool $especialidadesCambiaron)
     {
         $turnosPendientes = $medico->turnos()
-            ->where('estado', 'Pendiente')
+            ->where('estado', Turno::PENDIENTE)
             ->where('fecha', '>=', Carbon::today())
             ->get();
 
@@ -181,7 +182,7 @@ class MedicoService
             }
 
             if (!$esValido) {
-                $turno->update(['estado' => 'cancelado']);
+                $turno->update(['estado' => Turno::CANCELADO]);
                 $contador++;
                 
                 // Enviar Email

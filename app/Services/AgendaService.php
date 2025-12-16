@@ -49,7 +49,7 @@ class AgendaService
         // 3. Obtener turnos ya ocupados en esa fecha
         $turnosOcupados = Turno::where('id_medico', $id_medico)
             ->whereDate('fecha', $fecha)
-            ->whereIn('estado', ['pendiente', 'realizado', 'atendido']) // Excluir cancelados/ausentes
+            ->whereIn('estado', [Turno::PENDIENTE, Turno::REALIZADO, 'atendido']) // Excluir cancelados/ausentes
             ->when($except_turno_id, fn($q) => $q->where('id_turno', '!=', $except_turno_id))
             ->pluck('hora')
             ->map(fn($h) => Carbon::parse($h)->format('H:i'))

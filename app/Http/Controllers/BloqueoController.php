@@ -79,7 +79,7 @@ class BloqueoController extends Controller
 
             // --- Lógica de cancelación automática (se mantiene igual) ---
             $turnosSuperpuestos = Turno::where('id_medico', $bloqueo->id_medico)
-                ->where('estado', 'Pendiente')
+                ->where('estado', Turno::PENDIENTE)
                 ->where(function ($query) use ($bloqueo) {
                     $query->whereBetween('fecha', [$bloqueo->fecha_inicio, $bloqueo->fecha_fin]);
                 });
@@ -95,7 +95,7 @@ class BloqueoController extends Controller
             $turnosAfectadosCount = $turnosACancelar->count();
 
             foreach ($turnosACancelar as $turno) {
-                $turno->estado = 'cancelado'; // Aseguramos minúscula si ese es tu estándar
+                $turno->estado = Turno::CANCELADO; // Aseguramos minúscula si ese es tu estándar
                 $turno->save();
                 
                 // Enviar notificación (Mantenemos tu lógica de email)

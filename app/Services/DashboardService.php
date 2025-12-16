@@ -17,9 +17,9 @@ class DashboardService
             'total_medicos'   => Medico::count(),
             'total_pacientes' => Paciente::count(),
             'turnos_hoy'      => Turno::whereDate('fecha', Carbon::today())
-                                    ->where('estado', '!=', 'cancelado')
+                                    ->where('estado', '!=', Turno::CANCELADO)
                                     ->count(),
-            'turnos_pendientes_total' => Turno::where('estado', 'pendiente')
+            'turnos_pendientes_total' => Turno::where('estado', Turno::PENDIENTE)
                                     ->where('fecha', '>=', Carbon::now())
                                     ->count(),
         ];
@@ -36,10 +36,10 @@ class DashboardService
         return [
             'turnos_hoy' => Turno::where('id_medico', $medicoId)
                                 ->whereDate('fecha', Carbon::today())
-                                ->where('estado', '!=', 'cancelado')
+                                ->where('estado', '!=', Turno::CANCELADO)
                                 ->count(),
             'proximos_turnos' => Turno::where('id_medico', $medicoId)
-                                ->where('estado', 'pendiente')
+                                ->where('estado', Turno::PENDIENTE)
                                 ->where('fecha', '>', Carbon::now())
                                 ->count(),
         ];
@@ -52,12 +52,12 @@ class DashboardService
 
         return [
             'mis_turnos_pendientes' => Turno::whereIn('id_paciente', $pacientesIds)
-                                        ->where('estado', 'pendiente')
+                                        ->where('estado', Turno::PENDIENTE)
                                         ->where('fecha', '>=', Carbon::now())
                                         ->count(),
             'historial_turnos' => Turno::whereIn('id_paciente', $pacientesIds)
                                         ->where('fecha', '<', Carbon::now())
-                                        ->where('estado', '!=', 'cancelado')
+                                        ->where('estado', '!=', Turno::CANCELADO)
                                         ->count(),
         ];
     }

@@ -1,4 +1,5 @@
 @inject('Rol', 'App\Models\Rol')
+@inject('Turno', 'App\Models\Turno')
 
 <tr>
     <td class="table-data py-4">
@@ -28,7 +29,7 @@
         {{ ucfirst($turno->estado) }}
     </td>
     <td class="table-data py-4 acciones-fijas-columna">
-        @if(auth()->check() && $turno->estado == 'pendiente')
+        @if(auth()->check() && $turno->estado == $Turno::PENDIENTE)
             <div class="flex justify-center space-x-2">
                 {{-- Botones para Administrador --}}
                 @if(auth()->user()->hasRolActivo($Rol::ADMINISTRADOR))
