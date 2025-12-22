@@ -23,9 +23,8 @@ class TurnoController extends Controller
      */
     public function index(Request $request)
     {
-        $usuario              = Auth::user();
+        $usuario = Auth::user();
         
-        // Parámetros de filtro
         $estado_filtro        = $request->input('estado_filtro', Turno::PENDIENTE);
         $dni_filtro_paciente  = $request->input('dni_filtro_paciente');
         $dni_filtro_medico    = $request->input('dni_filtro_medico');
@@ -35,22 +34,19 @@ class TurnoController extends Controller
         $especialidad_filtro  = $request->input('especialidad_filtro');
         
         $perPage = 10;
-        $especialidades = Especialidad::orderBy('nombre_especialidad')->get();
+        $especialidades = \App\Models\Especialidad::orderBy('nombre_especialidad')->get();
 
-        // 1. Iniciar Query Base
         $query = Turno::with([
-            Rol::PACIENTE => fn($q) => $q->withTrashed(),
-            Rol::MEDICO   => fn($q) => $q->withTrashed(),
+            'paciente' => fn($q) => $q->withTrashed(),
+            'medico'   => fn($q) => $q->withTrashed(),
             'medico.usuario',
             'medico.especialidades',
         ]);
 
-        // 2. Aplicar Filtros (Usando los Scopes que creamos)
         $query->filtrarPorPaciente($dni_filtro_paciente)
               ->filtrarPorMedico($dni_filtro_medico)
               ->filtrarPorEspecialidad($especialidad_filtro);
 
-        // 3. Restricciones por Rol (Seguridad)
         if ($request->routeIs('medico.*')) {
             if (!$usuario->medico) {
                 return redirect()->route('medico.dashboard')->with('error', 'Perfil de médico no encontrado.');
@@ -58,35 +54,47 @@ class TurnoController extends Controller
             $query->where('id_medico', $usuario->medico->id_medico);
 
         } elseif ($request->routeIs('paciente.*')) {
-            $pacientes_ids = $usuario->pacientes->pluck('id_paciente');
-            $query->whereIn('id_paciente', $pacientes_ids);
+            if ($usuario->pacientes->isNotEmpty()) {
+                $pacientes_ids = $usuario->pacientes->pluck('id_paciente');
+                $query->whereIn('id_paciente', $pacientes_ids);
+            } else {
+                $query->where('id_paciente', -1);
+            }
         }
 
-        // 4. Lógica de Vistas (Tableros vs Listados)
         $hayRangoFechas = !empty($fecha_inicio) || !empty($fecha_fin);
-        $esVistaDefault = ($estado_filtro === Turno::PENDIENTE && empty($fecha_filtro) && !$hayRangoFechas);
+        $hayFiltrosActivos = !empty($dni_filtro_paciente) || !empty($dni_filtro_medico) || !empty($fecha_filtro) || $hayRangoFechas || !empty($especialidad_filtro);
+        
+        $esVistaDefault = ($estado_filtro === Turno::PENDIENTE && !$hayFiltrosActivos);
 
-        $turnosHoy = collect();
-        $turnosManana = collect();
-        $turnosProximos = collect();
-        $turnosPaginados = null;
+        $turnosHoy       = collect();
+        $turnosManana    = collect();
+        $turnosProximos  = collect();
+        $turnosPaginados = collect(); 
 
         if ($esVistaDefault) {
-            // VISTA DE TABLERO (Hoy, Mañana, Próximos)
+            $now = Carbon::now();
+
             $turnosHoy = (clone $query)->where('estado', Turno::PENDIENTE)
-                ->whereDate('fecha', Carbon::today())->orderBy('hora')->paginate($perPage, ['*'], 'page_hoy')->withQueryString();
+                ->whereDate('fecha', $now->toDateString())
+                ->where('hora', '>=', $now->toTimeString()) // Solo futuros
+                ->orderBy('hora')
+                ->paginate($perPage, ['*'], 'page_hoy')->withQueryString();
 
             $turnosManana = (clone $query)->where('estado', Turno::PENDIENTE)
-                ->whereDate('fecha', Carbon::tomorrow())->orderBy('hora')->paginate($perPage, ['*'], 'page_manana')->withQueryString();
+                ->whereDate('fecha', $now->copy()->addDay()->toDateString())
+                ->orderBy('hora')
+                ->paginate($perPage, ['*'], 'page_manana')->withQueryString();
 
             $turnosProximos = (clone $query)->where('estado', Turno::PENDIENTE)
-                ->whereDate('fecha', '>', Carbon::tomorrow())->orderBy('fecha')->orderBy('hora')
+                ->whereDate('fecha', '>', $now->copy()->addDay()->toDateString())
+                ->orderBy('fecha')->orderBy('hora')
                 ->paginate($perPage, ['*'], 'page_proximos')->withQueryString();
         } else {
             // VISTA DE LISTADO (Búsquedas y filtros específicos)
             $turnosPaginados = $query
-                ->filtrarPorEstado($estado_filtro) // Usamos el Scope de estado
-                ->filtrarPorFecha($fecha_filtro, $fecha_inicio, $fecha_fin) // Usamos el Scope de fecha
+                ->filtrarPorEstado($estado_filtro)
+                ->filtrarPorFecha($fecha_filtro, $fecha_inicio, $fecha_fin)
                 ->orderBy('fecha', 'desc')->orderBy('hora', 'desc')
                 ->paginate($perPage)->withQueryString();
         }

@@ -1,6 +1,10 @@
 @inject('Rol', 'App\Models\Rol')
 @inject('Turno', 'App\Models\Turno')
 
+@php
+    $canceladoIcon = 'https://img.icons8.com/color/48/cancel--v1.png';
+@endphp
+
 <tr>
     <td class="table-data py-4">
         {{ $turno->medico->usuario->nombre }} {{ $turno->medico->usuario->apellido }} ({{ $turno->medico->usuario->dni ?? 'N/A' }})
@@ -34,47 +38,37 @@
         </span>
     </td>
 
-    <td class="table-data py-4 acciones-fijas-columna">
-        {{-- CAMBIO 2: Verificamos contra 'estado_actual'. Si ya pasó la hora (es Realizado virtualmente), quitamos los botones --}}
-        @if(auth()->check() && $turno->estado_actual == $Turno::PENDIENTE)
-            
-            <div class="flex justify-center space-x-2">
-                
-                {{-- Lógica para ADMINISTRADOR: Solo botón Cancelar --}}
-                @if(auth()->user()->hasRolActivo($Rol::ADMINISTRADOR))                    
-                    <form action="{{ route('admin.turnos.cambiar-estado', $turno->id_turno) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');" title="Cancelar turno">
-                        @csrf
-                        @method('PATCH')
-                        <input type="hidden" name="estado" value="{{ $Turno::CANCELADO }}">
-                        <button type="submit" class="p-1 hover:bg-red-100 rounded-full transition">
-                            {{-- Usamos tu variable de icono, asegurate que esté disponible o usa un SVG directo --}}
-                            @if(isset($canceladoIcon))
+    {{-- Solo mostramos la columna de acciones si NO ES MÉDICO --}}
+    @if(!auth()->user()->hasRolActivo($Rol::MEDICO))
+        <td class="table-data py-4 actions-cell text-center">
+            @if(auth()->check() && $turno->estado_actual == $Turno::PENDIENTE)
+                <div class="flex justify-center space-x-2">
+                    
+                    {{-- Admin --}}
+                    @if(auth()->user()->hasRolActivo($Rol::ADMINISTRADOR))
+                        <form action="{{ route('admin.turnos.cambiar-estado', $turno->id_turno) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');" title="Cancelar turno">
+                            @csrf @method('PATCH')
+                            <input type="hidden" name="estado" value="{{ $Turno::CANCELADO }}">
+                            <button type="submit" class="p-1 hover:bg-red-100 rounded-full transition">
                                 <img src="{{ $canceladoIcon }}" alt="Cancelar" class="w-7 h-7">
-                            @else
-                                <span class="text-red-600 font-bold">❌</span>
-                            @endif
-                        </button>
-                    </form>
+                            </button>
+                        </form>
 
-                {{-- Lógica para PACIENTE: Solo botón Cancelar --}}
-                @elseif(auth()->user()->hasRolActivo($Rol::PACIENTE))
-                    <form action="{{ route('paciente.turnos.cambiar-estado', $turno->id_turno) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');" title="Cancelar turno">
-                        @csrf
-                        @method('PATCH')
-                        <input type="hidden" name="estado" value="{{ $Turno::CANCELADO }}">
-                        <button type="submit" class="p-1 hover:bg-red-100 rounded-full transition">
-                            @if(isset($canceladoIcon))
+                    {{-- Paciente --}}
+                    @elseif(auth()->user()->hasRolActivo($Rol::PACIENTE))
+                        <form action="{{ route('paciente.turnos.cambiar-estado', $turno->id_turno) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');" title="Cancelar turno">
+                            @csrf @method('PATCH')
+                            <input type="hidden" name="estado" value="{{ $Turno::CANCELADO }}">
+                            <button type="submit" class="p-1 hover:bg-red-100 rounded-full transition">
                                 <img src="{{ $canceladoIcon }}" alt="Cancelar" class="w-7 h-7">
-                            @else
-                                <span class="text-red-600 font-bold">❌</span>
-                            @endif
-                        </button>
-                    </form>
-                @endif
-            </div>
+                            </button>
+                        </form>
+                    @endif
 
-        @else
-            <span class="text-gray-400 text-sm">-</span>
-        @endif
-    </td>
+                </div>
+            @else
+                <span class="text-gray-300">-</span>
+            @endif
+        </td>
+    @endif
 </tr>
