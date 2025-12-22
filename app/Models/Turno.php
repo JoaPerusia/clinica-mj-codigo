@@ -5,13 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory; 
 use App\Models\Rol;
+use Carbon\Carbon;
 
 class Turno extends Model
 {
     use HasFactory; 
 
     protected $table = 'turnos'; 
-    
     protected $primaryKey = 'id_turno'; 
 
     protected $fillable = [
@@ -22,21 +22,37 @@ class Turno extends Model
         'id_medico',
     ];
 
+    protected $appends = ['estado_actual'];
+
     // --- CONSTANTES DE ESTADO ---
     public const PENDIENTE = 'pendiente';
     public const REALIZADO = 'realizado';
     public const CANCELADO = 'cancelado';
-    public const AUSENTE   = 'ausente';
-    public const ATENDIDO  = 'atendido';
 
     public function paciente()
     {
-        return $this->belongsTo(Paciente::class, 'id_paciente', 'id_paciente'); 
+        return $this->belongsTo(Paciente::class, 'id_paciente', 'id_paciente')->withTrashed(); 
     }
 
     public function medico()
     {
-        return $this->belongsTo(Medico::class, 'id_medico', 'id_medico'); 
+        return $this->belongsTo(Medico::class, 'id_medico', 'id_medico')->withTrashed(); 
+    }
+
+    // --- ATRIBUTO VIRTUAL (ACCESSOR) ---
+    public function getEstadoActualAttribute()
+    {
+        if ($this->estado === self::CANCELADO) {
+            return self::CANCELADO;
+        }
+
+        $fechaHoraTurno = Carbon::parse($this->fecha . ' ' . $this->hora);
+
+        if ($fechaHoraTurno->isPast()) {
+            return self::REALIZADO;
+        }
+
+        return self::PENDIENTE;
     }
 
     // --- SCOPES (Filtros Inteligentes) ---
@@ -45,7 +61,7 @@ class Turno extends Model
     {
         if (empty($busqueda)) return $query;
 
-        return $query->whereHas(Rol::PACIENTE, function ($q) use ($busqueda) {
+        return $query->whereHas('paciente', function ($q) use ($busqueda) { 
             $q->withTrashed()
               ->where(function ($w) use ($busqueda) {
                   $w->where('dni', 'like', "%{$busqueda}%")
@@ -59,12 +75,15 @@ class Turno extends Model
     {
         if (empty($busqueda)) return $query;
 
-        return $query->whereHas('medico.usuario', function ($q) use ($busqueda) {
-            $q->where(function ($w) use ($busqueda) {
-                $w->where('dni', 'like', "%{$busqueda}%")
-                  ->orWhere('nombre', 'like', "%{$busqueda}%")
-                  ->orWhere('apellido', 'like', "%{$busqueda}%");
-            });
+        return $query->whereHas('medico', function ($q) use ($busqueda) {
+            $q->withTrashed()
+              ->whereHas('usuario', function ($u) use ($busqueda) {
+                  $u->where(function ($w) use ($busqueda) {
+                      $w->where('dni', 'like', "%{$busqueda}%")
+                        ->orWhere('nombre', 'like', "%{$busqueda}%")
+                        ->orWhere('apellido', 'like', "%{$busqueda}%");
+                  });
+              });
         });
     }
 
@@ -97,13 +116,8 @@ class Turno extends Model
     public function scopeFiltrarPorEstado($query, $estado)
     {
         if ($estado === 'todos') {
-            return $query->whereIn('estado', [Turno::REALIZADO, 'atendido', Turno::PENDIENTE, Turno::CANCELADO, 'ausente']);
+            return $query->whereIn('estado', [Turno::REALIZADO, Turno::PENDIENTE, Turno::CANCELADO]);
         }
-        if ($estado === Turno::REALIZADO) {
-            return $query->whereIn('estado', [Turno::REALIZADO, 'atendido']);
-        }
-        
-        // Si no es un filtro especial, filtra directo por la columna (ej: 'pendiente')
         return $query->where('estado', $estado);
     }
 }

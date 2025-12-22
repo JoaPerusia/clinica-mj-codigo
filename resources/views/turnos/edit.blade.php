@@ -85,7 +85,7 @@
                     {{-- Campo Estado (condicionalmente habilitado/deshabilitado) --}}
                     @php
                         $estadoActual = $turno->estado;
-                        $isDisabled = in_array($estadoActual, [$Turno::REALIZADO, $Turno::CANCELADO, 'ausente']);
+                        $isDisabled = in_array($estadoActual, [$Turno::REALIZADO, $Turno::CANCELADO]);
                         // Solo el médico y el admin pueden cambiar el estado
                         $isMedico = Auth::user()->hasRole($Rol::MEDICO);
                         $isAdmin = Auth::user()->hasRole($Rol::ADMINISTRADOR);
@@ -102,7 +102,6 @@
                                     {{-- Si el estado es pendiente, permite cambiar a cualquier otro --}}
                                     <option value="pendiente" {{ $estadoActual == $Turno::PENDIENTE ? 'selected' : '' }}>Pendiente</option>
                                     <option value="realizado" {{ $estadoActual == $Turno::REALIZADO ? 'selected' : '' }}>Realizado</option>
-                                    <option value="ausente" {{ $estadoActual == 'ausente' ? 'selected' : '' }}>Ausente</option>
                                 @endif
                             </select>
                             @error('estado')

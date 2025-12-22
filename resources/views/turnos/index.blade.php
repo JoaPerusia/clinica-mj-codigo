@@ -14,8 +14,6 @@
                     $dashboardRoute = 'dashboard'; // Ruta por defecto
 
                     // URLs de los iconos desde un CDN
-                    $realizadoIcon = 'https://img.icons8.com/color/48/checked--v1.png';
-                    $ausenteIcon = 'https://img.icons8.com/emoji/48/minus-emoji.png';
                     $canceladoIcon = 'https://img.icons8.com/color/48/cancel--v1.png';
                                     
                     if ($rolActivo === $Rol::ADMINISTRADOR) {
@@ -83,7 +81,6 @@
                                     <option value="pendiente" {{ request('estado_filtro', $Turno::PENDIENTE) == $Turno::PENDIENTE ? 'selected' : '' }}>Pendiente</option>
                                     <option value="realizado" {{ request('estado_filtro') == $Turno::REALIZADO ? 'selected' : '' }}>Realizado</option>
                                     <option value="cancelado" {{ request('estado_filtro') == $Turno::CANCELADO ? 'selected' : '' }}>Cancelado</option>
-                                    <option value="ausente" {{ request('estado_filtro') == 'ausente' ? 'selected' : '' }}>Ausente</option>
                                     <option value="todos" {{ request('estado_filtro') == 'todos' ? 'selected' : '' }}>Todos</option>
                                 </select>
                             </div>

@@ -5,6 +5,8 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Rol;
+use App\Models\User;
 
 class StoreTurnoRequest extends FormRequest
 {
@@ -43,7 +45,7 @@ class StoreTurnoRequest extends FormRequest
             'id_medico' => 'required|exists:medicos,id_medico',
             'fecha'     => 'required|date|after_or_equal:today', // La fecha no puede ser en el pasado
             'hora'      => 'required|date_format:H:i', // Formato de hora HH:MM
-            'estado'    => 'nullable|in:pendiente,realizado,cancelado,ausente',
+            'estado'    => 'nullable|in:pendiente,realizado,cancelado',
         ];
     }
 

@@ -132,10 +132,6 @@ class TurnoController extends Controller
     {
         $usuario = Auth::user();
 
-        // --- AQUÍ BORRAMOS LA VALIDACIÓN MANUAL ---
-        // Laravel ya validó todo gracias a StoreTurnoRequest.
-        // Si algo falla, ni siquiera entra a esta función.
-
         $fecha = Carbon::parse($request->fecha);
         $hora = $request->hora; 
         $id_medico = $request->id_medico;
@@ -292,7 +288,7 @@ class TurnoController extends Controller
         ) {
             // Solo validamos el campo 'estado'. Otros campos no serán modificables.
             $rules = [
-                'estado' => 'required|in:pendiente,realizado,cancelado,ausente',
+                'estado' => 'required|in:pendiente,realizado,cancelado',
             ];
 
             $request->validate($rules);
@@ -302,7 +298,7 @@ class TurnoController extends Controller
             $estado_actual = $turno->estado;
 
             // Estados finales que no deberían ser modificables
-            $estados_finales = [Turno::REALIZADO, Turno::CANCELADO, 'ausente'];
+            $estados_finales = [Turno::REALIZADO, Turno::CANCELADO];
 
             // Si el turno ya está en un estado final y se intenta cambiar el estado,
             // o si se intenta cambiar de un estado final a 'pendiente', se rechaza.
@@ -447,42 +443,26 @@ class TurnoController extends Controller
         $usuario = Auth::user();
         $nuevoEstado = $request->input('estado');
 
-        // Validar el nuevo estado
-        if (!in_array($nuevoEstado, [Turno::REALIZADO, 'ausente', Turno::CANCELADO])) {
-            return back()->with('error', 'Estado de turno inválido.');
+        if ($nuevoEstado !== Turno::CANCELADO) {
+            return back()->with('error', 'Acción no permitida. Solo se permite cancelar.');
         }
 
-        // Autorización y lógica de actualización por rol
-        if ($usuario->hasRolActivo(Rol::ADMINISTRADOR)) {
-            $turno->estado = $nuevoEstado;
-        } elseif ($usuario->hasRolActivo(Rol::MEDICO)) {
-            // Un médico solo puede cambiar el estado de sus propios turnos
-            if ($turno->id_medico !== $usuario->medico->id_medico) {
-                return back()->with('error', 'No tienes permiso para modificar este turno.');
-            }
-
-            if ($nuevoEstado === Turno::REALIZADO || $nuevoEstado === 'ausente') {
-                $turno->estado = $nuevoEstado;
-            } else {
-                return back()->with('error', 'No tienes permiso para realizar esta acción.');
-            }
-        } elseif ($usuario->hasRolActivo(Rol::PACIENTE)) {
-            // Un paciente solo puede cancelar sus propios turnos
-            $paciente = $usuario->pacientes()->where('id_paciente', $turno->id_paciente)->first();
-            if (!$paciente) {
-                return back()->with('error', 'No tienes permiso para cancelar este turno.');
-            }
-
-            if ($nuevoEstado === Turno::CANCELADO) {
-                $turno->estado = $nuevoEstado;
-            } else {
-                return back()->with('error', 'No tienes permiso para realizar esta acción.');
-            }
-        } else {
-            return back()->with('error', 'No tienes permiso para realizar esta acción.');
+        if ($turno->estado !== Turno::PENDIENTE) {
+            return back()->with('error', 'Solo se pueden cancelar turnos pendientes.');
         }
 
-        $turno->save();
-        return back()->with('success', 'Estado del turno actualizado correctamente.');
+        if ($usuario->hasRole(Rol::ADMINISTRADOR)) {
+            $turno->estado = Turno::CANCELADO;
+            $turno->save();
+            return back()->with('success', 'Turno cancelado por administración.');
+        }
+
+        if ($turno->paciente && $turno->paciente->id_usuario == $usuario->id_usuario) {
+            $turno->estado = Turno::CANCELADO;
+            $turno->save();
+            return back()->with('success', 'Su turno ha sido cancelado correctamente.');
+        }
+
+        return back()->with('error', 'No tiene permiso para realizar esta acción.');
     }
 }
