@@ -23,7 +23,6 @@ class Medico extends Model
         'id_usuario', 
     ];
 
-    // Relación con el usuario asociado al médico
     public function usuario()
     {
         return $this->belongsTo(User::class, 'id_usuario', 'id_usuario');

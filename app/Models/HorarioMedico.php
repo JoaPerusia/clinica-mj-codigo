@@ -25,4 +25,19 @@ class HorarioMedico extends Model
     {
         return $this->belongsTo(Medico::class, 'id_medico', 'id_medico');
     }
+
+    public function getNombreDiaAttribute()
+    {
+        $dias = [
+            0 => 'Domingo',
+            1 => 'Lunes',
+            2 => 'Martes',
+            3 => 'Miércoles',
+            4 => 'Jueves',
+            5 => 'Viernes',
+            6 => 'Sábado',
+        ];
+
+        return $dias[$this->dia_semana] ?? 'Desconocido';
+    }
 }

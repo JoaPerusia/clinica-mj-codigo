@@ -4,79 +4,50 @@
 @section('content')
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="content-wrapper"> {{-- Usando la nueva clase --}}
-                <h1 class="page-title">Lista de Pacientes</h1> {{-- Usando la nueva clase --}}
+            <div class="content-wrapper">
+                <h1 class="page-title">Lista de Pacientes</h1>
 
-                {{-- Botón de Inicio (dinámico por rol) --}}
-                @if(auth()->check())
-                    <div class="action-buttons-container"> {{-- Usando la nueva clase --}}
-                        @php
-                            $user = Auth::user();
-                            $rolActivo = session('rol_activo');
-                            $dashboardRoute = 'dashboard'; // Ruta por defecto
+                {{-- Botonera Superior --}}
+                <div class="action-buttons-container flex justify-between items-center mb-6">
+                    @php
+                        $dashboardRoute = null;
+                        // Uso de Constantes Inyectadas
+                        if (auth()->user()->hasRolActivo($Rol::ADMINISTRADOR)) $dashboardRoute = 'admin.dashboard';
+                        elseif (auth()->user()->hasRolActivo($Rol::MEDICO))    $dashboardRoute = 'medico.dashboard';
+                        elseif (auth()->user()->hasRolActivo($Rol::PACIENTE))  $dashboardRoute = 'paciente.dashboard';
+                    @endphp
 
-                            if ($rolActivo === $Rol::ADMINISTRADOR) {
-                                $dashboardRoute = 'admin.dashboard';
-                            } elseif ($rolActivo === $Rol::MEDICO) {
-                                $dashboardRoute = 'medico.dashboard';
-                            } elseif ($rolActivo === $Rol::PACIENTE) {
-                                $dashboardRoute = 'paciente.dashboard';
-                            }
-                        @endphp
+                    @if($dashboardRoute)
+                        <a href="{{ route($dashboardRoute) }}" class="btn-secondary">← Inicio</a>
+                    @else
+                        <div></div>
+                    @endif
 
-                        @if($dashboardRoute)
-                            <a href="{{ route($dashboardRoute) }}" class="btn-secondary">
-                                ← Inicio
-                            </a>
-                        @endif
-                    </div>
-                @endif
+                    @if(auth()->user()->hasRolActivo($Rol::ADMINISTRADOR))
+                        <a href="{{ route('admin.pacientes.create') }}" class="btn-primary">Agregar Paciente</a>
+                    @elseif(auth()->user()->hasRolActivo($Rol::PACIENTE))
+                        <a href="{{ route('paciente.pacientes.create') }}" class="btn-primary">Agregar Paciente</a>
+                    @endif
+                </div>
 
-                {{-- Botón para Crear Nuevo Paciente (dinámico por rol) --}}
-                @if(auth()->check() && (auth()->user()->hasRole($Rol::ADMINISTRADOR) || auth()->user()->hasRole($Rol::PACIENTE)))
-                    <div class="action-buttons-container mb-6"> {{-- Usando la nueva clase, y mb-6 para más separación de la tabla --}}
-                        @php
-                            $createPacienteRoute = '';
-                            if (auth()->user()->hasRole($Rol::ADMINISTRADOR)) {
-                                $createPacienteRoute = route('admin.pacientes.create');
-                            } elseif (auth()->user()->hasRole($Rol::PACIENTE)) {
-                                $createPacienteRoute = route('paciente.pacientes.create');
-                            }
-                        @endphp
-
-                        @if($createPacienteRoute)
-                            <a href="{{ $createPacienteRoute }}" class="btn-primary">
-                                Agregar Paciente
-                            </a>
-                        @endif
-                    </div>
-                @endif
-                {{-- Nuevo: Formulario de búsqueda por DNI --}}
-                <div class="mb-4 flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+                {{-- Filtros --}}
+                <div class="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
                     <div class="flex items-center space-x-2">
-                        <label for="dni_filtro" class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Buscar paciente:
+                        <label for="dni_filtro" class="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">
+                            Buscar:
                         </label>
-                        <input type="text"
-                            id="dni_filtro"
-                            name="dni_filtro"
+                        <input type="text" id="dni_filtro" name="dni_filtro"
                             placeholder="DNI, nombre o apellido"
                             value="{{ request('dni_filtro') }}"
                             autocomplete="off"
-                            class="mt-1 inline-block w-auto pl-3 pr-10 py-2 text-base border-gray-300
-                                    focus:outline-none focus:ring-indigo-500 focus:border-indigo-500
-                                    sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                        <button id="buscar_dni_btn" class="btn-primary text-sm px-4 py-2 mt-1" title="Buscar">
-                            <svg xmlns="http://www.w3.org/2000/svg" 
-                                fill="none" viewBox="0 0 24 24" stroke-width="1.5" 
-                                stroke="currentColor" class="w-5 h-5">
-                                <path stroke-linecap="round" stroke-linejoin="round" 
-                                    d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 
-                                        0 5.196 5.196a7.5 7.5 0 0 0 
-                                        10.607 10.607Z" />
+                            class="form-input inline-block w-64">
+                        
+                        <button id="buscar_dni_btn" class="bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 transition shadow flex items-center" title="Buscar">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
                             </svg>
                         </button>
-                        <button id="limpiar_filtros_btn" class="btn-secondary text-sm px-4 py-2 mt-1" style="text-transform: none;" title="Restablecer filtros">
+                        <button id="limpiar_filtros_btn" class="bg-gray-500 text-white px-3 py-2 rounded-md hover:bg-gray-600 transition shadow flex items-center" title="Restablecer filtros">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
                             </svg>
@@ -85,35 +56,30 @@
                 </div>
 
                 @if (session('success'))
-                    <div class="alert-success"> {{-- Usando la nueva clase --}}
-                        {{ session('success') }}
-                    </div>
+                    <div class="alert-success mb-4">{{ session('success') }}</div>
                 @endif
-
                 @if (session('error'))
-                    <div class="alert-danger"> {{-- Usando la nueva clase --}}
-                        {{ session('error') }}
-                    </div>
+                    <div class="alert-danger mb-4">{{ session('error') }}</div>
                 @endif
 
                 @if ($pacientes->isEmpty())
-                    <p class="text-gray-700 dark:text-gray-300">No hay pacientes registrados.</p>
+                    <p class="text-center text-gray-500 py-8">No hay pacientes registrados.</p>
                 @else
-                    <div class="table-responsive"> {{-- Usando la nueva clase --}}
-                        <table class="custom-table"> {{-- Usando la nueva clase --}}
+                    <div class="table-responsive">
+                        <table class="custom-table">
                             <thead class="bg-gray-50 dark:bg-gray-700">
                                 <tr>
-                                    <th scope="col" class="table-header">Nombre</th>
-                                    <th scope="col" class="table-header">DNI</th>
-                                    <th scope="col" class="table-header">Fecha Nacimiento</th>
-                                    <th scope="col" class="table-header">Teléfono</th>
-                                    <th scope="col" class="table-header">Obra Social</th>
-                                    <th scope="col" class="table-header">Usuario Asociado</th>
-                                    <th scope="col" class="table-header">Acciones</th>
+                                    <th class="table-header">Nombre</th>
+                                    <th class="table-header">DNI</th>
+                                    <th class="table-header">Fecha Nacimiento</th>
+                                    <th class="table-header">Teléfono</th>
+                                    <th class="table-header">Obra Social</th>
+                                    <th class="table-header">Usuario Asociado</th>
+                                    <th class="table-header">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                @forelse($pacientes as $paciente)
+                                @foreach($pacientes as $paciente)
                                 <tr>
                                     <td class="table-data">{{ $paciente->apellido }}, {{ $paciente->nombre }}</td>
                                     <td class="table-data">{{ $paciente->dni }}</td>
@@ -122,89 +88,61 @@
                                     <td class="table-data">{{ $paciente->obra_social }}</td>
                                     <td class="table-data">{{ $paciente->usuario ? $paciente->usuario->nombre . ' (' . $paciente->usuario->id_usuario . ')' : 'N/A' }}</td>
                                     <td class="table-actions"> 
-                                        @if(auth()->check())
-                                            @if(auth()->user()->hasRole($Rol::ADMINISTRADOR))
-                                                <a href="{{ route('admin.pacientes.edit', $paciente->id_paciente) }}" class="btn-info table-action-button text-sm px-4 py-2 mt-1">Editar</a>
-                                                <form action="{{ route('admin.pacientes.destroy', $paciente->id_paciente) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de eliminar este paciente?');">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="btn-danger text-sm px-4 py-2 mt-1">Eliminar</button>
-                                                </form>
-                                            @elseif(auth()->user()->hasRole($Rol::PACIENTE) && $paciente->id_usuario == auth()->user()->id_usuario)
-                                                <a href="{{ route('paciente.pacientes.edit', $paciente->id_paciente) }}" class="btn-info table-action-button text-sm px-4 py-2 mt-1">Editar</a>
-                                                <form action="{{ route('paciente.pacientes.destroy', $paciente->id_paciente) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de eliminar este paciente?');">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="btn-danger text-sm px-4 py-2 mt-1">Eliminar</button>
-                                                </form>
-                                            @endif
+                                        @php
+                                            $canEdit = auth()->user()->hasRolActivo($Rol::ADMINISTRADOR) || (auth()->user()->hasRolActivo($Rol::PACIENTE) && $paciente->id_usuario == auth()->user()->id_usuario);
+                                            
+                                            $editRoute = auth()->user()->hasRolActivo($Rol::ADMINISTRADOR) 
+                                                ? route('admin.pacientes.edit', $paciente->id_paciente) 
+                                                : route('paciente.pacientes.edit', $paciente->id_paciente);
+                                            
+                                            $destroyRoute = auth()->user()->hasRolActivo($Rol::ADMINISTRADOR) 
+                                                ? route('admin.pacientes.destroy', $paciente->id_paciente) 
+                                                : route('paciente.pacientes.destroy', $paciente->id_paciente);
+                                        @endphp
+
+                                        @if($canEdit)
+                                            <a href="{{ $editRoute }}" class="btn-info table-action-button text-sm px-3 py-1 mr-1">Editar</a>
+                                            <form action="{{ $destroyRoute }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de eliminar este paciente?');">
+                                                @csrf @method('DELETE')
+                                                <button type="submit" class="btn-danger text-sm px-3 py-1">Eliminar</button>
+                                            </form>
                                         @endif
                                     </td>
                                 </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="8" class="table-data text-center">No hay pacientes registrados.</td>
-                                </tr>
-                                @endforelse
+                                @endforeach
                             </tbody>
                         </table>
                     </div>
                 @endif
                 <div class="mt-4">
-                    {{ $pacientes->links() }} {{-- Paginación --}}
+                    {{ $pacientes->links() }}
                 </div>
             </div>
         </div>
     </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const dniFiltroInput = document.getElementById('dni_filtro');
-            const buscarDniBtn = document.getElementById('buscar_dni_btn');
-            const limpiarFiltrosBtn = document.getElementById('limpiar_filtros_btn');
-
-            function updateUrlAndRedirect() {
-                const dniValue = dniFiltroInput.value.trim();
-                const currentUrl = new URL(window.location.href);
-
-                if (dniValue) {
-                    currentUrl.searchParams.set('dni_filtro', dniValue);
-                } else {
-                    currentUrl.searchParams.delete('dni_filtro');
-                }
-
-                currentUrl.searchParams.set('page', 1);
-
-                window.location.href = currentUrl.toString();
-            }
-
-            function clearFiltersAndRedirect() {
-                // Reestablecer los campos a sus valores predeterminados
-                const currentUrl = new URL(window.location.href);
-
-                // Borrar todos los parámetros de búsqueda de la URL
-                currentUrl.searchParams.delete('dni_filtro');
-                currentUrl.searchParams.set('page', 1); // Resetear la página a 1
-
-                // Redirigir a la URL sin los parámetros de filtro
-                window.location.href = currentUrl.toString();
-            }
-
-            buscarDniBtn.addEventListener('click', function (event) {
-                event.preventDefault(); 
-                updateUrlAndRedirect();
-            });
-
-            dniFiltroInput.addEventListener('keydown', function (event) {
-                if (event.key === 'Enter') {
-                    event.preventDefault();
-                    updateUrlAndRedirect();
-                }
-            });
-
-            limpiarFiltrosBtn.addEventListener('click', function (event) {
-                event.preventDefault();
-                clearFiltersAndRedirect();
-            });
-        });
-    </script>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const dniInput = document.getElementById('dni_filtro');
+        const btnBuscar = document.getElementById('buscar_dni_btn');
+        const btnLimpiar = document.getElementById('limpiar_filtros_btn');
+
+        function redirigir(params) {
+            const url = new URL(window.location.href);
+            if (!params) {
+                url.searchParams.delete('dni_filtro');
+            } else {
+                url.searchParams.set('dni_filtro', params);
+            }
+            url.searchParams.set('page', 1);
+            window.location.href = url.toString();
+        }
+
+        if(btnBuscar) btnBuscar.addEventListener('click', (e) => { e.preventDefault(); redirigir(dniInput.value.trim()); });
+        if(dniInput) dniInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') { e.preventDefault(); redirigir(dniInput.value.trim()); } });
+        if(btnLimpiar) btnLimpiar.addEventListener('click', (e) => { e.preventDefault(); redirigir(null); });
+    });
+</script>
+@endpush
