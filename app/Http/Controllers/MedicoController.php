@@ -71,7 +71,7 @@ class MedicoController extends Controller
         $especialidades = Especialidad::all();
         $diasSemana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
         
-        return view('medicos.edit', compact(Rol::MEDICO, 'especialidades', 'diasSemana', 'bloqueos'));
+        return view('medicos.edit', compact('medico', 'especialidades', 'diasSemana', 'bloqueos'));
     }
 
     public function update(UpdateMedicoRequest $request, $id)

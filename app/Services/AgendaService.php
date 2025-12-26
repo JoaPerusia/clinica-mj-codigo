@@ -6,6 +6,7 @@ use App\Models\Bloqueo;
 use App\Models\HorarioMedico;
 use App\Models\Turno;
 use Carbon\Carbon;
+use App\Models\Medico;
 
 class AgendaService
 {
@@ -14,7 +15,8 @@ class AgendaService
      */
     public function obtenerHorariosDisponibles($id_medico, $fecha_str, $except_turno_id = null)
     {
-        $intervalo = 30; // minutos por turno
+        $medico = Medico::findOrFail($id_medico);
+        $intervalo = (int) ($medico->tiempo_turno ?? 30); 
         $fecha = Carbon::parse($fecha_str);
         $dia   = $fecha->dayOfWeek;
 

@@ -15,6 +15,7 @@ class UpdateMedicoRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'tiempo_turno' => 'required|integer|min:5|max:120',
             'especialidades'           => 'required|array',
             'especialidades.*'         => 'exists:especialidades,id_especialidad',
             'horarios'                 => 'required|array',

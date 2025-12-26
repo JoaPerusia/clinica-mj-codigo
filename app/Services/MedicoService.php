@@ -30,11 +30,17 @@ class MedicoService
                 if (!$medico->trashed()) {
                     throw new Exception('El usuario ya está registrado como médico activo.');
                 }
-                // Restaurar
+                // Restaurar y actualizar solo el tiempo de turno
                 $medico->restore();
+                $medico->update([
+                    'tiempo_turno' => $data['tiempo_turno'] ?? 30, 
+                ]);
             } else {
-                // Crear nuevo
-                $medico = Medico::create(['id_usuario' => $usuario->id_usuario]);
+                // Crear nuevo solo con ID y tiempo_turno
+                $medico = Medico::create([
+                    'id_usuario' => $usuario->id_usuario,
+                    'tiempo_turno' => $data['tiempo_turno'] ?? 30, 
+                ]);
             }
 
             // 2. Asignar Especialidades
@@ -44,18 +50,16 @@ class MedicoService
 
             // 3. Crear Horarios
             if (isset($data['horarios'])) {
-                $medico->horariosTrabajo()->delete(); // Limpiar previos si es restauración
-                foreach ($data['horarios'] as $dias) {
-                    foreach ($dias as $horario) {
-                        $medico->horariosTrabajo()->create($horario);
+                $medico->horariosTrabajo()->delete(); 
+                foreach ($data['horarios'] as $dia => $bloques) {
+                    foreach ($bloques as $bloque) {
+                        $medico->horariosTrabajo()->create([
+                            'dia_semana' => $bloque['dia_semana'],
+                            'hora_inicio' => $bloque['hora_inicio'],
+                            'hora_fin' => $bloque['hora_fin'],
+                        ]);
                     }
                 }
-            }
-
-            // 4. Asegurar Rol
-            if (!$usuario->hasRole(Rol::MEDICO)) {
-                $medicoRol = Rol::where('rol', Rol::MEDICO)->firstOrFail();
-                $usuario->roles()->attach($medicoRol->id_rol);
             }
 
             return $medico;
@@ -69,6 +73,11 @@ class MedicoService
     {
         return DB::transaction(function () use ($medico, $data) {
             
+            // 0. guardamos el nuevo tiempo de turno
+            $medico->update([
+                'tiempo_turno' => $data['tiempo_turno']
+            ]);
+
             // 1. Normalizar y Preparar Nuevos Horarios
             $nuevosHorarios = $this->normalizarHorarios($data['horarios']);
 

@@ -15,7 +15,8 @@ class StoreMedicoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'id_usuario'               => 'required|exists:usuarios,id_usuario', 
+            'id_usuario'               => 'required|exists:usuarios,id_usuario',
+            'tiempo_turno' => 'required|integer|min:5|max:120',
             'especialidades'           => 'required|array',
             'especialidades.*'         => 'exists:especialidades,id_especialidad',
             'horarios'                 => 'nullable|array',

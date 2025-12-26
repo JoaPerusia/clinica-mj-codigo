@@ -50,7 +50,7 @@
 
                     {{-- Selección de Especialidades --}}
                     <div class="form-group mb-9">
-                        <label class="form-label">Especialidad(es):</label>
+                        <label class="form-label">Especialidad:</label>
                         <div id="especialidades-container" class="space-y-4">
                             {{-- Campo de selección inicial --}}
                             <div class="flex items-center space-x-2 specialty-select-group">
@@ -108,6 +108,26 @@
                             </div>
                         @endforeach
                     </div>
+
+                    {{-- Campo de Duración del Turno --}}
+                    <div class="form-group">
+                        <label for="tiempo_turno" class="form-label">Duración del Turno (minutos):</label>
+                        <input type="number" 
+                               id="tiempo_turno" 
+                               name="tiempo_turno" 
+                               class="form-input" 
+                               value="{{ old('tiempo_turno', 30) }}" 
+                               required 
+                               min="5" 
+                               max="120" 
+                               step="5"
+                               placeholder="Ej: 30">
+                        <p class="text-xs text-gray-500 mt-1 ml-1">Tiempo estándar para cada consulta (Ej: 15, 20, 30, 60).</p>
+                        @error('tiempo_turno')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    
                     
                     <button type="submit" class="btn-primary mt-4">Crear Médico</button>
                     <a href="{{ route('admin.medicos.index') }}" class="btn-secondary ml-2">Cancelar</a>

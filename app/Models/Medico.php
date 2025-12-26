@@ -21,6 +21,7 @@ class Medico extends Model
         'apellido',
         'horario_disponible',
         'id_usuario', 
+        'tiempo_turno',
     ];
 
     public function usuario()
