@@ -42,6 +42,7 @@ Route::middleware('auth')->group(function () {
     // APIs internas para selectores dinámicos
     Route::get('/api/medicos-by-especialidad', [TurnoController::class, 'getMedicosByEspecialidad'])->name('api.medicos.by-especialidad');
     Route::get('/api/turnos/disponibles', [TurnoController::class, 'getHorariosDisponibles'])->name('api.turnos.disponibles');
+    Route::get('/api/agenda/mes', [TurnoController::class, 'obtenerAgendaMes'])->name('api.agenda.mes');
 });
 
 

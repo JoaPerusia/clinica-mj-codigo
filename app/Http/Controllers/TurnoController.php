@@ -473,4 +473,20 @@ class TurnoController extends Controller
 
         return back()->with('error', 'No tiene permiso para realizar esta acción.');
     }
+
+
+    public function obtenerAgendaMes(Request $request, AgendaService $agendaService)
+    {
+        $id_medico = $request->input('id_medico');
+        $mes       = $request->input('mes');
+        $anio      = $request->input('anio');
+
+        if (!$id_medico || !$mes || !$anio) {
+            return response()->json([]);
+        }
+
+        $estados = $agendaService->obtenerEstadoMes($id_medico, $mes, $anio);
+
+        return response()->json($estados);
+    }
 }

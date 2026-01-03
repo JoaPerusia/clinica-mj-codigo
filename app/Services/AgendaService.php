@@ -127,4 +127,68 @@ class AgendaService
             'mensaje'  => $mensaje
         ];
     }
+
+    /**
+     * Devuelve el estado de cada día del mes para un calendario visual.
+     */
+    public function obtenerEstadoMes($id_medico, $mes, $anio)
+    {
+        $inicioMes = Carbon::createFromDate($anio, $mes, 1)->startOfDay();
+        $finMes    = $inicioMes->copy()->endOfMonth();
+
+        // 1. Obtener días laborales del médico (0=Domingo, ..., 6=Sábado)
+        $diasLaborales = HorarioMedico::where('id_medico', $id_medico)
+            ->pluck('dia_semana')
+            ->unique()
+            ->toArray();
+
+        // 2. Obtener bloqueos de día completo que caigan en este mes
+        $bloqueos = Bloqueo::where('id_medico', $id_medico)
+            ->where(function ($q) use ($inicioMes, $finMes) {
+                 $q->whereBetween('fecha_inicio', [$inicioMes, $finMes])
+                   ->orWhereBetween('fecha_fin', [$inicioMes, $finMes])
+                   ->orWhere(function ($sub) use ($inicioMes, $finMes) {
+                       $sub->where('fecha_inicio', '<', $inicioMes)
+                           ->where('fecha_fin', '>', $finMes);
+                   });
+            })
+            ->whereNull('hora_inicio')
+            ->get();
+
+        $estados = [];
+        $fecha = $inicioMes->copy();
+
+        // 3. Recorrer día por día el mes
+        while ($fecha->lte($finMes)) {
+            $fechaStr = $fecha->format('Y-m-d');
+            $estado = null; 
+
+            // A. ¿Es día laboral?
+            if (in_array($fecha->dayOfWeek, $diasLaborales)) {
+                $estado = 'disponible'; 
+            }
+
+            // B. ¿Está bloqueado? 
+            $esBloqueado = $bloqueos->contains(function ($bloqueo) use ($fecha) {
+                $inicio = Carbon::parse($bloqueo->fecha_inicio)->startOfDay();
+                $fin    = Carbon::parse($bloqueo->fecha_fin)->endOfDay();
+                return $fecha->between($inicio, $fin);
+            });
+
+            if ($esBloqueado) {
+                $estado = 'bloqueado';
+            }
+
+            if ($estado) {
+                 $estados[] = [
+                    'fecha' => $fechaStr,
+                    'estado' => $estado
+                ];
+            }
+
+            $fecha->addDay();
+        }
+
+        return $estados;
+    }
 }

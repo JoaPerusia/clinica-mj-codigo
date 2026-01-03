@@ -27,14 +27,13 @@
                     </div>
                 @endif
 
-                {{-- Determinar la ruta de almacenamiento dinámicamente según el rol --}}
+                {{-- Formulario Principal --}}
                 <form method="POST" action="
                     @if(auth()->check() && auth()->user()->hasRole($Rol::ADMINISTRADOR))
                         {{ route('admin.turnos.store') }}
                     @elseif(auth()->check() && auth()->user()->hasRole($Rol::MEDICO))
-                        {{-- Los médicos no deberían crear turnos desde aquí, pero por si acaso --}}
                         {{ route('medico.turnos.store') }}
-                    @else {{-- Asumiendo que es paciente (id_rol 3) o cualquier otro rol --}}
+                    @else
                         {{ route('paciente.turnos.store') }}
                     @endif
                 ">
@@ -50,7 +49,7 @@
                         </div>
                     @endif
 
-                    {{-- seleccionar paciente --}}
+                    {{-- 1. Seleccionar Paciente --}}
                     <div class="form-group">
                         <label for="paciente_input" class="form-label">Paciente:</label>
                         <input type="text"
@@ -68,11 +67,10 @@
                             @endforeach
                         </datalist>
 
-                        {{-- Campo oculto que se envía al store --}}
                         <input type="hidden" name="id_paciente" id="id_paciente_hidden" value="{{ old('id_paciente') }}">
                     </div>
 
-                    {{-- seleccionar especialidad --}}
+                    {{-- 2. Seleccionar Especialidad --}}
                     <div class="form-group">
                         <label for="id_especialidad" class="form-label">Especialidad</label>
                         <select name="id_especialidad" id="id_especialidad" class="form-input">
@@ -83,28 +81,38 @@
                         </select>
                     </div>
 
-                    {{-- seleccionar médico --}}
+                    {{-- 3. Seleccionar Médico --}}
                     <div class="form-group">
                         <label for="id_medico" class="form-label">Médico:</label>
                         <select name="id_medico" id="id_medico" required class="form-input" disabled>
                             <option value="">Selecciona una especialidad primero</option>
-                           <!-- @foreach($medicos as $medico)
-                                <option value="{{ $medico->id_medico }}">
-                                    {{ $medico->usuario->nombre }} {{ $medico->usuario->apellido }}
-                                    @if($medico->especialidades->isNotEmpty())
-                                        ({{ $medico->especialidades->pluck('nombre')->join(', ') }})
-                                    @endif
-                                </option>
-                            @endforeach {{-- el foreach no sé si va --}} -->
                         </select> 
                     </div>
-                    
 
+                    {{-- 4. Fecha (AHORA CON FLATPICKR PERO CON TU ESTILO) --}}
                     <div class="form-group">
                         <label for="fecha" class="form-label">Fecha:</label>
-                        <input type="date" name="fecha" id="fecha" required min="{{ \Carbon\Carbon::today()->toDateString() }}" class="form-input">
+                        
+                        {{-- Input text para Flatpickr usando TU clase form-input --}}
+                        <input type="text" id="fecha" name="fecha" 
+                               class="form-input cursor-pointer"
+                               placeholder="Selecciona una fecha..." 
+                               disabled required>
+                        
+                        {{-- Referencia de Colores (Estilo simple para que no choque) --}}
+                        <div id="referencia-colores" class="mt-2 flex items-center text-xs text-gray-600 hidden">
+                            <div class="flex items-center mr-4">
+                                <span class="w-3 h-3 rounded-full bg-green-200 border border-green-400 mr-1"></span>
+                                <span class="ml-1 text-white">Disponible</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="w-3 h-3 rounded-full bg-red-200 border border-red-400 mr-1"></span>
+                                <span class="ml-1 text-white">Ocupado / No atiende</span>
+                            </div>
+                        </div>
                     </div>
 
+                    {{-- 5. Hora --}}
                     <div class="form-group">
                         <label for="hora" class="form-label">Hora:</label>
                         <select name="hora" id="hora" required disabled class="form-input">
@@ -112,7 +120,9 @@
                         </select>
                     </div>
 
+                    {{-- Botones de Acción --}}
                     <button type="submit" class="btn-primary mt-4">Confirmar turno</button>
+                    
                     @php
                         $cancelRoute = '';
                         if (auth()->check() && auth()->user()->hasRole($Rol::ADMINISTRADOR)) {
@@ -121,48 +131,60 @@
                             $cancelRoute = route('paciente.turnos.index');
                         }
                     @endphp
+                    
                     @if($cancelRoute)
                         <a href="{{ $cancelRoute }}" class="btn-secondary ml-2">Cancelar</a>
                     @endif
                 </form>
-
-                {{-- Incluye el script de JavaScript para cargar horarios --}}
-                <script>
-                    // Definimos estas variables para que sean accesibles desde el script externo
-                    const apiUrlBase = @json(Auth::check() ? (Auth::user()->hasRole($Rol::ADMINISTRADOR) ? '/admin/turnos' : (Auth::user()->hasRole($Rol::MEDICO) ? '/medico/turnos' : '/paciente/turnos')) : '/paciente/turnos');
-                    const apiUrlMedicosBase = '{{ route('api.medicos.by-especialidad') }}';
-                    const apiUrlHorariosDisponibles = '{{ route('api.turnos.disponibles') }}'; 
-                    const currentTurnoId = null;
-                    const currentTurnoHora = '';
-                </script>
-                @vite('resources/js/turnos.js')
             </div>
         </div>
     </div>
-    
-    {{-- Script para manejar la selección del paciente --}}
+
+    {{-- Estilos de Flatpickr --}}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+@endsection
+
+@push('scripts')
+    {{-- Scripts de Flatpickr --}}
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
+
+    {{-- Variables para JS --}}
+    <script>
+        const apiUrlBase = @json(Auth::check() ? (Auth::user()->hasRole($Rol::ADMINISTRADOR) ? '/admin/turnos' : (Auth::user()->hasRole($Rol::MEDICO) ? '/medico/turnos' : '/paciente/turnos')) : '/paciente/turnos');
+        const apiUrlMedicosBase = '{{ route('api.medicos.by-especialidad') }}';
+        const apiUrlHorariosDisponibles = '{{ route('api.turnos.disponibles') }}';
+        const apiUrlAgenda = '{{ route('api.agenda.mes') }}'; // Variable necesaria para los colores
+        
+        const currentTurnoId = null;
+        const currentTurnoHora = '';
+    </script>
+
+    {{-- Tu Script Principal --}}
+    @vite('resources/js/turnos.js')
+
+    {{-- Script de Pacientes (Datalist) --}}
     <script>
     document.addEventListener('DOMContentLoaded', function () {
         const pacienteInput = document.getElementById('paciente_input');
         const pacientesList = document.getElementById('pacientes_list');
         const idHidden      = document.getElementById('id_paciente_hidden');
 
-        pacienteInput.addEventListener('input', function () {
-            const texto = this.value;
-            let encontrado = false;
+        if(pacienteInput) {
+            pacienteInput.addEventListener('input', function () {
+                const texto = this.value;
+                let encontrado = false;
 
-            for (let opt of pacientesList.options) {
-                if (opt.value === texto) {
-                    idHidden.value = opt.dataset.id;
-                    encontrado = true;
-                    break;
+                for (let opt of pacientesList.options) {
+                    if (opt.value === texto) {
+                        idHidden.value = opt.dataset.id;
+                        encontrado = true;
+                        break;
+                    }
                 }
-            }
-
-            if (!encontrado) {
-                idHidden.value = '';
-            }
-        });
+                if (!encontrado) idHidden.value = '';
+            });
+        }
     });
     </script>
-@endsection
+@endpush

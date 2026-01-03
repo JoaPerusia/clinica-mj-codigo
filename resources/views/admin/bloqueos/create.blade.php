@@ -25,17 +25,29 @@
                 <form action="{{ route('admin.bloqueos.store') }}" method="POST">
                     @csrf
                     
-                    {{-- Selector de Médico --}}
+                    {{-- Seleccionar Médico --}}
                     <div class="form-group mb-4">
-                        <label for="id_medico" class="form-label">Médico</label>
-                        <select name="id_medico" id="id_medico" class="form-select" required>
-                            <option value="">Seleccione un médico</option>
+                        <label for="medico_input" class="form-label block font-medium text-gray-700">Médico:</label>
+                        
+                        {{-- Input visible para buscar --}}
+                        <input type="text"
+                               id="medico_input"
+                               list="medicos_list"
+                               class="form-input block w-full rounded-md border-gray-300 shadow-sm"
+                               placeholder="Escribe para buscar médico..."
+                               autocomplete="off"
+                               required>
+
+                        {{-- Lista oculta de opciones --}}
+                        <datalist id="medicos_list">
                             @foreach($medicos as $medico)
-                                <option value="{{ $medico->id_medico }}" {{ old('id_medico') == $medico->id_medico ? 'selected' : '' }}>
-                                    {{ $medico->usuario->nombre }} {{ $medico->usuario->apellido }} (DNI: {{ $medico->usuario->dni }})
-                                </option>
+                                <option value="{{ $medico->usuario->apellido }} {{ $medico->usuario->nombre }}" 
+                                        data-id="{{ $medico->id_medico }}">
                             @endforeach
-                        </select>
+                        </datalist>
+
+                        {{-- Input oculto que envía el ID real al backend --}}
+                        <input type="hidden" name="id_medico" id="id_medico_hidden" value="{{ old('id_medico') }}">
                     </div>
 
                     {{-- Formulario de Bloqueo --}}
@@ -73,3 +85,33 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const medicoInput = document.getElementById('medico_input');
+        const medicosList = document.getElementById('medicos_list');
+        const idHidden    = document.getElementById('id_medico_hidden');
+
+        medicoInput.addEventListener('input', function () {
+            const val = this.value;
+            let found = false;
+
+            // Buscamos si lo escrito coincide con alguna opción de la lista
+            for (let option of medicosList.options) {
+                if (option.value === val) {
+                    // Si coincide, guardamos el ID oculto
+                    idHidden.value = option.dataset.id;
+                    found = true;
+                    break;
+                }
+            }
+
+            // Si el usuario borra o escribe algo inválido, limpiamos el ID
+            if (!found) {
+                idHidden.value = '';
+            }
+        });
+    });
+</script>
+@endpush
