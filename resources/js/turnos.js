@@ -1,62 +1,50 @@
 document.addEventListener('DOMContentLoaded', function () {
     const especialidadSelect = document.getElementById('id_especialidad');
     const medicoSelect = document.getElementById('id_medico');
-    const fechaInput = document.getElementById('fecha'); // Input controlado por Flatpickr
+    const fechaInput = document.getElementById('fecha');
     const horaSelect = document.getElementById('hora');
-    const refColores = document.getElementById('referencia-colores'); // La leyenda de colores
+    const refColores = document.getElementById('referencia-colores');
     
-    let calendario; // Instancia de Flatpickr
-    let agendaCache = {}; // Caché para evitar recargas innecesarias de colores
+    let calendario;
+    let agendaCache = {}; 
 
-    // -------------------------------------------------------------------
-    // 1. INICIALIZACIÓN DE FLATPICKR (El Calendario Visual)
-    // -------------------------------------------------------------------
+    // 1. INICIALIZAR FLATPICKR (Versión Clásica Estable)
     calendario = flatpickr(fechaInput, {
-        locale: {
-            ...flatpickr.l10ns.es, // Carga todas las traducciones de Español
-            firstDayOfWeek: 0      // 0 = Domingo, 1 = Lunes
-        },
+        locale: 'es',
         minDate: "today",
-        dateFormat: "Y-m-d",
+        dateFormat: "Y-m-d", // Formato aaaa-mm-dd (Estándar para BD)
         disableMobile: "true",
         
+        // Eventos para recargar colores al cambiar de mes
         onMonthChange: function(selectedDates, dateStr, instance) {
             actualizarColoresCalendario(instance.currentYear, instance.currentMonth + 1);
         },
         onYearChange: function(selectedDates, dateStr, instance) {
             actualizarColoresCalendario(instance.currentYear, instance.currentMonth + 1);
         },
-        onDayCreate: function(dObj, dStr, fp, dayElem) {
-             if (typeof agendaActual !== 'undefined' && agendaActual.length > 0) {
-                const fechaDia = dObj.getFullYear() + "-" + 
-                               String(dObj.getMonth() + 1).padStart(2, '0') + "-" + 
-                               String(dObj.getDate()).padStart(2, '0');
-                
-                const infoDia = agendaActual.find(item => item.fecha === fechaDia);
-                if (infoDia) {
-                    if (infoDia.estado === 'disponible') dayElem.classList.add('dia-disponible');
-                    else if (infoDia.estado === 'bloqueado') dayElem.classList.add('dia-bloqueado');
-                }
+        // Al abrir el calendario, intentamos pintar (por si acaso)
+        onOpen: function(selectedDates, dateStr, instance) {
+            if (medicoSelect.value) {
+                actualizarColoresCalendario(instance.currentYear, instance.currentMonth + 1);
             }
         },
         onChange: function(selectedDates, dateStr, instance) {
-            if (dateStr) cargarHorariosDisponibles(dateStr);
-            else resetearHorario();
+            if (dateStr) {
+                cargarHorariosDisponibles(dateStr);
+            } else {
+                resetearHorario();
+            }
         }
     });
 
-    // -------------------------------------------------------------------
-    // 2. FUNCIONES DE RESETEO
-    // -------------------------------------------------------------------
-
+    // --- FUNCIONES DE RESETEO ---
     function resetearHorario(message = 'Selecciona una hora') {
         horaSelect.innerHTML = `<option value="">${message}</option>`;
         horaSelect.disabled = true;
     }
 
     function resetearFecha() {
-        calendario.clear(); // Limpiar visualmente
-        fechaInput.disabled = true;
+        calendario.clear(); 
         if(refColores) refColores.classList.add('hidden');
     }
 
@@ -67,31 +55,28 @@ document.addEventListener('DOMContentLoaded', function () {
         resetearHorario();
     }
 
-    // -------------------------------------------------------------------
-    // 3. LÓGICA DE COLORES (AGENDA VISUAL)
-    // -------------------------------------------------------------------
-
+    // --- LÓGICA DE COLORES (AGENDA) ---
     async function actualizarColoresCalendario(year, month) {
         const medicoId = medicoSelect.value;
         if (!medicoId) return;
 
-        // Clave única para caché (ej: "5-10-2025")
         const cacheKey = `${medicoId}-${month}-${year}`;
 
         try {
             let datos;
             
-            // Usar caché si ya consultamos este mes
             if (agendaCache[cacheKey]) {
                 datos = agendaCache[cacheKey];
             } else {
-                // Consultar API (apiUrlAgenda viene de create.blade.php)
+                // apiUrlAgenda viene del blade
                 const response = await fetch(`${apiUrlAgenda}?id_medico=${medicoId}&mes=${month}&anio=${year}`);
-                if (!response.ok) throw new Error('Error al obtener agenda');
+                if (!response.ok) throw new Error('Error API Agenda');
+                
                 datos = await response.json();
                 agendaCache[cacheKey] = datos;
             }
 
+            // Llamamos directamente a la función de pintar
             pintarDias(datos);
 
         } catch (error) {
@@ -100,17 +85,17 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function pintarDias(estados) {
-        // Limpiar clases previas
+        // 1. Limpiamos clases anteriores
         const diasDOM = document.querySelectorAll('.flatpickr-day');
         diasDOM.forEach(dia => dia.classList.remove('dia-disponible', 'dia-bloqueado'));
 
-        // Pintar según respuesta de la API
+        // 2. Pintamos los días correspondientes
         estados.forEach(item => {
-            // Buscamos el día en el DOM comparando fechas
+            // Buscamos el día en el calendario por su atributo 'aria-label' o fecha interna
             diasDOM.forEach(diaElem => {
                 if (!diaElem.dateObj) return;
 
-                // Formateamos la fecha del elemento DOM a Y-m-d para comparar
+                // Convertimos la fecha del elemento a string Y-m-d para comparar
                 const d = diaElem.dateObj;
                 const diaStr = d.getFullYear() + "-" + 
                                String(d.getMonth() + 1).padStart(2, '0') + "-" + 
@@ -127,43 +112,40 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // -------------------------------------------------------------------
-    // 4. EVENT LISTENERS
-    // -------------------------------------------------------------------
+    // --- EVENTOS DEL DOM ---
 
-    // A. Cambio de Especialidad
     if (especialidadSelect) {
         especialidadSelect.addEventListener('change', function () {
             const especialidadId = this.value;
             resetearMedicos();
-            agendaCache = {}; // Limpiar caché al cambiar especialidad
-
+            agendaCache = {}; 
+            
             if (especialidadId) {
                 cargarMedicosPorEspecialidad(especialidadId);
             }
         });
     }
 
-    // B. Cambio de Médico
     if (medicoSelect) {
         medicoSelect.addEventListener('change', function () {
             resetearFecha();
             resetearHorario();
-            agendaCache = {}; // Limpiar caché al cambiar médico
+            agendaCache = {};
 
             if (this.value) {
-                fechaInput.disabled = false; // Habilitar calendario
+                // Habilitamos calendario
+                calendario._input.disabled = false; 
                 if(refColores) refColores.classList.remove('hidden');
                 
-                // Cargar colores del mes actual
+                // Cargar colores iniciales
                 actualizarColoresCalendario(calendario.currentYear, calendario.currentMonth + 1);
+            } else {
+                calendario._input.disabled = true;
             }
         });
     }
 
-    // -------------------------------------------------------------------
-    // 5. FUNCIONES AJAX (CARGA DE DATOS)
-    // -------------------------------------------------------------------
+    // --- CARGA DE DATOS ---
 
     async function cargarMedicosPorEspecialidad(especialidadId) {
         medicoSelect.disabled = true;
@@ -171,12 +153,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
         try {
             const response = await fetch(`${apiUrlMedicosBase}?id_especialidad=${especialidadId}`);
-            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            if (!response.ok) throw new Error('Error HTTP');
             
             const medicos = await response.json();
 
             medicoSelect.innerHTML = '';
-            let defaultOption = document.createElement('option');
+            const defaultOption = document.createElement('option');
             defaultOption.value = '';
             defaultOption.textContent = 'Selecciona un médico';
             medicoSelect.appendChild(defaultOption);
@@ -185,9 +167,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 medicos.forEach(medico => {
                     const option = document.createElement('option');
                     option.value = medico.id_medico;
-                    
                     option.textContent = `${medico.apellido}, ${medico.nombre}`;
-                    
                     medicoSelect.appendChild(option);
                 });
                 medicoSelect.disabled = false;
@@ -195,50 +175,44 @@ document.addEventListener('DOMContentLoaded', function () {
                 resetearMedicos('No hay médicos con esta especialidad');
             }
         } catch (error) {
-            console.error('Error al cargar médicos por especialidad:', error);
-            resetearMedicos('Error al cargar médicos.');
+            console.error(error);
+            resetearMedicos('Error al cargar médicos');
         }
     }
 
-    // Se llama desde Flatpickr onChange
     async function cargarHorariosDisponibles(fechaStr) {
         const medicoId = medicoSelect.value;
         if (!medicoId || !fechaStr) return;
 
-        horaSelect.innerHTML = '<option>Cargando horarios...</option>';
+        horaSelect.innerHTML = '<option>Cargando...</option>';
         horaSelect.disabled = true;
 
         try {
-            // Construir URL (considerando si es edición)
             let url = `${apiUrlHorariosDisponibles}?id_medico=${medicoId}&fecha=${fechaStr}`;
             if (typeof currentTurnoId !== 'undefined' && currentTurnoId) {
                 url += `&except_turno_id=${currentTurnoId}`;
             }
 
             const response = await fetch(url);
-            if (!response.ok) throw new Error('Error HTTP');
             const data = await response.json();
 
-            horaSelect.innerHTML = ''; // Limpiar
+            horaSelect.innerHTML = '';
 
             if (data.mensaje) {
-                // Mensaje específico del backend (ej: "Médico no atiende")
                 resetearHorario(data.mensaje);
                 return;
             }
 
             if (data.horarios && data.horarios.length > 0) {
-                const defaultOpt = document.createElement('option');
-                defaultOpt.value = '';
-                defaultOpt.textContent = 'Selecciona una hora';
-                horaSelect.appendChild(defaultOpt);
+                const def = document.createElement('option');
+                def.value = '';
+                def.textContent = 'Selecciona una hora';
+                horaSelect.appendChild(def);
 
                 data.horarios.forEach(hora => {
                     const opt = document.createElement('option');
                     opt.value = hora;
                     opt.textContent = hora;
-                    
-                    // Preseleccionar si estamos editando
                     if (typeof currentTurnoHora !== 'undefined' && hora === currentTurnoHora) {
                         opt.selected = true;
                     }
@@ -248,31 +222,9 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 resetearHorario('No hay horarios disponibles');
             }
-
         } catch (error) {
             console.error(error);
             resetearHorario('Error al cargar horarios');
         }
-    }
-
-    // -------------------------------------------------------------------
-    // 6. CARGA INICIAL (PARA EDICIÓN O RECARGA CON ERRORES)
-    // -------------------------------------------------------------------
-    if (especialidadSelect.value) {
-        cargarMedicosPorEspecialidad(especialidadSelect.value).then(() => {
-            
-            const medicoPreseleccionado = medicoSelect.getAttribute('data-selected') || medicoSelect.value; 
-            
-            if (medicoPreseleccionado) {
-                 medicoSelect.value = medicoPreseleccionado;
-                 medicoSelect.dispatchEvent(new Event('change')); // Disparar lógica de calendario
-                 
-                 // Si hay fecha preseleccionada
-                 if (fechaInput.value) {
-                     // Flatpickr ya tiene el valor por el input value, solo cargamos horarios
-                     cargarHorariosDisponibles(fechaInput.value);
-                 }
-            }
-        });
     }
 });

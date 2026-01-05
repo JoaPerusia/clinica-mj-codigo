@@ -142,6 +142,31 @@
 
     {{-- Estilos de Flatpickr --}}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+    {{-- ESTILOS PERSONALIZADOS PARA LOS COLORES --}}
+    <style>
+        /* Día Disponible (Verde) */
+        .flatpickr-day.dia-disponible {
+            background: #dcfce7 !important; /* Verde claro */
+            border-color: #86efac !important;
+            color: #166534 !important; /* Texto verde oscuro */
+            font-weight: bold;
+        }
+
+        /* Día Bloqueado (Rojo) */
+        .flatpickr-day.dia-bloqueado {
+            background: #fee2e2 !important; /* Rojo claro */
+            border-color: #fca5a5 !important;
+            color: #991b1b !important; /* Texto rojo oscuro */
+            cursor: not-allowed;
+            text-decoration: line-through;
+        }
+        
+        /* Ajuste para que el hover no tape el color */
+        .flatpickr-day.dia-disponible:hover {
+            background: #bbf7d0 !important;
+        }
+    </style>
 @endsection
 
 @push('scripts')
