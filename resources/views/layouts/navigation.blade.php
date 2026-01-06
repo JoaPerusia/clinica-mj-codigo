@@ -1,3 +1,5 @@
+@inject('Rol', 'App\Models\Rol')
+
 <nav x-data="{ open: false }"
      class="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700"
 >
@@ -27,7 +29,7 @@
                         </x-nav-link>
 
                         {{-- Admin --}}
-                        @if(Auth::user()->hasRole('Administrador') && request()->is('admin*'))
+                        @if(Auth::user()->hasRole($Rol::ADMINISTRADOR) && request()->is('admin*'))
                             <x-nav-link :href="route('admin.turnos.index')"    :active="request()->routeIs('admin.turnos.*')">    {{ __('Turnos') }}               </x-nav-link>
                             <x-nav-link :href="route('admin.especialidades.index')" :active="request()->routeIs('admin.especialidades.*')"> {{ __('Especialidades') }}     </x-nav-link>
                             <x-nav-link :href="route('admin.medicos.index')"   :active="request()->routeIs('admin.medicos.*')">   {{ __('Médicos') }}             </x-nav-link>
@@ -36,14 +38,14 @@
                         @endif
 
                         {{-- Médico --}}
-                        @if(Auth::user()->hasRole('Medico') && request()->is('medico*'))
+                        @if(Auth::user()->hasRole($Rol::MEDICO) && request()->is('medico*'))
                             <x-nav-link :href="route('medico.turnos.index')" :active="request()->routeIs('medico.turnos.*')">
                                 {{ __('Turnos') }}
                             </x-nav-link>
                         @endif
 
                         {{-- Paciente --}}
-                        @if(Auth::user()->hasRole('Paciente') && request()->is('paciente*'))
+                        @if(Auth::user()->hasRole($Rol::PACIENTE) && request()->is('paciente*'))
                             <x-nav-link :href="route('paciente.turnos.index')"   :active="request()->routeIs('paciente.turnos.*')">   {{ __('Turnos') }}   </x-nav-link>
                             <x-nav-link :href="route('paciente.pacientes.index')" :active="request()->routeIs('paciente.pacientes.*')"> {{ __('Pacientes') }}</x-nav-link>
                         @endif
@@ -139,7 +141,7 @@
 
             {{-- Mis opciones (idénticas a escritorio, pero con responsive-nav-link) --}}
             @unless(request()->routeIs('dashboard'))
-                @if(Auth::user()->hasRole('Administrador') && request()->is('admin*'))
+                @if(Auth::user()->hasRole($Rol::ADMINISTRADOR) && request()->is('admin*'))
                     <x-responsive-nav-link :href="route('admin.turnos.index')"    :active="request()->routeIs('admin.turnos.*')">    {{ __('Turnos') }}               </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('admin.especialidades.index')" :active="request()->routeIs('admin.especialidades.*')"> {{ __('Especialidades') }}     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('admin.medicos.index')"   :active="request()->routeIs('admin.medicos.*')">   {{ __('Médicos') }}             </x-responsive-nav-link>
@@ -147,13 +149,13 @@
                     <x-responsive-nav-link :href="route('admin.pacientes.index')" :active="request()->routeIs('admin.pacientes.*')"> {{ __('Pacientes') }}           </x-responsive-nav-link>
                 @endif
 
-                @if(Auth::user()->hasRole('Medico') && request()->is('medico*'))
+                @if(Auth::user()->hasRole($Rol::MEDICO) && request()->is('medico*'))
                     <x-responsive-nav-link :href="route('medico.turnos.index')" :active="request()->routeIs('medico.turnos.*')">
                         {{ __('Turnos') }}
                     </x-responsive-nav-link>
                 @endif
 
-                @if(Auth::user()->hasRole('Paciente') && request()->is('paciente*'))
+                @if(Auth::user()->hasRole($Rol::PACIENTE) && request()->is('paciente*'))
                     <x-responsive-nav-link :href="route('paciente.turnos.index')"   :active="request()->routeIs('paciente.turnos.*')">   {{ __('Turnos') }}   </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('paciente.pacientes.index')" :active="request()->routeIs('paciente.pacientes.*')"> {{ __('Pacientes') }}</x-responsive-nav-link>
                 @endif

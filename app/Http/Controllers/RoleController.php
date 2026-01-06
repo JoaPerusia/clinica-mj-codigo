@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
+use App\Models\Rol;
 
 class RoleController extends Controller
 {
@@ -29,9 +30,9 @@ class RoleController extends Controller
 
         // Redirijo al dashboard correspondiente
         return match($rol) {
-            'Administrador' => redirect()->route('admin.dashboard'),
-            'Medico'        => redirect()->route('medico.dashboard'),
-            'Paciente'      => redirect()->route('paciente.dashboard'),
+            Rol::ADMINISTRADOR => redirect()->route('admin.dashboard'),
+            Rol::MEDICO        => redirect()->route('medico.dashboard'),
+            Rol::PACIENTE      => redirect()->route('paciente.dashboard'),
         };
     }
 }

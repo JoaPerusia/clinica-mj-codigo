@@ -1,5 +1,6 @@
 {{-- Asumiendo que este es el contenido de tu archivo turnos/edit.blade.php --}}
-
+@inject('Rol', 'App\Models\Rol')
+@inject('Turno', 'App\Models\Turno')
 @extends('layouts.app')
 
 @section('content')
@@ -13,11 +14,11 @@
                     <div class="action-buttons-container"> 
                         @php
                             $dashboardRoute = '';
-                            if (auth()->user()->hasRole('Administrador')) {
+                            if (auth()->user()->hasRole($Rol::ADMINISTRADOR)) {
                                 $dashboardRoute = route('admin.turnos.index');
-                            } elseif (auth()->user()->hasRole('Paciente')) {
+                            } elseif (auth()->user()->hasRole($Rol::PACIENTE)) {
                                 $dashboardRoute = route('paciente.turnos.index');
-                            } elseif (auth()->user()->hasRole('Medico')) {
+                            } elseif (auth()->user()->hasRole($Rol::MEDICO)) {
                                 $dashboardRoute = route('medico.turnos.index');
                             }
                         @endphp
@@ -51,7 +52,7 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route(Auth::user()->hasRole('Administrador') ? 'admin.turnos.update' : (Auth::user()->hasRole('Medico') ? 'medico.turnos.update' : 'paciente.turnos.update'), $turno->id_turno) }}">
+                <form method="POST" action="{{ route(Auth::user()->hasRole($Rol::ADMINISTRADOR) ? 'admin.turnos.update' : (Auth::user()->hasRole($Rol::MEDICO) ? 'medico.turnos.update' : 'paciente.turnos.update'), $turno->id_turno) }}">
                     @csrf
                     @method('PUT')
 
@@ -84,10 +85,10 @@
                     {{-- Campo Estado (condicionalmente habilitado/deshabilitado) --}}
                     @php
                         $estadoActual = $turno->estado;
-                        $isDisabled = in_array($estadoActual, ['realizado', 'cancelado', 'ausente']);
+                        $isDisabled = in_array($estadoActual, [$Turno::REALIZADO, $Turno::CANCELADO]);
                         // Solo el médico y el admin pueden cambiar el estado
-                        $isMedico = Auth::user()->hasRole('Medico');
-                        $isAdmin = Auth::user()->hasRole('Administrador');
+                        $isMedico = Auth::user()->hasRole($Rol::MEDICO);
+                        $isAdmin = Auth::user()->hasRole($Rol::ADMINISTRADOR);
                     @endphp
 
                     @if ($isMedico || $isAdmin)
@@ -99,9 +100,8 @@
                                     <option value="{{ $estadoActual }}" selected>{{ ucfirst($estadoActual) }}</option>
                                 @else
                                     {{-- Si el estado es pendiente, permite cambiar a cualquier otro --}}
-                                    <option value="pendiente" {{ $estadoActual == 'pendiente' ? 'selected' : '' }}>Pendiente</option>
-                                    <option value="realizado" {{ $estadoActual == 'realizado' ? 'selected' : '' }}>Realizado</option>
-                                    <option value="ausente" {{ $estadoActual == 'ausente' ? 'selected' : '' }}>Ausente</option>
+                                    <option value="pendiente" {{ $estadoActual == $Turno::PENDIENTE ? 'selected' : '' }}>Pendiente</option>
+                                    <option value="realizado" {{ $estadoActual == $Turno::REALIZADO ? 'selected' : '' }}>Realizado</option>
                                 @endif
                             </select>
                             @error('estado')
@@ -120,11 +120,11 @@
                     
                     @php
                         $cancelRoute = '';
-                        if (auth()->check() && auth()->user()->hasRole('Administrador')) {
+                        if (auth()->check() && auth()->user()->hasRole($Rol::ADMINISTRADOR)) {
                             $cancelRoute = route('admin.turnos.index');
-                        } elseif (auth()->check() && auth()->user()->hasRole('Paciente')) {
+                        } elseif (auth()->check() && auth()->user()->hasRole($Rol::PACIENTE)) {
                             $cancelRoute = route('paciente.turnos.index');
-                        } elseif (auth()->check() && auth()->user()->hasRole('Medico')) {
+                        } elseif (auth()->check() && auth()->user()->hasRole($Rol::MEDICO)) {
                             $cancelRoute = route('medico.turnos.index');
                         }
                     @endphp

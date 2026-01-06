@@ -13,7 +13,7 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        $adminRol = Rol::where('rol', 'Administrador')->first();
+        $adminRol = Rol::where('rol', Rol::ADMINISTRADOR)->first();
 
         if ($adminRol) {
             $user = User::firstOrCreate(

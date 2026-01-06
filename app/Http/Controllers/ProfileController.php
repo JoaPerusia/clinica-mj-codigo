@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use App\Models\Paciente;
+use App\Models\Rol;
 
 class ProfileController extends Controller
 {
@@ -32,7 +33,7 @@ class ProfileController extends Controller
     {
         $user = $request->user();
         
-        if ($user->hasRole('Administrador')) {
+        if ($user->hasRole(Rol::ADMINISTRADOR)) {
             // Lógica para el Administrador
             $validatedData = $request->validate([
                 'nombre' => ['required', 'string', 'max:255'],
@@ -66,7 +67,7 @@ class ProfileController extends Controller
         $user->save();
 
         // LÓGICA AGREGADA PARA SINCRONIZAR LA TABLA DE PACIENTES
-        if ($user->hasRole('Paciente')) {
+        if ($user->hasRole(Rol::PACIENTE)) {
             // CORRECCIÓN CLAVE: Buscar el registro del paciente que tiene este id_usuario
             $paciente = Paciente::where('id_usuario', $user->id_usuario)->first();
             if ($paciente) {

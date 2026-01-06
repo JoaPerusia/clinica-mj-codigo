@@ -63,7 +63,7 @@ class RegisteredUserController extends Controller
             ]);
 
             // 3. Asignar el rol de Paciente al usuario
-            $pacienteRol = Rol::where('rol', 'Paciente')->first();
+            $pacienteRol = Rol::where('rol', Rol::PACIENTE)->first();
             if ($pacienteRol) {
                 $user->roles()->attach($pacienteRol->id_rol);
             }
@@ -97,14 +97,14 @@ class RegisteredUserController extends Controller
         Auth::login($user);
 
         // --- Lógica de redirección por rol ---
-        if ($user->hasRole('Administrador')) {
-            session(['rol_activo' => 'Administrador']);
+        if ($user->hasRole(Rol::ADMINISTRADOR)) {
+            session(['rol_activo' => Rol::ADMINISTRADOR]);
             return Redirect::route('admin.dashboard');
-        } elseif ($user->hasRole('Medico')) {
-            session(['rol_activo' => 'Medico']);
+        } elseif ($user->hasRole(Rol::MEDICO)) {
+            session(['rol_activo' => Rol::MEDICO]);
             return Redirect::route('medico.dashboard');
-        } elseif ($user->hasRole('Paciente')) {
-            session(['rol_activo' => 'Paciente']);
+        } elseif ($user->hasRole(Rol::PACIENTE)) {
+            session(['rol_activo' => Rol::PACIENTE]);
             return Redirect::route('paciente.dashboard');
         }
 

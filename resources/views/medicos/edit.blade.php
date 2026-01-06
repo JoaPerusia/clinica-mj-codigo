@@ -35,7 +35,7 @@
 
                     {{-- Campo de selección de Especialidad --}}
                     <div class="form-group mb-8">
-                        <label class="form-label">Especialidad(es):</label>
+                        <label class="form-label">Especialidad:</label>
                         <div id="especialidades-container" class="space-y-4">
                             @php
                                 // Obtener las especialidades actuales del médico
@@ -69,9 +69,11 @@
                                 </div>
                             @endforelse
                         </div>
+                        <!--
                         <button type="button" id="add-specialty-btn" class="inline-flex items-center px-3 py-1 text-sm font-semibold rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 mt-2">
                             + Agregar Especialidad
                         </button>
+                        -->
                     </div>
 
                     {{-- Horarios de Trabajo --}}
@@ -127,6 +129,24 @@
                                 </div>
                             </div>
                         @endforeach
+                    </div>
+
+                    {{-- Campo de Duración del Turno --}}
+                    <div class="form-group">
+                        <label for="tiempo_turno" class="form-label">Duración del Turno (minutos):</label>
+                        <input type="number" 
+                               id="tiempo_turno" 
+                               name="tiempo_turno" 
+                               class="form-input" 
+                               value="{{ old('tiempo_turno', $medico->tiempo_turno ?? 30) }}" 
+                               required 
+                               min="5" 
+                               max="120" 
+                               step="5">
+                        <p class="text-xs text-gray-500 mt-1 ml-1">Tiempo estándar para cada consulta.</p>
+                        @error('tiempo_turno')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     {{-- Botones de acción --}}

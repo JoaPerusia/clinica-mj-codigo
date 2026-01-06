@@ -1,3 +1,4 @@
+@inject('Rol', 'App\Models\Rol')
 @extends('layouts.app')
 
 @section('content')
@@ -7,7 +8,7 @@
                 <h1 class="page-title">Agregar Especialidad</h1> 
 
                 {{-- Botón de Inicio para Admin --}}
-                @if(auth()->check() && auth()->user()->hasRole('Administrador'))
+                @if(auth()->check() && auth()->user()->hasRole($Rol::ADMINISTRADOR))
                     <div class="action-buttons-container"> 
                         <a href="{{ route('admin.especialidades.index') }}" class="btn-secondary">
                             ← Especialidades

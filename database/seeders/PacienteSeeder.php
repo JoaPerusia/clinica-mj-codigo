@@ -13,7 +13,7 @@ class PacienteSeeder extends Seeder
     public function run(): void
     {
         // 1. Buscamos el rol Paciente
-        $pacienteRol = Rol::where('rol', 'Paciente')->first();
+        $pacienteRol = Rol::where('rol', Rol::PACIENTE)->first();
         if (! $pacienteRol) {
             $this->command->info('❌ Falta el rol Paciente. Ejecuta RolSeeder primero.');
             return;

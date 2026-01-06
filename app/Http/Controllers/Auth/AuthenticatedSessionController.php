@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use Illuminate\Validation\ValidationException;
+use App\Models\Rol;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -43,11 +44,11 @@ class AuthenticatedSessionController extends Controller
         // Redirigir según el rol activo
         $activeRole = $request->session()->get('rol_activo');
 
-        if ($activeRole === 'Administrador') {
+        if ($activeRole === Rol::ADMINISTRADOR) {
             return redirect()->route('admin.dashboard');
-        } elseif ($activeRole === 'Medico') {
+        } elseif ($activeRole === Rol::MEDICO) {
             return redirect()->route('medico.dashboard');
-        } elseif ($activeRole === 'Paciente') {
+        } elseif ($activeRole === Rol::PACIENTE) {
             return redirect()->route('paciente.dashboard');
         }
         

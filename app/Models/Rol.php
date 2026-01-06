@@ -9,13 +9,16 @@ use App\Models\User;
 class Rol extends Model
 {
     use HasFactory;
+
     protected $table = 'roles';
-
     protected $primaryKey = 'id_rol';
+    protected $fillable = ['rol'];
 
-    protected $fillable = [
-        'rol',
-    ];
+    public const ADMINISTRADOR = 'Administrador';
+    public const MEDICO        = 'Medico';
+    public const PACIENTE      = 'Paciente';
+
+    public $timestamps = false;
 
     
     public function users()

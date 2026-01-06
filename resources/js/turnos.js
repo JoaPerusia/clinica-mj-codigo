@@ -1,104 +1,164 @@
-// Definimos las variables globales que se pasan desde la vista Blade
-// Estas se inicializan en el script inline en create.blade.php
-// const apiUrlBase = '/admin/turnos'; // Ejemplo: se sobrescribe por el valor real de Blade
-// const currentTurnoId = null; // Ejemplo: se sobrescribe por el valor real de Blade
-// const currentTurnoHora = ''; // Ejemplo: se sobrescribe por el valor real de Blade
-// const apiUrlMedicosBase = '{{ route('api.medicos.by-especialidad') }}'; // Se sobrescribe por el valor real de Blade
-// const apiUrlHorariosDisponibles = '{{ route('api.turnos.disponibles') }}'; // Se agrega esta nueva variable
-
 document.addEventListener('DOMContentLoaded', function () {
     const especialidadSelect = document.getElementById('id_especialidad');
     const medicoSelect = document.getElementById('id_medico');
     const fechaInput = document.getElementById('fecha');
     const horaSelect = document.getElementById('hora');
+    const refColores = document.getElementById('referencia-colores');
+    
+    let calendario;
+    let agendaCache = {}; 
 
-    // --- Funciones de Reseteo ---
+    // 1. INICIALIZAR FLATPICKR (Versión Clásica Estable)
+    calendario = flatpickr(fechaInput, {
+        locale: 'es',
+        minDate: "today",
+        dateFormat: "Y-m-d", // Formato aaaa-mm-dd (Estándar para BD)
+        disableMobile: "true",
+        
+        // Eventos para recargar colores al cambiar de mes
+        onMonthChange: function(selectedDates, dateStr, instance) {
+            actualizarColoresCalendario(instance.currentYear, instance.currentMonth + 1);
+        },
+        onYearChange: function(selectedDates, dateStr, instance) {
+            actualizarColoresCalendario(instance.currentYear, instance.currentMonth + 1);
+        },
+        // Al abrir el calendario, intentamos pintar (por si acaso)
+        onOpen: function(selectedDates, dateStr, instance) {
+            if (medicoSelect.value) {
+                actualizarColoresCalendario(instance.currentYear, instance.currentMonth + 1);
+            }
+        },
+        onChange: function(selectedDates, dateStr, instance) {
+            if (dateStr) {
+                cargarHorariosDisponibles(dateStr);
+            } else {
+                resetearHorario();
+            }
+        }
+    });
 
-    /**
-     * Resetea el selector de hora a su estado inicial con un mensaje opcional.
-     * @param {string} message - El mensaje a mostrar en el selector.
-     */
-    function resetearHorario(message = 'Selecciona primero médico y fecha') {
+    // --- FUNCIONES DE RESETEO ---
+    function resetearHorario(message = 'Selecciona una hora') {
         horaSelect.innerHTML = `<option value="">${message}</option>`;
         horaSelect.disabled = true;
     }
 
-    /**
-     * Resetea el selector de fecha y, por cascada, el de hora.
-     * @param {string} messageFecha - El mensaje a mostrar en el selector de fecha.
-     */
-    function resetearFechaYHora(messageFecha = 'Selecciona primero un médico') {
-        fechaInput.value = ''; // Limpiar fecha seleccionada
-        fechaInput.disabled = true;
-        resetearHorario(); // Resetear hora también
+    function resetearFecha() {
+        calendario.clear(); 
+        if(refColores) refColores.classList.add('hidden');
     }
 
-    /**
-     * Resetea el selector de médicos y, por cascada, el de fecha y hora.
-     * @param {string} messageMedicos - El mensaje a mostrar en el selector de médicos.
-     */
     function resetearMedicos(messageMedicos = 'Selecciona primero una especialidad') {
         medicoSelect.innerHTML = `<option value="">${messageMedicos}</option>`;
         medicoSelect.disabled = true;
-        medicoSelect.selectedIndex = 0;
-        resetearFechaYHora(); // Resetear fecha y hora también
+        resetearFecha();
+        resetearHorario();
     }
 
-    // --- Estado Inicial de los Selectores al Cargar la Página ---
-    if (!especialidadSelect.value) {
-        resetearMedicos(); // Esto también resetea fecha y hora
+    // --- LÓGICA DE COLORES (AGENDA) ---
+    async function actualizarColoresCalendario(year, month) {
+        const medicoId = medicoSelect.value;
+        if (!medicoId) return;
+
+        const cacheKey = `${medicoId}-${month}-${year}`;
+
+        try {
+            let datos;
+            
+            if (agendaCache[cacheKey]) {
+                datos = agendaCache[cacheKey];
+            } else {
+                // apiUrlAgenda viene del blade
+                const response = await fetch(`${apiUrlAgenda}?id_medico=${medicoId}&mes=${month}&anio=${year}`);
+                if (!response.ok) throw new Error('Error API Agenda');
+                
+                datos = await response.json();
+                agendaCache[cacheKey] = datos;
+            }
+
+            // Llamamos directamente a la función de pintar
+            pintarDias(datos);
+
+        } catch (error) {
+            console.error('Error cargando agenda visual:', error);
+        }
     }
 
-    // --- Event Listeners ---
+    function pintarDias(estados) {
+        // 1. Limpiamos clases anteriores
+        const diasDOM = document.querySelectorAll('.flatpickr-day');
+        diasDOM.forEach(dia => dia.classList.remove('dia-disponible', 'dia-bloqueado'));
+
+        // 2. Pintamos los días correspondientes
+        estados.forEach(item => {
+            // Buscamos el día en el calendario por su atributo 'aria-label' o fecha interna
+            diasDOM.forEach(diaElem => {
+                if (!diaElem.dateObj) return;
+
+                // Convertimos la fecha del elemento a string Y-m-d para comparar
+                const d = diaElem.dateObj;
+                const diaStr = d.getFullYear() + "-" + 
+                               String(d.getMonth() + 1).padStart(2, '0') + "-" + 
+                               String(d.getDate()).padStart(2, '0');
+
+                if (diaStr === item.fecha) {
+                    if (item.estado === 'disponible') {
+                        diaElem.classList.add('dia-disponible');
+                    } else if (item.estado === 'bloqueado') {
+                        diaElem.classList.add('dia-bloqueado');
+                    }
+                }
+            });
+        });
+    }
+
+    // --- EVENTOS DEL DOM ---
+
     if (especialidadSelect) {
-        especialidadSelect.addEventListener('change', async function() {
+        especialidadSelect.addEventListener('change', function () {
             const especialidadId = this.value;
             resetearMedicos();
-
+            agendaCache = {}; 
+            
             if (especialidadId) {
-                await cargarMedicosPorEspecialidad(especialidadId);
-                if (medicoSelect.value && fechaInput.value) {
-                    fechaInput.disabled = false;
-                    cargarHorariosDisponibles();
-                } else if (medicoSelect.value) {
-                    fechaInput.disabled = false;
-                }
+                cargarMedicosPorEspecialidad(especialidadId);
             }
         });
     }
 
-    if (medicoSelect && fechaInput && horaSelect) {
-        medicoSelect.addEventListener('change', function() {
-            resetearFechaYHora();
-            if (medicoSelect.value) {
-                fechaInput.disabled = false;
-                if (fechaInput.value) {
-                    cargarHorariosDisponibles();
-                }
+    if (medicoSelect) {
+        medicoSelect.addEventListener('change', function () {
+            resetearFecha();
+            resetearHorario();
+            agendaCache = {};
+
+            if (this.value) {
+                // Habilitamos calendario
+                calendario._input.disabled = false; 
+                if(refColores) refColores.classList.remove('hidden');
+                
+                // Cargar colores iniciales
+                actualizarColoresCalendario(calendario.currentYear, calendario.currentMonth + 1);
+            } else {
+                calendario._input.disabled = true;
             }
         });
-        fechaInput.addEventListener('change', cargarHorariosDisponibles);
     }
 
-    // --- Funciones para Llamadas AJAX y Actualización de UI ---
+    // --- CARGA DE DATOS ---
 
-    /**
-     * Carga los médicos según la especialidad seleccionada.
-     * @param {string} especialidadId - El ID de la especialidad seleccionada.
-     */
     async function cargarMedicosPorEspecialidad(especialidadId) {
         medicoSelect.disabled = true;
         medicoSelect.innerHTML = '<option value="">Cargando médicos...</option>';
 
         try {
             const response = await fetch(`${apiUrlMedicosBase}?id_especialidad=${especialidadId}`);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+            if (!response.ok) throw new Error('Error HTTP');
+            
             const medicos = await response.json();
 
             medicoSelect.innerHTML = '';
-            let defaultOption = document.createElement('option');
+            const defaultOption = document.createElement('option');
             defaultOption.value = '';
             defaultOption.textContent = 'Selecciona un médico';
             medicoSelect.appendChild(defaultOption);
@@ -107,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 medicos.forEach(medico => {
                     const option = document.createElement('option');
                     option.value = medico.id_medico;
-                    option.textContent = `${medico.nombre} ${medico.apellido}`;
+                    option.textContent = `${medico.apellido}, ${medico.nombre}`;
                     medicoSelect.appendChild(option);
                 });
                 medicoSelect.disabled = false;
@@ -115,89 +175,56 @@ document.addEventListener('DOMContentLoaded', function () {
                 resetearMedicos('No hay médicos con esta especialidad');
             }
         } catch (error) {
-            console.error('Error al cargar médicos por especialidad:', error);
-            resetearMedicos('Error al cargar médicos. Intenta de nuevo.');
+            console.error(error);
+            resetearMedicos('Error al cargar médicos');
         }
     }
 
-    /**
-     * Función para cargar los horarios disponibles de un médico para una fecha específica.
-     */
-    /**
-     * Función para cargar los horarios disponibles de un médico para una fecha específica.
-     */
-    async function cargarHorariosDisponibles() {
+    async function cargarHorariosDisponibles(fechaStr) {
         const medicoId = medicoSelect.value;
-        const fecha = fechaInput.value;
-    
-        if (!medicoId || !fecha) {
-            resetearHorario('Selecciona primero un médico y una fecha');
-            return;
-        }
-    
-        // Deshabilitar el selector de horas mientras se cargan los datos
+        if (!medicoId || !fechaStr) return;
+
+        horaSelect.innerHTML = '<option>Cargando...</option>';
         horaSelect.disabled = true;
-        horaSelect.innerHTML = '<option value="">Cargando horarios...</option>';
-    
+
         try {
-            const url = currentTurnoId
-                ? `${apiUrlHorariosDisponibles}?id_medico=${medicoId}&fecha=${fecha}&except_turno_id=${currentTurnoId}`
-                : `${apiUrlHorariosDisponibles}?id_medico=${medicoId}&fecha=${fecha}`;
-    
-            const response = await fetch(url);
-            if (!response.ok) {
-                // Si la respuesta no es exitosa, lanza un error
-                throw new Error(`HTTP error! status: ${response.status}`);
+            let url = `${apiUrlHorariosDisponibles}?id_medico=${medicoId}&fecha=${fechaStr}`;
+            if (typeof currentTurnoId !== 'undefined' && currentTurnoId) {
+                url += `&except_turno_id=${currentTurnoId}`;
             }
+
+            const response = await fetch(url);
             const data = await response.json();
-    
-            // Limpiamos el contenido anterior del selector de horas
+
             horaSelect.innerHTML = '';
-            
-            // Si el servidor envía un mensaje, lo mostramos
+
             if (data.mensaje) {
                 resetearHorario(data.mensaje);
                 return;
             }
-    
-            // Si no hay mensaje, procedemos con los horarios
-            const horarios = data.horarios;
-    
-            if (horarios.length > 0) {
-                const defaultOption = document.createElement('option');
-                defaultOption.value = '';
-                defaultOption.textContent = 'Selecciona una hora';
-                horaSelect.appendChild(defaultOption);
-    
-                horarios.forEach(horario => {
-                    const option = document.createElement('option');
-                    option.value = horario;
-                    option.textContent = horario;
-                    if (horario === currentTurnoHora) {
-                        option.selected = true;
+
+            if (data.horarios && data.horarios.length > 0) {
+                const def = document.createElement('option');
+                def.value = '';
+                def.textContent = 'Selecciona una hora';
+                horaSelect.appendChild(def);
+
+                data.horarios.forEach(hora => {
+                    const opt = document.createElement('option');
+                    opt.value = hora;
+                    opt.textContent = hora;
+                    if (typeof currentTurnoHora !== 'undefined' && hora === currentTurnoHora) {
+                        opt.selected = true;
                     }
-                    horaSelect.appendChild(option);
+                    horaSelect.appendChild(opt);
                 });
                 horaSelect.disabled = false;
             } else {
-                // Mensaje por defecto cuando no hay horarios disponibles
-                resetearHorario('No hay horarios disponibles para este día.');
+                resetearHorario('No hay horarios disponibles');
             }
         } catch (error) {
-            console.error('Error al cargar horarios:', error);
-            resetearHorario('Error al cargar horarios. Intenta de nuevo.');
+            console.error(error);
+            resetearHorario('Error al cargar horarios');
         }
-    }
-
-    // --- Lógica de Carga Inicial para el caso de 'create' y 'edit' ---
-    if (especialidadSelect.value) {
-        cargarMedicosPorEspecialidad(especialidadSelect.value).then(() => {
-            if (medicoSelect.value && fechaInput.value) {
-                fechaInput.disabled = false;
-                cargarHorariosDisponibles();
-            } else if (medicoSelect.value) {
-                fechaInput.disabled = false;
-            }
-        });
     }
 });

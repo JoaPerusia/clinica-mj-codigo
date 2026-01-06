@@ -21,9 +21,9 @@ class Medico extends Model
         'apellido',
         'horario_disponible',
         'id_usuario', 
+        'tiempo_turno',
     ];
 
-    // Relación con el usuario asociado al médico
     public function usuario()
     {
         return $this->belongsTo(User::class, 'id_usuario', 'id_usuario');

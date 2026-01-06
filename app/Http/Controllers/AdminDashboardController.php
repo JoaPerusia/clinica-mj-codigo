@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\DashboardService;
 use Illuminate\Http\Request;
 
 class AdminDashboardController extends Controller
 {
-    public function index()
+    public function index(DashboardService $dashboardService)
     {
-        return view('admin.dashboard');
+        // Delegamos los cálculos al servicio
+        $stats = $dashboardService->getAdminStats();
+        
+        return view('admin.dashboard', compact('stats'));
     }
 }

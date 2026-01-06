@@ -1,3 +1,4 @@
+@inject('Rol', 'App\Models\Rol')
 @extends('layouts.app')
 
 @section('content')
@@ -6,38 +7,35 @@
             <div class="content-wrapper">
                 <h1 class="page-title">Gestión de Médicos</h1>
 
-                <div class="action-buttons-container">
+                {{-- Botonera Superior --}}
+                <div class="action-buttons-container flex justify-between items-center mb-6">
                     <a href="{{ route('admin.dashboard') }}" class="btn-secondary">
                         ← Inicio
                     </a>
-                </div>
-                
-                <div class="action-buttons-container mb-6">
+                    
                     <a href="{{ route('admin.medicos.create') }}" class="btn-primary">
                         Agregar Médico
                     </a>
                 </div>
-                <div class="mb-4 flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+
+                {{-- Filtros --}}
+                <div class="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
                     <div class="flex items-center space-x-2">
-                        <label for="dni_filtro" class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Buscar médico:
+                        <label for="dni_filtro" class="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">
+                            Buscar:
                         </label>
                         <input type="text" id="dni_filtro" name="dni_filtro"
                             placeholder="DNI, nombre o apellido"
                             value="{{ request('dni_filtro') }}"
                             autocomplete="off"
-                            class="form-input inline-block w-auto">
-                        <button id="buscar_dni_btn" class="btn-primary text-sm px-4 py-2 mt-1" title="Buscar">
-                            <svg xmlns="http://www.w3.org/2000/svg" 
-                                fill="none" viewBox="0 0 24 24" stroke-width="1.5" 
-                                stroke="currentColor" class="w-5 h-5">
-                                <path stroke-linecap="round" stroke-linejoin="round" 
-                                    d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 
-                                        0 5.196 5.196a7.5 7.5 0 0 0 
-                                        10.607 10.607Z" />
+                            class="form-input inline-block w-64">
+                        
+                        <button id="buscar_dni_btn" class="bg-blue-600 text-white px-3 py-2 rounded-md hover:bg-blue-700 transition shadow flex items-center" title="Buscar">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
                             </svg>
                         </button>
-                        <button id="limpiar_filtros_btn" class="btn-secondary text-sm px-4 py-2 mt-1" style="text-transform: none;" title="Restablecer filtros">
+                        <button id="limpiar_filtros_btn" class="bg-gray-500 text-white px-3 py-2 rounded-md hover:bg-gray-600 transition shadow flex items-center" title="Restablecer filtros">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
                             </svg>
@@ -46,73 +44,62 @@
                 </div>
                 
                 @if (session('success'))
-                    <div class="alert-success">
-                        {{ session('success') }}
-                    </div>
+                    <div class="alert-success mb-4">{{ session('success') }}</div>
                 @endif
                 @if (session('error'))
-                    <div class="alert-danger">
-                        {{ session('error') }}
-                    </div>
+                    <div class="alert-danger mb-4">{{ session('error') }}</div>
                 @endif
 
                 @if($medicos->isEmpty())
-                    <p class="text-center">No hay médicos registrados.</p>
+                    <p class="text-center text-gray-500 py-8">No hay médicos registrados.</p>
                 @else
-                    <div class="overflow-x-auto relative shadow-md sm:rounded-lg">
-                        <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                            <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <div class="table-responsive">
+                        <table class="custom-table">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
                                 <tr>
-                                    <th scope="col" class="py-3 px-6">DNI</th>
-                                    <th scope="col" class="py-3 px-6">Nombre</th>
-                                    <th scope="col" class="py-3 px-6">Especialidades</th>
-                                    <th scope="col" class="py-3 px-6">Día</th>
-                                    <th scope="col" class="py-3 px-6">Horarios</th>
-                                    <th scope="col" class="py-3 px-6">Acciones</th>
+                                    <th class="table-header">DNI</th>
+                                    <th class="table-header">Nombre</th>
+                                    <th class="table-header">Especialidades</th>
+                                    <th class="table-header">Día</th>
+                                    <th class="table-header">Horarios</th>
+                                    <th class="table-header">Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                @php
-                                    // Mapeo de números de día a nombres, ya que los datos se guardan así.
-                                    $diasSemana = [
-                                        0 => 'Domingo',
-                                        1 => 'Lunes',
-                                        2 => 'Martes',
-                                        3 => 'Miércoles',
-                                        4 => 'Jueves',
-                                        5 => 'Viernes',
-                                        6 => 'Sábado',
-                                    ];
-                                @endphp
+                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                 @foreach ($medicos as $medico)
-                                <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
-                                    <td class="py-4 px-6 table-data">{{ $medico->usuario->dni }}</td>
-                                    <td class="py-4 px-6 table-data">{{ $medico->usuario->nombre }} {{ $medico->usuario->apellido }}</td>
-                                    <td class="py-4 px-6 table-data">
+                                <tr>
+                                    <td class="table-data">{{ $medico->usuario->dni }}</td>
+                                    <td class="table-data">{{ $medico->usuario->nombre }} {{ $medico->usuario->apellido }}</td>
+                                    <td class="table-data">
                                         @foreach($medico->especialidades as $especialidad)
-                                            <span class="badge badge-info">{{ $especialidad->nombre_especialidad }}</span>
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-s font-medium bg-blue-100 text-blue-800 mr-1">
+                                                {{ $especialidad->nombre_especialidad }}
+                                            </span>
                                         @endforeach
                                     </td>
-                                    <td class="py-4 px-6 table-data">
+                                    <td class="table-data">
                                         @forelse($medico->horariosTrabajo as $horario)
-                                            <p>{{ $diasSemana[$horario->dia_semana] ?? 'Día no válido' }}</p>
+                                            <div class="text-sm text-gray-900 dark:text-gray-100">
+                                                {{ $horario->nombre_dia }}
+                                            </div>
                                         @empty
-                                            <p>No tiene</p>
+                                            <span class="text-gray-400 italic">Sin asignar</span>
                                         @endforelse
                                     </td>
-                                    <td class="py-4 px-6 table-data">
+                                    <td class="table-data">
                                         @forelse($medico->horariosTrabajo as $horario)
-                                            <p>{{ \Carbon\Carbon::parse($horario->hora_inicio)->format('H:i') }} - {{ \Carbon\Carbon::parse($horario->hora_fin)->format('H:i') }}</p>
+                                            <div class="text-sm text-gray-900 dark:text-gray-100">
+                                                {{ \Carbon\Carbon::parse($horario->hora_inicio)->format('H:i') }} - {{ \Carbon\Carbon::parse($horario->hora_fin)->format('H:i') }}
+                                            </div>
                                         @empty
-                                            <p>horarios de trabajo</p>
+                                            <span class="text-gray-400 italic">-</span>
                                         @endforelse
                                     </td>
-                                    <td class="py-4 px-6 table-data">
-                                        <a href="{{ route('admin.medicos.edit', $medico->id_medico) }}" class="btn-info table-action-button text-sm px-4 py-2 mt-1">Editar</a>
+                                    <td class="table-actions">
+                                        <a href="{{ route('admin.medicos.edit', $medico->id_medico) }}" class="btn-info table-action-button text-sm px-3 py-1 mr-1">Editar</a>
                                         <form action="{{ route('admin.medicos.destroy', $medico->id_medico) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de eliminar este médico?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn-danger text-sm px-4 py-2 mt-1">Eliminar</button>
+                                            @csrf @method('DELETE')
+                                            <button type="submit" class="btn-danger text-sm px-3 py-1">Eliminar</button>
                                         </form>
                                     </td>
                                 </tr>
@@ -127,56 +114,29 @@
             </div>
         </div>
     </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const dniFiltroInput = document.getElementById('dni_filtro');
-            const buscarDniBtn = document.getElementById('buscar_dni_btn'); // Asegúrate de que tu botón tiene este ID
-            const limpiarFiltrosBtn = document.getElementById('limpiar_filtros_btn');
-
-            function updateUrlAndRedirect() {
-                const dniValue = dniFiltroInput.value.trim();
-                const currentUrl = new URL(window.location.href);
-
-                if (dniValue) {
-                    currentUrl.searchParams.set('dni_filtro', dniValue);
-                } else {
-                    currentUrl.searchParams.delete('dni_filtro');
-                }
-
-                currentUrl.searchParams.set('page', 1);
-
-                window.location.href = currentUrl.toString();
-            }
-
-            function clearFiltersAndRedirect() {
-                // Reestablecer los campos a sus valores predeterminados
-                const currentUrl = new URL(window.location.href);
-
-                // Borrar todos los parámetros de búsqueda de la URL
-                currentUrl.searchParams.delete('dni_filtro');
-                currentUrl.searchParams.set('page', 1); // Resetear la página a 1
-
-                // Redirigir a la URL sin los parámetros de filtro
-                window.location.href = currentUrl.toString();
-            }
-
-            buscarDniBtn.addEventListener('click', function (event) {
-                event.preventDefault(); 
-                updateUrlAndRedirect();
-            });
-
-            dniFiltroInput.addEventListener('keydown', function (event) {
-                if (event.key === 'Enter') {
-                    event.preventDefault();
-                    updateUrlAndRedirect();
-                }
-            });
-
-            limpiarFiltrosBtn.addEventListener('click', function (event) {
-                event.preventDefault();
-                clearFiltersAndRedirect();
-            });
-        });
-    </script>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const dniInput = document.getElementById('dni_filtro');
+        const btnBuscar = document.getElementById('buscar_dni_btn');
+        const btnLimpiar = document.getElementById('limpiar_filtros_btn');
+
+        function redirigir(params) {
+            const url = new URL(window.location.href);
+            if (!params) {
+                url.searchParams.delete('dni_filtro');
+            } else {
+                url.searchParams.set('dni_filtro', params);
+            }
+            url.searchParams.set('page', 1);
+            window.location.href = url.toString();
+        }
+
+        if(btnBuscar) btnBuscar.addEventListener('click', (e) => { e.preventDefault(); redirigir(dniInput.value.trim()); });
+        if(dniInput) dniInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') { e.preventDefault(); redirigir(dniInput.value.trim()); } });
+        if(btnLimpiar) btnLimpiar.addEventListener('click', (e) => { e.preventDefault(); redirigir(null); });
+    });
+</script>
+@endpush
