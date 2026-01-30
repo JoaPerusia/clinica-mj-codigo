@@ -85,7 +85,7 @@
                                     <td class="table-data">{{ $paciente->dni }}</td>
                                     <td class="table-data">{{ \Carbon\Carbon::parse($paciente->fecha_nacimiento)->format('d/m/Y') }}</td> 
                                     <td class="table-data">{{ $paciente->telefono }}</td> 
-                                    <td class="table-data">{{ $paciente->obra_social }}</td>
+                                    <td class="table-data">{{ $paciente->obraSocial ? $paciente->obraSocial->nombre : 'Sin Obra Social' }}</td>
                                     <td class="table-data">{{ $paciente->usuario ? $paciente->usuario->nombre . ' (' . $paciente->usuario->id_usuario . ')' : 'N/A' }}</td>
                                     <td class="table-actions"> 
                                         @php

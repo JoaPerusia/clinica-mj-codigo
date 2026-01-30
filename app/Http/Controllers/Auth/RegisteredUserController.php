@@ -15,22 +15,16 @@ use App\Models\Paciente;
 use App\Models\Rol;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\DB;
+use App\Models\ObraSocial;
 
 class RegisteredUserController extends Controller
 {
-    /**
-     * Display the registration view.
-     */
     public function create(): View
     {
-        return view('auth.register');
+        $obras_sociales = ObraSocial::where('habilitada', true)->orderBy('nombre')->get();
+        return view('auth.register', compact('obras_sociales'));
     }
 
-    /**
-     * Handle an incoming registration request.
-     *
-     * @throws \Illuminate\Validation\ValidationException
-     */
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
@@ -38,7 +32,7 @@ class RegisteredUserController extends Controller
             'apellido' => ['required', 'string', 'max:255'],
             'dni' => ['required', 'string', 'max:20', 'unique:usuarios'], 
             'fecha_nacimiento' => ['required', 'date'],
-            'obra_social' => ['nullable', 'string', 'max:255'],
+            'id_obra_social' => ['required', 'exists:obras_sociales,id_obra_social'],
             'telefono' => ['nullable', 'string', 'max:20'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:usuarios'], 
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
@@ -47,10 +41,8 @@ class RegisteredUserController extends Controller
         DB::beginTransaction();
 
         try {
-            // 1. Buscar si ya existe un paciente con ese DNI.
             $pacienteExistente = Paciente::where('dni', $request->dni)->first();
 
-            // 2. Crear el nuevo usuario
             $user = User::create([
                 'nombre' => $request->nombre,
                 'apellido' => $request->apellido,
@@ -58,20 +50,17 @@ class RegisteredUserController extends Controller
                 'dni' => $request->dni,
                 'password' => Hash::make($request->password),
                 'fecha_nacimiento' => $request->fecha_nacimiento,
-                'obra_social' => $request->obra_social,
                 'telefono' => $request->telefono,
             ]);
 
-            // 3. Asignar el rol de Paciente al usuario
             $pacienteRol = Rol::where('rol', Rol::PACIENTE)->first();
             if ($pacienteRol) {
                 $user->roles()->attach($pacienteRol->id_rol);
             }
 
-            // 4. Lógica de vinculación: Si el paciente ya existe, vincularlo al usuario.
-            // Si no, crear un nuevo registro de paciente.
             if ($pacienteExistente) {
                 $pacienteExistente->id_usuario = $user->id_usuario;
+                $pacienteExistente->id_obra_social = $request->id_obra_social;
                 $pacienteExistente->save();
             } else {
                 Paciente::create([
@@ -79,9 +68,9 @@ class RegisteredUserController extends Controller
                     'apellido' => $user->apellido,
                     'dni' => $user->dni,
                     'fecha_nacimiento' => $user->fecha_nacimiento,
-                    'obra_social' => $user->obra_social,
                     'telefono' => $user->telefono,
                     'id_usuario' => $user->id_usuario,
+                    'id_obra_social' => $request->id_obra_social, 
                 ]);
             }
             

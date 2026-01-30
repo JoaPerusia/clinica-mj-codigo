@@ -21,10 +21,10 @@ class StorePacienteRequest extends FormRequest
             'dni'              => 'required|string|max:20|unique:pacientes,dni',
             'fecha_nacimiento' => 'required|date',
             'telefono'         => 'nullable|string|max:20',
-            'obra_social'      => 'nullable|string|max:255',
+            // CAMBIO: Ahora validamos que exista el ID en la tabla obras_sociales
+            'id_obra_social'   => 'required|exists:obras_sociales,id_obra_social',
         ];
 
-        // Si es Admin, el ID de usuario es obligatorio (lo selecciona de una lista)
         if ($this->user()->hasRole(Rol::ADMINISTRADOR)) {
             $rules['id_usuario'] = 'required|exists:usuarios,id_usuario';
         }

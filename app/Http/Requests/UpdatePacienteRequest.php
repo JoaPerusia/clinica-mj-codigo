@@ -17,23 +17,21 @@ class UpdatePacienteRequest extends FormRequest
 
     public function rules(): array
     {
-        // Reglas para el Administrador (Todo editable)
+        // Reglas para el Administrador
         if ($this->user()->hasRole(Rol::ADMINISTRADOR)) {
-            // Obtenemos el ID del paciente de la ruta para ignorar su propio DNI en la validación unique
-            $id = $this->route(Rol::PACIENTE); // Asegúrate que en la ruta se llame 'paciente'
-
+            $id = $this->route('paciente');
             return [
                 'nombre'           => 'required|string|max:255',
                 'apellido'         => 'required|string|max:255',
                 'telefono'         => 'nullable|string|max:20',
-                'obra_social'      => 'required|string|max:255',
+                'id_obra_social'   => 'required|exists:obras_sociales,id_obra_social',
                 'dni'              => 'required|string|max:20|unique:pacientes,dni,' . $id . ',id_paciente',
                 'fecha_nacimiento' => 'required|date',
                 'id_usuario'       => 'required|exists:usuarios,id_usuario',
             ];
         }
 
-        // Reglas para el Paciente (Solo teléfono editable)
+        // Reglas para el Paciente (Solo teléfono)
         return [
             'telefono' => 'nullable|string|max:20',
         ];

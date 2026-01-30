@@ -76,8 +76,15 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="obra_social" class="form-label">Obra Social:</label>
-                        <input type="text" name="obra_social" id="obra_social" value="{{ old('obra_social') }}" class="form-input">
+                        <label for="id_obra_social" class="form-label">Obra Social:</label>
+                        <select name="id_obra_social" id="id_obra_social" class="form-input" required>
+                            <option value="" disabled selected>Seleccione una opción...</option>
+                            @foreach($obras_sociales as $obra)
+                                <option value="{{ $obra->id_obra_social }}" {{ old('id_obra_social') == $obra->id_obra_social ? 'selected' : '' }}>
+                                    {{ $obra->nombre }}
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
 
                     @if(auth()->user()->hasRole($Rol::ADMINISTRADOR))

@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Rol;
 use App\Models\Turno;
+use App\Models\ObraSocial; 
 
 class PacienteController extends Controller
 {
@@ -34,8 +35,8 @@ class PacienteController extends Controller
             });
         }
 
-        $pacientes = $query->paginate(10)->withQueryString();
-
+        $pacientes = $query->with(['usuario', 'obraSocial'])->paginate(10)->withQueryString();
+        
         return view('pacientes.index', compact('pacientes'));
     }
 
@@ -45,7 +46,8 @@ class PacienteController extends Controller
 
         if ($usuario->hasRole(Rol::ADMINISTRADOR) || $usuario->hasRole(Rol::PACIENTE)) {
             $usuarios = $usuario->hasRole(Rol::ADMINISTRADOR) ? User::orderBy('nombre')->get() : null;
-            return view('pacientes.create', compact('usuarios'));
+            $obras_sociales = ObraSocial::where('habilitada', true)->orderBy('nombre')->get();
+            return view('pacientes.create', compact('usuarios', 'obras_sociales'));
         }
 
         abort(403, 'Acceso no autorizado.');
@@ -74,7 +76,8 @@ class PacienteController extends Controller
         $usuario = Auth::user();
 
         if ($usuario->hasRole(Rol::ADMINISTRADOR) || ($usuario->hasRole(Rol::PACIENTE) && $paciente->id_usuario == $usuario->id_usuario)) {
-            return view('pacientes.edit', compact(Rol::PACIENTE));
+            $obras_sociales = ObraSocial::where('habilitada', true)->orderBy('nombre')->get();
+            return view('pacientes.edit', compact('paciente', 'obras_sociales'));
         }
 
         abort(403, 'Acceso no autorizado.');
@@ -85,12 +88,10 @@ class PacienteController extends Controller
         $paciente = Paciente::findOrFail($id);
         $usuario = Auth::user();
 
-        // Autorización de propiedad
         if (!$usuario->hasRole(Rol::ADMINISTRADOR) && $paciente->id_usuario != $usuario->id_usuario) {
             abort(403, 'No tienes permiso para editar este paciente.');
         }
 
-        // Actualización (Las reglas ya se validaron en el Request según el rol)
         $paciente->update($request->validated());
 
         $route = $usuario->hasRole(Rol::ADMINISTRADOR) ? 'admin.pacientes.index' : 'paciente.pacientes.index';
@@ -118,9 +119,8 @@ class PacienteController extends Controller
         return redirect()->route($route)->with('success', 'Paciente eliminado y turnos cancelados.');
     }
     
-    // show no parece usarse mucho en tu código actual o es igual a edit, lo simplifico o lo quito si no lo usas
     public function show(string $id) {
          $paciente = Paciente::findOrFail($id);
-         return view('pacientes.show', compact(Rol::PACIENTE));
+         return view('pacientes.show', compact('paciente'));
     }
 }
