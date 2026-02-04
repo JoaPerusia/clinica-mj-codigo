@@ -69,11 +69,9 @@
                                 </div>
                             @endforelse
                         </div>
-                        <!--
                         <button type="button" id="add-specialty-btn" class="inline-flex items-center px-3 py-1 text-sm font-semibold rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 mt-2">
                             + Agregar Especialidad
                         </button>
-                        -->
                     </div>
 
                     {{-- Horarios de Trabajo --}}
@@ -206,63 +204,71 @@
     {{-- Scripts para la lógica dinámica de horarios y especialidades --}}
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Lógica para agregar campos de especialidad
+            
+            // --- LÓGICA DE ESPECIALIDADES ---
             const especialidadesContainer = document.getElementById('especialidades-container');
             const addSpecialtyBtn = document.getElementById('add-specialty-btn');
 
-            function createNewSpecialtySelect() {
-                const newGroup = document.createElement('div');
-                newGroup.classList.add('flex', 'items-center', 'space-x-2', 'mt-2', 'specialty-select-group');
-                newGroup.innerHTML = `
-                    <select name="especialidades[]" class="form-input w-full">
-                        <option value="">-- Seleccionar especialidad --</option>
-                        @foreach($especialidades as $especialidad)
-                            <option value="{{ $especialidad->id_especialidad }}">
-                                {{ $especialidad->nombre_especialidad }}
-                            </option>
-                        @endforeach
-                    </select>
-                    <button type="button" class="btn-danger remove-specialty-btn w-6 h-6 p-1 flex items-center justify-center rounded-md">X</button>
-                `;
-                especialidadesContainer.appendChild(newGroup);
+            // Verificamos que el botón exista antes de asignarle eventos
+            if (addSpecialtyBtn) {
+                addSpecialtyBtn.addEventListener('click', function() {
+                    const newGroup = document.createElement('div');
+                    newGroup.classList.add('flex', 'items-center', 'space-x-2', 'mt-2', 'specialty-select-group');
+                    newGroup.innerHTML = `
+                        <select name="especialidades[]" class="form-input w-full">
+                            <option value="">-- Seleccionar especialidad --</option>
+                            @foreach($especialidades as $especialidad)
+                                <option value="{{ $especialidad->id_especialidad }}">
+                                    {{ $especialidad->nombre_especialidad }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <button type="button" class="btn-danger remove-specialty-btn w-6 h-6 p-1 flex items-center justify-center rounded-md">X</button>
+                    `;
+                    especialidadesContainer.appendChild(newGroup);
+                });
             }
 
-            addSpecialtyBtn.addEventListener('click', function() {
-                createNewSpecialtySelect();
-            });
+            // Delegación de eventos para eliminar especialidades
+            if (especialidadesContainer) {
+                especialidadesContainer.addEventListener('click', function(e) {
+                    if (e.target.classList.contains('remove-specialty-btn') || e.target.closest('.remove-specialty-btn')) {
+                        const btn = e.target.classList.contains('remove-specialty-btn') ? e.target : e.target.closest('.remove-specialty-btn');
+                        btn.closest('.specialty-select-group').remove();
+                    }
+                });
+            }
 
-            especialidadesContainer.addEventListener('click', function(e) {
-                if (e.target.classList.contains('remove-specialty-btn')) {
-                    e.target.closest('.specialty-select-group').remove();
-                }
-            });
-
-            // Lógica para agregar campos de horario
+            // --- LÓGICA DE HORARIOS ---
+            
+            // Agregar Horario
             document.querySelectorAll('.add-schedule-btn').forEach(button => {
                 button.addEventListener('click', function() {
                     const dayNumber = this.dataset.dayNumber;
-                    const dayName = this.dataset.dayName;
                     const container = this.closest('.day-schedule-container').querySelector('.schedule-inputs-container');
-                    const index = container.querySelectorAll('.schedule-input-group').length;
+                    
+                    const uniqueIndex = Date.now() + Math.floor(Math.random() * 1000);
 
                     const newGroup = document.createElement('div');
                     newGroup.classList.add('flex', 'items-center', 'space-x-2', 'mt-2', 'schedule-input-group');
                     newGroup.innerHTML = `
-                        <input type="time" name="horarios[${dayNumber}][${index}][hora_inicio]" class="form-input">
+                        <input type="time" name="horarios[${dayNumber}][${uniqueIndex}][hora_inicio]" class="form-input" required>
                         <span class="text-gray-500">-</span>
-                        <input type="time" name="horarios[${dayNumber}][${index}][hora_fin]" class="form-input">
-                        <input type="hidden" name="horarios[${dayNumber}][${index}][dia_semana]" value="${dayNumber}"> 
+                        <input type="time" name="horarios[${dayNumber}][${uniqueIndex}][hora_fin]" class="form-input" required>
+                        <input type="hidden" name="horarios[${dayNumber}][${uniqueIndex}][dia_semana]" value="${dayNumber}"> 
                         <button type="button" class="btn-danger remove-schedule-btn w-6 h-6 p-1 flex items-center justify-center rounded-md">X</button>
                     `;
                     container.appendChild(newGroup);
                 });
             });
 
-            // Lógica para eliminar campos de horario
             document.addEventListener('click', function(e) {
-                if (e.target.classList.contains('remove-schedule-btn')) {
-                    const groupToRemove = e.target.closest('.schedule-input-group');
-                    groupToRemove.remove();
+                if (e.target.classList.contains('remove-schedule-btn') || e.target.closest('.remove-schedule-btn')) {
+                    const btn = e.target.classList.contains('remove-schedule-btn') ? e.target : e.target.closest('.remove-schedule-btn');
+                    const groupToRemove = btn.closest('.schedule-input-group');
+                    if (groupToRemove) {
+                        groupToRemove.remove();
+                    }
                 }
             });
         });

@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             RolSeeder::class, // siembra los roles
+            ObraSocialSeeder::class, // siembra las obras sociales
             UserSeeder::class, // siembra los usuarios
             EspecialidadSeeder::class, // siembra las especialidades
             MedicoSeeder::class, // siembra los médicos

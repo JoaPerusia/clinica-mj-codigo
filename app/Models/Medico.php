@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\ObraSocial;
 
 class Medico extends Model
 {
@@ -22,6 +23,7 @@ class Medico extends Model
         'horario_disponible',
         'id_usuario', 
         'tiempo_turno',
+        'precio_particular',
     ];
 
     public function usuario()
@@ -47,5 +49,12 @@ class Medico extends Model
     public function horariosTrabajo()
     {
         return $this->hasMany(HorarioMedico::class, 'id_medico', 'id_medico');
+    }
+
+    public function obrasSociales()
+    {
+        return $this->belongsToMany(ObraSocial::class, 'medico_obra_social', 'id_medico', 'id_obra_social')
+                    ->withPivot('instrucciones')
+                    ->withTimestamps();
     }
 }

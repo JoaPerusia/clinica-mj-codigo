@@ -489,4 +489,64 @@ class TurnoController extends Controller
 
         return response()->json($estados);
     }
+
+
+    // API Interna: Obtiene costo e instrucciones según Médico y Paciente (Obra Social).
+    public function getInfoCosto(Request $request)
+    {
+        $id_medico = $request->input('id_medico');
+        $id_paciente = $request->input('id_paciente');
+
+        // Si es el propio paciente logueado quien pide la info
+        if (!$id_paciente && auth()->user()->hasRole(Rol::PACIENTE)) {
+            // Buscamos el ID del paciente asociado al usuario
+            $paciente = auth()->user()->pacientes->first();
+            $id_paciente = $paciente ? $paciente->id_paciente : null;
+        }
+
+        if (!$id_medico || !$id_paciente) {
+            return response()->json(['status' => 'error', 'message' => 'Faltan datos']);
+        }
+
+        // Buscamos los modelos
+        $paciente = Paciente::with('obraSocial')->find($id_paciente);
+        $medico = Medico::find($id_medico);
+
+        if (!$paciente || !$medico) {
+            return response()->json(['status' => 'error', 'message' => 'Datos inválidos']);
+        }
+
+        $obraSocial = $paciente->obraSocial;
+
+        // CASO 1: PACIENTE PARTICULAR (Sin obra social o ID especial si lo tienes definido así)
+        if (!$obraSocial || stripos($obraSocial->nombre, 'Particular') !== false) {
+            return response()->json([
+                'status' => 'ok',
+                'obra_social' => 'Particular',
+                'costo' => $medico->precio_particular, // Precio fijo del médico
+                'instrucciones' => 'Abonar en administración al llegar.'
+            ]);
+        }
+
+        // CASO 2: TIENE OBRA SOCIAL
+        // Buscamos si el médico atiende esa obra social en la tabla pivote
+        $datoPivot = $medico->obrasSociales()->where('medico_obra_social.id_obra_social', $obraSocial->id_obra_social)->first();
+
+        if ($datoPivot) {
+            return response()->json([
+                'status' => 'ok',
+                'obra_social' => $obraSocial->nombre,
+                'costo' => 'Cubierto', 
+                'instrucciones' => $datoPivot->pivot->instrucciones ?? 'Sin instrucciones especiales.'
+            ]);
+        }
+
+        // CASO 3: NO ATIENDE ESA OBRA SOCIAL
+        return response()->json([
+            'status' => 'warning',
+            'obra_social' => $obraSocial->nombre,
+            'costo' => $medico->precio_particular, 
+            'mensaje' => 'El médico NO atiende por esta Obra Social. Se aplica tarifa particular.'
+        ]);
+    }
 }

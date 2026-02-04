@@ -10,6 +10,7 @@ use App\Models\Especialidad;
 use App\Models\User;
 use App\Models\Rol;
 use Illuminate\Http\Request;
+use App\Models\ObraSocial;
 
 class MedicoController extends Controller
 {
@@ -106,5 +107,41 @@ class MedicoController extends Controller
         } catch (\Exception $e) {
             return back()->with('error', 'No se pudo eliminar: ' . $e->getMessage());
         }
+    }
+
+    
+    public function editPrecios($id)
+    {
+        $medico = Medico::with('obrasSociales')->findOrFail($id);
+        // Mostrar todas las obras sociales habilitadas para que el médico configure sus precios
+        $obrasSociales = ObraSocial::where('habilitada', true)->orderBy('nombre')->get();
+
+        return view('medicos.precios', compact('medico', 'obrasSociales'));
+    }
+
+    public function updatePrecios(Request $request, $id)
+    {
+        $medico = Medico::findOrFail($id);
+
+        // 1. Guardamos el precio general para particulares
+        $medico->precio_particular = $request->input('precio_particular', 0);
+        $medico->save();
+
+        // 2. Procesamos las obras sociales (solo activas e instrucciones)
+        $syncData = [];
+        if ($request->has('obras')) {
+            foreach ($request->input('obras') as $idObra => $data) {
+                if (isset($data['activo']) && $data['activo'] == 1) {
+                    $syncData[$idObra] = [
+                        // 'costo' => ... YA NO VA
+                        'instrucciones' => $data['instrucciones'] ?? null,
+                    ];
+                }
+            }
+        }
+
+        $medico->obrasSociales()->sync($syncData);
+
+        return redirect()->route('admin.medicos.index')->with('success', 'Configuración de atención actualizada correctamente.');
     }
 }

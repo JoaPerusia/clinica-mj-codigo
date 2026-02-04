@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\Rol;
 use App\Models\User;
 use App\Models\Paciente;
+use App\Models\ObraSocial; 
 
 class PacienteSeeder extends Seeder
 {
@@ -14,75 +15,67 @@ class PacienteSeeder extends Seeder
     {
         // 1. Buscamos el rol Paciente
         $pacienteRol = Rol::where('rol', Rol::PACIENTE)->first();
-        if (! $pacienteRol) {
-            $this->command->info('❌ Falta el rol Paciente. Ejecuta RolSeeder primero.');
-            return;
-        }
 
-        // 2. Definimos el array con los pacientes de ejemplo
+        $obrasSocialesIds = ObraSocial::pluck('id_obra_social')->toArray();
+
+        // Datos de ejemplo
         $pacientes = [
             [
-                'nombre'           => 'María',
-                'apellido'         => 'González',
-                'dni'              => '20111222',
+                'nombre' => 'María',
+                'apellido' => 'González',
+                'dni' => '20111222',
+                'email' => 'maria@example.com',
+                'telefono' => '1133445566',
                 'fecha_nacimiento' => '1990-05-15',
-                'obra_social'      => 'Osde',
-                'email'            => 'maria.gonzalez@example.com',
-                'telefono'         => '1133445566',
             ],
             [
-                'nombre'           => 'Carlos',
-                'apellido'         => 'Rodríguez',
-                'dni'              => '25333444',
-                'fecha_nacimiento' => '1985-11-22',
-                'obra_social'      => 'Swiss Medical',
-                'email'            => 'carlos.rodriguez@example.com',
-                'telefono'         => '1166778899',
+                'nombre' => 'Carlos',
+                'apellido' => 'Rodríguez',
+                'dni' => '30111222',
+                'email' => 'carlos@example.com',
+                'telefono' => '1144556677',
+                'fecha_nacimiento' => '1985-08-20',
             ],
             [
-                'nombre'           => 'Laura',
-                'apellido'         => 'Fernandez',
-                'dni'              => '30555666',
-                'fecha_nacimiento' => '1995-09-30',
-                'obra_social'      => 'Galeno',
-                'email'            => 'laura.fernandez@example.com',
-                'telefono'         => '1199887766',
+                'nombre' => 'Ana',
+                'apellido' => 'Fernández',
+                'dni' => '40111222',
+                'email' => 'ana@example.com',
+                'telefono' => '1155667788',
+                'fecha_nacimiento' => '1995-12-10',
             ],
         ];
 
-        // 3. Recorremos cada paciente y lo creamos/actualizamos
         foreach ($pacientes as $data) {
-            // Crear o actualizar usuario
-            $user = User::updateOrCreate(
-                ['email' => $data['email']],
-                [
-                    'nombre'           => $data['nombre'],
-                    'apellido'         => $data['apellido'],
-                    'dni'              => $data['dni'],
-                    'fecha_nacimiento' => $data['fecha_nacimiento'],
-                    'obra_social'      => $data['obra_social'],
-                    'telefono'         => $data['telefono'],
-                    'password'         => Hash::make('password'),
-                ]
-            );
+            // Crear Usuario
+            $user = User::create([
+                'nombre' => $data['nombre'],
+                'apellido' => $data['apellido'],
+                'dni' => $data['dni'],
+                'email' => $data['email'],
+                'telefono' => $data['telefono'],
+                'fecha_nacimiento' => $data['fecha_nacimiento'],
+                'password' => Hash::make('password123'),
+            ]);
 
-            // Asignar rol Paciente
-            $user->roles()->syncWithoutDetaching([$pacienteRol->id_rol]);
+            // Asignar rol
+            if ($pacienteRol) {
+                $user->roles()->attach($pacienteRol->id_rol);
+            }
 
-            // Crear o actualizar perfil en la tabla pacientes
-            Paciente::updateOrCreate(
-                ['id_usuario' => $user->id_usuario],
-                [
-                    'nombre'           => $data['nombre'],
-                    'apellido'         => $data['apellido'],
-                    'dni'              => $data['dni'],
-                    'fecha_nacimiento' => $data['fecha_nacimiento'],
-                    'obra_social'      => $data['obra_social'],
-                    'telefono'         => $data['telefono'],
-                ]
-            );
+            // Seleccionar obra social aleatoria si existen, sino null
+            $idObraSocial = !empty($obrasSocialesIds) ? $obrasSocialesIds[array_rand($obrasSocialesIds)] : null;
 
-            $this->command->info("✅ Paciente {$data['nombre']} {$data['apellido']} seedado.");
+            // Crear Paciente 
+            Paciente::create([
+                'id_usuario' => $user->id_usuario,
+                'nombre' => $data['nombre'],
+                'apellido' => $data['apellido'],
+                'dni' => $data['dni'],
+                'fecha_nacimiento' => $data['fecha_nacimiento'],
+                'telefono' => $data['telefono'],
+                'id_obra_social' => $idObraSocial, 
+            ]);
         }
     }
 }

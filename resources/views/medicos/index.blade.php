@@ -96,8 +96,24 @@
                                         @endforelse
                                     </td>
                                     <td class="table-actions">
-                                        <a href="{{ route('admin.medicos.edit', $medico->id_medico) }}" class="btn-info table-action-button text-sm px-3 py-1 mr-1">Editar</a>
-                                        <form action="{{ route('admin.medicos.destroy', $medico->id_medico) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de eliminar este médico?');">
+                                        {{-- Botón Honorarios (Verde) --}}
+                                        <a href="{{ route('admin.medicos.precios', $medico->id_medico) }}" 
+                                        class="btn-success table-action-button text-sm px-3 py-1" 
+                                        title="Configurar Honorarios">
+                                        $
+                                        </a>
+
+                                        {{-- Botón Editar (Azul) --}}
+                                        <a href="{{ route('admin.medicos.edit', $medico->id_medico) }}" 
+                                        class="btn-info table-action-button text-sm px-3 py-1">
+                                        Editar
+                                        </a>
+
+                                        {{-- Botón Eliminar (Rojo) --}}
+                                        <form action="{{ route('admin.medicos.destroy', $medico->id_medico) }}" 
+                                            method="POST" 
+                                            class="inline-block" 
+                                            onsubmit="return confirm('¿Estás seguro de eliminar este médico?');">
                                             @csrf @method('DELETE')
                                             <button type="submit" class="btn-danger text-sm px-3 py-1">Eliminar</button>
                                         </form>

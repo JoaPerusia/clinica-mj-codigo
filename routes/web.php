@@ -43,6 +43,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/medicos-by-especialidad', [TurnoController::class, 'getMedicosByEspecialidad'])->name('api.medicos.by-especialidad');
     Route::get('/api/turnos/disponibles', [TurnoController::class, 'getHorariosDisponibles'])->name('api.turnos.disponibles');
     Route::get('/api/agenda/mes', [TurnoController::class, 'obtenerAgendaMes'])->name('api.agenda.mes');
+    Route::get('/api/turno/info-costo', [TurnoController::class, 'getInfoCosto'])->name('api.turno.info-costo');
 });
 
 
@@ -51,6 +52,9 @@ Route::middleware('auth')->group(function () {
 // 🛡️ Administrador
 Route::middleware(['auth', 'role:Administrador'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+    
+    Route::get('/medicos/{medico}/precios', [MedicoController::class, 'editPrecios'])->name('medicos.precios');
+    Route::put('/medicos/{medico}/precios', [MedicoController::class, 'updatePrecios'])->name('medicos.updatePrecios');
     
     // Resources completos
     Route::resource('medicos', MedicoController::class);

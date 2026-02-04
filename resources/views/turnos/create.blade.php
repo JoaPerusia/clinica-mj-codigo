@@ -89,6 +89,21 @@
                         </select> 
                     </div>
 
+                    {{-- Info de Costos e Instrucciones segun medico y obra social --}}
+                    <div id="info-turno-container" class="mb-4 p-4 bg-blue-50 dark:bg-gray-700 border-l-4 border-blue-500 rounded hidden">
+                        <h4 class="text-md font-bold text-blue-700 dark:text-blue-300 mb-2">Información del Turno:</h4>
+                        <p class="text-sm text-gray-700 dark:text-gray-300">
+                            <strong>Obra Social:</strong> <span id="info-obra-social">Cargando...</span>
+                        </p>
+                        <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                            <strong>Costo (Honorarios):</strong> <span id="info-costo" class="font-bold text-green-600">$ -</span>
+                        </p>
+                        <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                            <strong>Instrucciones/Requisitos:</strong> <br>
+                            <span id="info-instrucciones" class="italic">Seleccione médico y paciente para ver detalles.</span>
+                        </p>
+                    </div>
+
                     {{-- 4. Fecha (AHORA CON FLATPICKR PERO CON TU ESTILO) --}}
                     <div class="form-group">
                         <label for="fecha" class="form-label">Fecha:</label>
@@ -208,6 +223,68 @@
                     }
                 }
                 if (!encontrado) idHidden.value = '';
+            });
+        }
+    });
+    </script>
+
+    <script>
+    const apiUrlInfoCosto = '{{ route('api.turno.info-costo') }}';
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const medicoSelect = document.getElementById('id_medico');
+        const pacienteInput = document.getElementById('id_paciente_hidden'); 
+        const infoContainer = document.getElementById('info-turno-container');
+        const spanObraSocial = document.getElementById('info-obra-social');
+        const spanCosto = document.getElementById('info-costo');
+        const spanInstrucciones = document.getElementById('info-instrucciones');
+
+        // Función para consultar la info
+        function actualizarInfoTurno() {
+            const idMedico = medicoSelect.value;
+            const idPaciente = pacienteInput ? pacienteInput.value : null; // Si es paciente logueado, esto puede ser null y el controller lo resuelve
+            
+            if (idMedico) {
+                let url = `${apiUrlInfoCosto}?id_medico=${idMedico}`;
+                if (idPaciente) {
+                    url += `&id_paciente=${idPaciente}`;
+                }
+
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        infoContainer.classList.remove('hidden'); 
+                        
+                        if (data.status === 'ok') {
+                            spanObraSocial.textContent = data.obra_social;
+                            spanCosto.textContent = `$ ${data.costo}`;
+                            spanInstrucciones.textContent = data.instrucciones;
+                            infoContainer.classList.remove('border-red-500', 'bg-red-50');
+                            infoContainer.classList.add('border-blue-500', 'bg-blue-50');
+                        } else if (data.status === 'warning') {
+                            spanObraSocial.textContent = data.obra_social;
+                            spanCosto.textContent = 'Consultar (Particular: $' + data.costo + ')';                           
+                            spanInstrucciones.textContent = data.mensaje;
+                            infoContainer.classList.remove('border-blue-500', 'bg-blue-50');
+                            infoContainer.classList.add('border-yellow-500', 'bg-yellow-50');
+                        } else {
+                            infoContainer.classList.add('hidden');
+                        }
+                    })
+                    .catch(error => console.error('Error al obtener info del turno:', error));
+            } else {
+                infoContainer.classList.add('hidden');
+            }
+        }
+
+        if (medicoSelect) {
+            medicoSelect.addEventListener('change', actualizarInfoTurno);
+        }
+        
+        const inputVisiblePaciente = document.getElementById('paciente_input');
+        if (inputVisiblePaciente) {
+            inputVisiblePaciente.addEventListener('input', function() {
+                 setTimeout(actualizarInfoTurno, 100); 
             });
         }
     });

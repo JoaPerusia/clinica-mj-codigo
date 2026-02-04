@@ -41,31 +41,50 @@
     {{-- Solo mostramos la columna de acciones si NO ES MÉDICO --}}
     @if(!auth()->user()->hasRolActivo($Rol::MEDICO))
         <td class="table-data py-4 actions-cell text-center">
+            
+            {{-- Verificamos si el turno está pendiente y el usuario logueado --}}
             @if(auth()->check() && $turno->estado_actual == $Turno::PENDIENTE)
-                <div class="flex justify-center space-x-2">
+                
+                <div class="flex justify-center items-center space-x-2">
                     
-                    {{-- Admin --}}
-                    @if(auth()->user()->hasRolActivo($Rol::ADMINISTRADOR))
-                        <form action="{{ route('admin.turnos.cambiar-estado', $turno->id_turno) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');" title="Cancelar turno">
-                            @csrf @method('PATCH')
-                            <input type="hidden" name="estado" value="{{ $Turno::CANCELADO }}">
-                            <button type="submit" class="p-1 hover:bg-red-100 rounded-full transition">
-                                <img src="{{ $canceladoIcon }}" alt="Cancelar" class="w-7 h-7">
-                            </button>
-                        </form>
+                    {{-- 1. BOTÓN DE INFORMACIÓN (Azul) --}}
+                    @if($turno->estado != 'cancelado') 
+                        <button type="button" 
+                                onclick="abrirModalInfo({{ $turno->id_medico }}, {{ $turno->id_paciente }})"
+                                class="text-blue-500 hover:text-blue-700 transition" 
+                                title="Ver Costos e Instrucciones">
+                            <svg xmlns="https://img.icons8.com/color/48/info--v1.png" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                            </svg>
+                        </button>
+                    @endif
+                    
+                    {{-- 2. BOTÓN DE CANCELAR (Rojo) --}}
+                    @if(auth()->user()->hasRolActivo($Rol::ADMINISTRADOR) || auth()->user()->hasRolActivo($Rol::PACIENTE))
+                        
+                        {{-- Definimos la ruta según el rol --}}
+                        @php
+                            $rutaCancelar = auth()->user()->hasRolActivo($Rol::ADMINISTRADOR) 
+                                ? route('admin.turnos.cambiar-estado', $turno->id_turno)
+                                : route('paciente.turnos.cambiar-estado', $turno->id_turno);
+                        @endphp
 
-                    {{-- Paciente --}}
-                    @elseif(auth()->user()->hasRolActivo($Rol::PACIENTE))
-                        <form action="{{ route('paciente.turnos.cambiar-estado', $turno->id_turno) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');" title="Cancelar turno">
-                            @csrf @method('PATCH')
+                        <form action="{{ $rutaCancelar }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');" title="Cancelar turno">
+                            @csrf 
+                            @method('PATCH')
                             <input type="hidden" name="estado" value="{{ $Turno::CANCELADO }}">
-                            <button type="submit" class="p-1 hover:bg-red-100 rounded-full transition">
-                                <img src="{{ $canceladoIcon }}" alt="Cancelar" class="w-7 h-7">
+                            
+                            <button type="submit" class="text-red-500 hover:text-red-700 transition pt-1">
+                                {{-- Icono X SVG (Sin imagen externa) --}}
+                                <svg xmlns="https://img.icons8.com/color/48/cancel--v1.png" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 9.75l4.5 4.5m0-4.5l-4.5 4.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
                             </button>
                         </form>
                     @endif
 
                 </div>
+
             @else
                 <span class="text-gray-300">-</span>
             @endif
