@@ -95,28 +95,26 @@
                                             <span class="text-gray-400 italic">-</span>
                                         @endforelse
                                     </td>
-                                    <td class="table-actions">
-                                        {{-- Botón Honorarios (Verde) --}}
-                                        <a href="{{ route('admin.medicos.precios', $medico->id_medico) }}" 
-                                        class="btn-success table-action-button text-sm px-3 py-1" 
-                                        title="Configurar Honorarios">
-                                        $
-                                        </a>
+                                    <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                                        <div class="flex justify-center items-center space-x-3">
+                                            
+                                            <a href="{{ route('admin.medicos.precios', $medico->id_medico) }}" title="Configurar Honorarios">
+                                                <x-action-icon accion="dinero" />
+                                            </a>
 
-                                        {{-- Botón Editar (Azul) --}}
-                                        <a href="{{ route('admin.medicos.edit', $medico->id_medico) }}" 
-                                        class="btn-info table-action-button text-sm px-3 py-1">
-                                        Editar
-                                        </a>
+                                            <a href="{{ route('admin.medicos.edit', $medico->id_medico) }}" title="Configurar Médico">
+                                                <x-action-icon accion="editar" />
+                                            </a>
 
-                                        {{-- Botón Eliminar (Rojo) --}}
-                                        <form action="{{ route('admin.medicos.destroy', $medico->id_medico) }}" 
-                                            method="POST" 
-                                            class="inline-block" 
-                                            onsubmit="return confirm('¿Estás seguro de eliminar este médico?');">
-                                            @csrf @method('DELETE')
-                                            <button type="submit" class="btn-danger text-sm px-3 py-1">Eliminar</button>
-                                        </form>
+                                            <form action="{{ route('admin.medicos.destroy', $medico->id_medico) }}" method="POST" 
+                                                onsubmit="return confirm('¿Seguro que deseas eliminar este médico?');" class="inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="pt-1" title="Eliminar Médico">
+                                                    <x-action-icon accion="eliminar" />
+                                                </button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                                 @endforeach

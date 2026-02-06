@@ -7,23 +7,17 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Rol;
 use App\Models\User;
+use App\Models\HorarioMedico;
+use App\Models\MedicoHorarioFecha;
+use Carbon\Carbon;
 
 class StoreTurnoRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        // Permitimos que cualquiera autenticado intente crear (la lógica de roles la validamos abajo o en middleware)
         return true; 
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         $usuario = $this->user();
@@ -33,8 +27,6 @@ class StoreTurnoRequest extends FormRequest
                 'required', 
                 'exists:pacientes,id_paciente', 
                 function ($attribute, $value, $fail) use ($usuario) {
-                    // Si el usuario es un paciente, verificar que el id_paciente seleccionado le pertenezca
-                    // Usamos la relación 'pacientes' que ya tienes definida en tu modelo User
                     if ($usuario->hasRole(Rol::PACIENTE)) {
                         if (!$usuario->pacientes->contains('id_paciente', $value)) {
                             $fail('El paciente seleccionado no te pertenece.');
@@ -43,9 +35,34 @@ class StoreTurnoRequest extends FormRequest
                 }
             ],
             'id_medico' => 'required|exists:medicos,id_medico',
-            'fecha'     => 'required|date|after_or_equal:today', // La fecha no puede ser en el pasado
-            'hora'      => 'required|date_format:H:i', // Formato de hora HH:MM
-            'estado'    => 'nullable|in:pendiente,realizado,cancelado',
+            'fecha' => [
+                'required',
+                'date',
+                'after_or_equal:today',
+                function ($attribute, $value, $fail) {
+                    $idMedico = $this->input('id_medico');
+                    if (!$idMedico) return;
+
+                    $fecha = Carbon::parse($value);
+                    $diaSemana = $fecha->dayOfWeek;
+
+                    // 1. ¿Trabaja ese día de la semana?
+                    $atiendeSemanal = HorarioMedico::where('id_medico', $idMedico)
+                        ->where('dia_semana', $diaSemana)
+                        ->exists();
+
+                    // 2. ¿Tiene una fecha puntual habilitada?
+                    $atiendePuntual = MedicoHorarioFecha::where('id_medico', $idMedico)
+                        ->where('fecha', $value)
+                        ->exists();
+
+                    if (!$atiendeSemanal && !$atiendePuntual) {
+                        $fail('El médico no tiene agenda disponible para la fecha seleccionada.');
+                    }
+                }
+            ],
+            'hora' => 'required|date_format:H:i',
+            'estado' => 'nullable|in:pendiente,realizado,cancelado',
         ];
     }
 

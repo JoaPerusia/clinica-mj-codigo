@@ -23,6 +23,10 @@ class UpdateMedicoRequest extends FormRequest
             'horarios.*.*.dia_semana'  => 'required',
             'horarios.*.*.hora_inicio' => 'required|date_format:H:i',
             'horarios.*.*.hora_fin'    => 'required|date_format:H:i|after:horarios.*.*.hora_inicio',
+            'fechas_eliminar' => ['nullable', 'string'],
+            'fechas_nuevas' => ['nullable', 'string'],
+            'hora_inicio_fecha' => ['nullable', 'date_format:H:i', 'required_with:fechas_nuevas'],
+            'hora_fin_fecha' => ['nullable', 'date_format:H:i', 'required_with:fechas_nuevas', 'after:hora_inicio_fecha'],
         ];
     }
 }

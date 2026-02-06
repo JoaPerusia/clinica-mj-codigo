@@ -20,6 +20,7 @@ class Turno extends Model
         'estado',
         'id_paciente',
         'id_medico',
+        'observaciones'
     ];
 
     protected $appends = ['estado_actual'];

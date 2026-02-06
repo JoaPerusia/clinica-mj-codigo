@@ -136,7 +136,7 @@ class TurnoController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreTurnoRequest $request) // <--- ¡Mira el cambio aquí!
+    public function store(StoreTurnoRequest $request) 
     {
         $usuario = Auth::user();
 
@@ -144,74 +144,80 @@ class TurnoController extends Controller
         $hora = $request->hora; 
         $id_medico = $request->id_medico;
 
-        // Cargar el médico con sus horarios de trabajo para la validación lógica
-        $medico = Medico::with('horariosTrabajo', 'bloqueos')->find($id_medico);
+        // Cargar el médico con TODOS sus horarios (semanales y puntuales) y bloqueos
+        $medico = Medico::with(['horariosTrabajo', 'horariosFechas', 'bloqueos'])->find($id_medico);
+        
         if (!$medico) {
             return back()->withInput()->withErrors(['id_medico' => 'Médico no encontrado.']);
         }
 
-        // 1. Verificar si el médico trabaja en el día y horario seleccionados
-        $diaSemanaNumero = $fecha->dayOfWeek; // 0 (Domingo) a 6 (Sábado)
-        $horariosTrabajoDelDia = $medico->horariosTrabajo->where('dia_semana', $diaSemanaNumero);
-
-        if ($horariosTrabajoDelDia->isEmpty()) {
-            return back()->withInput()->withErrors(['fecha' => 'El médico no trabaja en la fecha seleccionada.']);
-        }
-
+        // VALIDACIÓN DE HORA (HÍBRIDA)        
         $turno_hora_carbon = Carbon::parse($hora);
+        // Asumimos duración del turno (podría venir de $medico->tiempo_turno)
+        $duracionTurno = (int) ($medico->tiempo_turno ?? 30); 
+        $turno_fin_carbon = (clone $turno_hora_carbon)->addMinutes($duracionTurno);
+
         $trabajaEnHorario = false;
-        foreach ($horariosTrabajoDelDia as $horario) {
-            $horario_inicio_carbon = Carbon::parse($horario->hora_inicio);
-            $horario_fin_carbon = Carbon::parse($horario->hora_fin);
 
-            // Verificar si la hora del turno está dentro de algún bloque de trabajo del médico
-            // El turno tiene una duración de 30 minutos (asumiendo)
-            $turno_fin_carbon = (clone $turno_hora_carbon)->addMinutes(30);
+        // 1. Revisar Horarios Semanales (Regular)
+        $diaSemanaNumero = $fecha->dayOfWeek;
+        $horariosSemanal = $medico->horariosTrabajo->where('dia_semana', $diaSemanaNumero);
 
-            if ($turno_hora_carbon->gte($horario_inicio_carbon) && $turno_fin_carbon->lte($horario_fin_carbon)) {
+        // 2. Revisar Horarios Puntuales (Fecha específica)
+        $horariosPuntual = $medico->horariosFechas->where('fecha', $fecha->format('Y-m-d'));
+
+        // Fusionamos ambas colecciones para iterar una sola vez
+        $todosLosHorarios = $horariosSemanal->concat($horariosPuntual);
+
+        // Verificamos si la hora cae en alguno de los bloques
+        foreach ($todosLosHorarios as $horario) {
+            $inicio = Carbon::parse($horario->hora_inicio);
+            $fin = Carbon::parse($horario->hora_fin);
+
+            // ¿El turno entra completo en este bloque?
+            if ($turno_hora_carbon->gte($inicio) && $turno_fin_carbon->lte($fin)) {
                 $trabajaEnHorario = true;
-                break;
+                break; // Encontramos un hueco válido, salimos.
             }
         }
 
         if (!$trabajaEnHorario) {
-            return back()->withInput()->withErrors(['hora' => 'La hora seleccionada está fuera del horario de disponibilidad del médico para este día.']);
+            return back()->withInput()->withErrors(['hora' => 'La hora seleccionada está fuera del rango de atención del médico para este día.']);
         }
 
-        // 2. Verificar Bloqueos del Médico
+        // 2. Verificar Bloqueos (Esto queda casi igual)
         $bloqueosDelDia = $medico->bloqueos
             ->where('fecha_inicio', '<=', $fecha->format('Y-m-d'))
             ->where('fecha_fin', '>=', $fecha->format('Y-m-d'));
 
         foreach ($bloqueosDelDia as $bloqueo) {
-            // Si el bloqueo no tiene hora de inicio/fin, es un bloqueo de día completo
+            // Bloqueo total
             if (empty($bloqueo->hora_inicio) || empty($bloqueo->hora_fin)) {
-                return back()->withInput()->withErrors(['fecha' => 'El médico tiene un bloqueo de día completo en la fecha seleccionada.']);
+                return back()->withInput()->withErrors(['fecha' => 'El médico tiene un bloqueo administrativo (día completo) en esta fecha.']);
             }
 
-            // Bloqueo por horas: Verificar si el turno se solapa con el bloqueo
-            $bloqueo_hora_inicio_carbon = Carbon::parse($bloqueo->hora_inicio);
-            $bloqueo_hora_fin_carbon = Carbon::parse($bloqueo->hora_fin);
+            // Bloqueo parcial
+            $bloqueo_inicio = Carbon::parse($bloqueo->hora_inicio);
+            $bloqueo_fin = Carbon::parse($bloqueo->hora_fin);
 
-            $turno_fin_carbon = (clone $turno_hora_carbon)->addMinutes(30); 
-
+            // Verificamos solapamiento
             if (
-                ($turno_hora_carbon->gte($bloqueo_hora_inicio_carbon) && $turno_hora_carbon->lt($bloqueo_hora_fin_carbon)) ||
-                ($turno_fin_carbon->gt($bloqueo_hora_inicio_carbon) && $turno_fin_carbon->lte($bloqueo_hora_fin_carbon)) ||
-                ($bloqueo_hora_inicio_carbon->gte($turno_hora_carbon) && $bloqueo_hora_fin_carbon->lte($turno_fin_carbon))
+                ($turno_hora_carbon->gte($bloqueo_inicio) && $turno_hora_carbon->lt($bloqueo_fin)) ||
+                ($turno_fin_carbon->gt($bloqueo_inicio) && $turno_fin_carbon->lte($bloqueo_fin)) ||
+                ($bloqueo_inicio->gte($turno_hora_carbon) && $bloqueo_fin->lte($turno_fin_carbon))
             ) {
-                return back()->withInput()->withErrors(['hora' => 'El médico tiene un bloqueo en el horario seleccionado.']);
+                return back()->withInput()->withErrors(['hora' => 'El horario seleccionado coincide con un bloqueo administrativo parcial.']);
             }
         }
 
-        // 3. Asegurarse de que el horario no sea anterior a la hora actual para turnos de hoy
+        // 3. Validar margen de tiempo para turnos de "hoy"
         if ($fecha->isToday()) {
             if ($turno_hora_carbon->lt(Carbon::now()->addMinutes(15))) {
                 return back()->withInput()->withErrors(['hora' => 'La hora seleccionada debe ser al menos 15 minutos en el futuro.']);
             }
         }
 
-        // 4. Verificar si ya existe un turno a esa hora para ese médico
+        // 4. Verificar si ya existe un turno (Esto queda igual)
         $turnoExistente = Turno::where('id_medico', $id_medico)
                                ->where('fecha', $fecha->toDateString())
                                ->where('hora', $hora)
@@ -219,10 +225,10 @@ class TurnoController extends Controller
                                ->first();
 
         if ($turnoExistente) {
-            return back()->withInput()->withErrors(['hora' => 'Ya existe un turno reservado para este médico en la fecha y hora seleccionadas.']);
+            return back()->withInput()->withErrors(['hora' => 'Ese horario ya fue reservado por otro paciente mientras completabas el formulario.']);
         }
 
-        // Si todas las verificaciones pasan, crea el turno
+        // === CREACIÓN DEL TURNO ===
         $turno = Turno::create([
             'id_paciente' => $request->id_paciente,
             'id_medico' => $request->id_medico,
@@ -231,13 +237,13 @@ class TurnoController extends Controller
             'estado' => $request->estado ?? Turno::PENDIENTE,
         ]);
 
-        // Redireccionamiento dinámico
+        // Redireccionamiento según rol
         if ($usuario->hasRole(Rol::ADMINISTRADOR)) {
-            return redirect()->route('admin.turnos.index')->with('success', 'Turno agendado con éxito por el administrador.');
+            return redirect()->route('admin.turnos.index')->with('success', 'Turno agendado con éxito.');
         } elseif ($usuario->hasRole(Rol::PACIENTE)) {
-            return redirect()->route('paciente.turnos.index')->with('success', 'Turno agendado con éxito.');
+            return redirect()->route('paciente.turnos.index')->with('success', 'Turno reservado exitosamente.');
         } else {
-            return redirect()->route('dashboard')->with('success', 'Turno agendado con éxito.');
+            return redirect()->route('dashboard')->with('success', 'Turno agendado.');
         }
     }
 

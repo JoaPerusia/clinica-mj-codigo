@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Bloqueo;
 use App\Models\HorarioMedico;
+use App\Models\MedicoHorarioFecha;
 use App\Models\Turno;
 use Carbon\Carbon;
 use App\Models\Medico;
@@ -36,17 +37,27 @@ class AgendaService
             ];
         }
 
-        // 2. Obtener horarios de trabajo del médico para ese día de la semana
-        $bloquesTrabajo = HorarioMedico::where('id_medico', $id_medico)
+        // 2a. Obtener horarios regulares (Semanales)
+        $bloquesRegulares = HorarioMedico::where('id_medico', $id_medico)
             ->where('dia_semana', $dia)
             ->get();
 
-        if ($bloquesTrabajo->isEmpty()) {
+        // 2b. Obtener horarios puntuales (Fechas Específicas)
+        $bloquesPuntuales = MedicoHorarioFecha::where('id_medico', $id_medico)
+            ->where('fecha', $fecha->format('Y-m-d'))
+            ->get();
+
+        // Si no hay horarios ni regulares ni puntuales, no trabaja hoy
+        if ($bloquesRegulares->isEmpty() && $bloquesPuntuales->isEmpty()) {
             return [
                 'horarios' => [],
-                'mensaje'  => 'El médico no trabaja los ' . $fecha->locale('es')->dayName . '.'
+                'mensaje'  => 'El médico no trabaja los ' . $fecha->locale('es')->dayName . ' ni tiene horario especial asignado.'
             ];
         }
+
+        // Fusionamos ambas colecciones
+        $todosLosBloques = $bloquesRegulares->concat($bloquesPuntuales);
+
 
         // 3. Obtener turnos ya ocupados en esa fecha
         $turnosOcupados = Turno::where('id_medico', $id_medico)
@@ -67,24 +78,17 @@ class AgendaService
 
         $horariosDisponibles = [];
 
-        // 5. Generar slots de tiempo
-        foreach ($bloquesTrabajo as $bloque) {
+        // 5. Generar slots de tiempo (Iteramos sobre la colección fusionada)
+        foreach ($todosLosBloques as $bloque) {
             $inicio = Carbon::parse($bloque->hora_inicio);
             $fin    = Carbon::parse($bloque->hora_fin);
 
-            // Generar intervalos de 30 mins
             for ($hora = $inicio->copy(); $hora->lt($fin); $hora->addMinutes($intervalo)) {
-                
-                // El turno termina 30 mins después del inicio
                 $finTurno = (clone $hora)->addMinutes($intervalo);
-
-                // Si el turno termina después de que el médico se vaya, no es válido (opcional, depende de tu regla)
                 if ($finTurno->gt($fin)) {
                     continue;
                 }
-
                 $slot = $hora->format('H:i');
-
                 // 5.1 Saltar si ya está ocupado por un turno
                 if (in_array($slot, $turnosOcupados)) {
                     continue;
@@ -95,7 +99,6 @@ class AgendaService
                     $bInicio = Carbon::parse($b->hora_inicio);
                     $bFin    = Carbon::parse($b->hora_fin);
                     
-                    // Lógica de superposición de horarios
                     return ($hora->gte($bInicio) && $hora->lt($bFin)) || 
                            ($finTurno->gt($bInicio) && $finTurno->lte($bFin));
                 });
@@ -104,7 +107,7 @@ class AgendaService
                     continue;
                 }
 
-                // 5.3 Saltar si es hoy y el horario ya pasó (damos 15 mins de margen)
+                // 5.3 Saltar si es hoy y el horario ya pasó
                 if ($fecha->isToday() && $hora->lt(Carbon::now()->addMinutes(15))) {
                     continue;
                 }
@@ -113,7 +116,7 @@ class AgendaService
             }
         }
 
-        // 6. Ordenar y limpiar
+        // 6. Ordenar y limpiar duplicados
         $horariosDisponibles = array_values(array_unique($horariosDisponibles));
         sort($horariosDisponibles);
 
@@ -136,21 +139,27 @@ class AgendaService
         $inicioMes = Carbon::createFromDate($anio, $mes, 1)->startOfDay();
         $finMes    = $inicioMes->copy()->endOfMonth();
 
-        // 1. Obtener días laborales del médico (0=Domingo, ..., 6=Sábado)
+        // 1. Obtener días laborales regulares (0=Domingo, ..., 6=Sábado)
         $diasLaborales = HorarioMedico::where('id_medico', $id_medico)
             ->pluck('dia_semana')
             ->unique()
             ->toArray();
 
-        // 2. Obtener bloqueos de día completo que caigan en este mes
+        // 2. NUEVO: Obtener fechas puntuales en este mes
+        $fechasPuntuales = MedicoHorarioFecha::where('id_medico', $id_medico)
+            ->whereBetween('fecha', [$inicioMes->format('Y-m-d'), $finMes->format('Y-m-d')])
+            ->pluck('fecha')
+            ->toArray();
+
+        // 3. Obtener bloqueos de día completo
         $bloqueos = Bloqueo::where('id_medico', $id_medico)
             ->where(function ($q) use ($inicioMes, $finMes) {
                  $q->whereBetween('fecha_inicio', [$inicioMes, $finMes])
-                   ->orWhereBetween('fecha_fin', [$inicioMes, $finMes])
-                   ->orWhere(function ($sub) use ($inicioMes, $finMes) {
-                       $sub->where('fecha_inicio', '<', $inicioMes)
-                           ->where('fecha_fin', '>', $finMes);
-                   });
+                    ->orWhereBetween('fecha_fin', [$inicioMes, $finMes])
+                    ->orWhere(function ($sub) use ($inicioMes, $finMes) {
+                        $sub->where('fecha_inicio', '<', $inicioMes)
+                            ->where('fecha_fin', '>', $finMes);
+                    });
             })
             ->whereNull('hora_inicio')
             ->get();
@@ -158,17 +167,20 @@ class AgendaService
         $estados = [];
         $fecha = $inicioMes->copy();
 
-        // 3. Recorrer día por día el mes
+        // 4. Recorrer día por día el mes
         while ($fecha->lte($finMes)) {
             $fechaStr = $fecha->format('Y-m-d');
             $estado = null; 
 
-            // A. ¿Es día laboral?
-            if (in_array($fecha->dayOfWeek, $diasLaborales)) {
+            // A. ¿Es día laboral? (Ya sea por semana o por fecha puntual)
+            $esDiaLaboral = in_array($fecha->dayOfWeek, $diasLaborales);
+            $esFechaPuntual = in_array($fechaStr, $fechasPuntuales);
+
+            if ($esDiaLaboral || $esFechaPuntual) {
                 $estado = 'disponible'; 
             }
 
-            // B. ¿Está bloqueado? 
+            // B. ¿Está bloqueado? (El bloqueo gana sobre la disponibilidad)
             $esBloqueado = $bloqueos->contains(function ($bloqueo) use ($fecha) {
                 $inicio = Carbon::parse($bloqueo->fecha_inicio)->startOfDay();
                 $fin    = Carbon::parse($bloqueo->fecha_fin)->endOfDay();

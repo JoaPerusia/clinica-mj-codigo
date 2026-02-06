@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Exception;
+use App\Models\MedicoHorarioFecha;
 
 class MedicoService
 {
@@ -72,31 +73,110 @@ class MedicoService
     public function updateMedico(Medico $medico, array $data)
     {
         return DB::transaction(function () use ($medico, $data) {
-            
-            // 0. guardamos el nuevo tiempo de turno
-            $medico->update([
-                'tiempo_turno' => $data['tiempo_turno']
-            ]);
-
-            // 1. Normalizar y Preparar Nuevos Horarios
+            $medico->update(['tiempo_turno' => $data['tiempo_turno']]);
             $nuevosHorarios = $this->normalizarHorarios($data['horarios']);
-
-            // 2. Detectar cambios en especialidades
+            if ($nuevosHorarios instanceof \Illuminate\Support\Collection) {
+                $nuevosHorarios = $nuevosHorarios->toArray();
+            }
             $nuevasEspecialidades = collect($data['especialidades'])->map(fn($id) => (int)$id)->sort()->values()->toArray();
-            $especialidadesOriginales = $medico->especialidades->pluck('id_especialidad')->sort()->values()->toArray();
-            $especialidadesCambiaron = ($especialidadesOriginales !== $nuevasEspecialidades);
-
-            // 3. Gestionar Conflictos con Turnos Pendientes
-            $turnosAfectados = $this->gestionarConflictosTurnos($medico, $nuevosHorarios, $especialidadesCambiaron);
-
-            // 4. Persistir Cambios
+            $idsEliminar = !empty($data['fechas_eliminar']) ? explode(',', $data['fechas_eliminar']) : [];
+            $turnosAfectados = $this->gestionarConflictosTurnos(
+                $medico, 
+                $nuevosHorarios, 
+                $idsEliminar, 
+                $data['fechas_nuevas'] ?? null
+            );
             $medico->especialidades()->sync($nuevasEspecialidades);
             $medico->horariosTrabajo()->delete();
             foreach ($nuevosHorarios as $h) {
                 $medico->horariosTrabajo()->create($h);
             }
+            if (!empty($idsEliminar)) {
+                MedicoHorarioFecha::whereIn('id', $idsEliminar)->delete();
+            }
+            if (!empty($data['fechas_nuevas'])) {
+                $this->syncFechasPuntuales($medico, $data);
+            }
 
             return $turnosAfectados;
+        });
+    }
+
+    /**
+     * Procesa y guarda las fechas puntuales ingresadas por lote.
+     * Método auxiliar privado para mantener la limpieza del servicio.
+     */
+    private function syncFechasPuntuales(Medico $medico, array $data)
+    {
+        $fechas = explode(', ', $data['fechas_nuevas']);
+
+        foreach ($fechas as $fecha) {
+            if (!strtotime($fecha)) continue;
+
+            MedicoHorarioFecha::firstOrCreate(
+                [
+                    'id_medico' => $medico->id_medico,
+                    'fecha' => $fecha,
+                    'hora_inicio' => $data['hora_inicio_fecha'],
+                ],
+                [
+                    'hora_fin' => $data['hora_fin_fecha']
+                ]
+            );
+        }
+    }
+
+    /**
+     * Elimina una fecha puntual y cancela los turnos asociados.
+     * Retorna la cantidad de turnos cancelados.
+     */
+    public function deleteFechaPuntual($id)
+    {
+        return DB::transaction(function () use ($id) {
+            $fechaPuntual = MedicoHorarioFecha::findOrFail($id);
+
+            // 1. Buscamos turnos PENDIENTES que caigan en ese día y rango horario
+            $turnosAfectados = Turno::where('id_medico', $fechaPuntual->id_medico)
+                ->where('fecha', $fechaPuntual->fecha)
+                ->where('estado', 'pendiente') 
+                ->where(function ($query) use ($fechaPuntual) {
+                    $query->whereBetween('hora', [$fechaPuntual->hora_inicio, $fechaPuntual->hora_fin]);
+                })
+                ->with(['paciente.usuario', 'medico.usuario']) // Traemos datos para el mail
+                ->get();
+
+            $cantidadCancelados = $turnosAfectados->count();
+
+            // 2. Cancelamos los turnos y notificamos
+            if ($cantidadCancelados > 0) {
+                
+                // Definimos el mensaje que le llegará al paciente
+                $motivoParaEmail = "El profesional ha eliminado su disponibilidad para la fecha " . \Carbon\Carbon::parse($fechaPuntual->fecha)->format('d/m/Y') . ".";
+
+                foreach ($turnosAfectados as $turno) {
+                    // A. Actualizar estado en BD
+                    $turno->estado = 'cancelado';
+                    $turno->observaciones = $motivoParaEmail; 
+                    $turno->save();
+
+                    // B. Enviar Email
+                    if ($turno->paciente && $turno->paciente->usuario && $turno->paciente->usuario->email) {
+                        try {
+                            // Usamos queue() ya que tu Mailable tiene "use Queueable"
+                            // Le pasamos el $turno y el $motivo tal como espera tu constructor
+                            Mail::to($turno->paciente->usuario->email)
+                                ->queue(new TurnoCanceladoMailable($turno, $motivoParaEmail));
+                        } catch (\Exception $e) {
+                            \Log::error("Error enviando mail cancelación turno {$turno->id_turno}: " . $e->getMessage());
+                        }
+                    }
+                }
+            }
+
+            // 3. Eliminamos la disponibilidad de la base de datos
+            $fechaPuntual->delete();
+
+            return $cantidadCancelados;
         });
     }
 
@@ -147,64 +227,103 @@ class MedicoService
         ])->filter(fn($h) => $h['dia_semana'] !== null)->values();
     }
 
-    private function gestionarConflictosTurnos(Medico $medico, $nuevosHorarios, bool $especialidadesCambiaron)
+    /**
+     * Verifica conflictos considerando Horarios Semanales Y Fechas Puntuales.
+     */
+    private function gestionarConflictosTurnos(Medico $medico, array $nuevosHorarios, array $idsEliminar, ?string $fechasNuevasStr)
     {
-        $turnosPendientes = $medico->turnos()
-            ->where('estado', Turno::PENDIENTE)
-            ->where('fecha', '>=', Carbon::today())
+        // 1. Buscamos TODOS los turnos futuros pendientes
+        $turnosPendientes = Turno::where('id_medico', $medico->id_medico)
+            ->where('estado', 'pendiente')
+            ->whereDate('fecha', '>=', now())
             ->get();
 
-        $contador = 0;
+        $contadorCancelados = 0;
 
-        foreach ($turnosPendientes as $turno) {
-            $esValido = true;
-            $motivo = '';
-
-            // Caso A: Cambió de especialidad (Invalidación total)
-            if ($especialidadesCambiaron) {
-                $esValido = false;
-                $motivo = 'El médico cambió sus especialidades/servicios.';
-            }
-
-            // Caso B: Verificar si el turno encaja en los nuevos horarios
-            if ($esValido) {
-                $fechaTurno = Carbon::parse($turno->fecha);
-                $horaTurno = Carbon::parse($turno->hora)->setDateFrom($fechaTurno);
-                
-                $coincide = false;
-                foreach ($nuevosHorarios as $nh) {
-                    if ($nh['dia_semana'] === $fechaTurno->dayOfWeek) {
-                        $inicio = Carbon::createFromFormat('H:i', $nh['hora_inicio'])->setDateFrom($fechaTurno);
-                        $fin    = Carbon::createFromFormat('H:i', $nh['hora_fin'])->setDateFrom($fechaTurno);
-
-                        if ($horaTurno->between($inicio, $fin, true)) {
-                            $coincide = true;
-                            break;
-                        }
-                    }
-                }
-                
-                if (!$coincide) {
-                    $esValido = false;
-                    $motivo = 'El médico modificó sus horarios de atención.';
-                }
-            }
-
-            if (!$esValido) {
-                $turno->update(['estado' => Turno::CANCELADO]);
-                $contador++;
-                
-                // Enviar Email
-                try {
-                    $turno->load('paciente.usuario', 'medico.usuario');
-                    Mail::to($turno->paciente->usuario->email)
-                        ->send(new TurnoCanceladoMailable($turno, $motivo));
-                } catch (Exception $e) {
-                    Log::error("Fallo envío mail turno {$turno->id_turno}: " . $e->getMessage());
-                }
+        // Recuperamos los horarios NUEVOS del request para validar estrictamente
+        $horaInicioNueva = request('hora_inicio_fecha');
+        $horaFinNueva = request('hora_fin_fecha');
+        
+        $fechasNuevasArray = [];
+        if ($fechasNuevasStr) {
+            $rawFechas = explode(', ', $fechasNuevasStr);
+            foreach($rawFechas as $f) {
+                // Guardamos solo fechas válidas
+                if(strtotime($f)) $fechasNuevasArray[] = \Carbon\Carbon::parse($f)->format('Y-m-d');
             }
         }
 
-        return $contador;
+        foreach ($turnosPendientes as $turno) {
+            $fechaTurno = \Carbon\Carbon::parse($turno->fecha);
+            $horaTurno = \Carbon\Carbon::parse($turno->hora);
+            $horaTurnoStr = $horaTurno->format('H:i:s');
+            $diaSemana = $fechaTurno->dayOfWeek;
+
+            $turnoSalvado = false;
+
+            // --- CHECK 1: Horario Semanal (Lunes, Martes...) ---
+            foreach ($nuevosHorarios as $horario) {
+                if ($horario['dia_semana'] == $diaSemana) {
+                    $inicio = \Carbon\Carbon::parse($horario['hora_inicio']);
+                    $fin = \Carbon\Carbon::parse($horario['hora_fin']);
+                    
+                    // Comparamos horas estrictamente
+                    if ($horaTurno->format('H:i') >= $inicio->format('H:i') && 
+                        $horaTurno->format('H:i') < $fin->format('H:i')) {
+                        $turnoSalvado = true;
+                        break; 
+                    }
+                }
+            }
+            if ($turnoSalvado) continue; 
+
+            // --- CHECK 2: Fechas Puntuales NUEVAS (Las que estás agregando ahora) ---
+            if (in_array($fechaTurno->format('Y-m-d'), $fechasNuevasArray)) {
+                // Si agregamos fecha nueva, verificamos que el turno entre en el NUEVO horario
+                if ($horaInicioNueva && $horaFinNueva) {
+                    $inicio = \Carbon\Carbon::parse($horaInicioNueva);
+                    $fin = \Carbon\Carbon::parse($horaFinNueva);
+                    
+                    if ($horaTurno->format('H:i') >= $inicio->format('H:i') && 
+                        $horaTurno->format('H:i') < $fin->format('H:i')) {
+                        $turnoSalvado = true;
+                    }
+                }
+            }
+            if ($turnoSalvado) continue;
+
+            // --- CHECK 3: Fechas Puntuales EXISTENTES (Base de Datos) ---
+            // Buscamos si hay una fecha en BD que cubra este turno, EXCLUYENDO las que se van a borrar
+            $fechaDB = MedicoHorarioFecha::where('id_medico', $medico->id_medico)
+                ->where('fecha', $fechaTurno->format('Y-m-d'))
+                ->whereNotIn('id', $idsEliminar)
+                ->where(function($q) use ($horaTurnoStr) {
+                    $q->whereTime('hora_inicio', '<=', $horaTurnoStr)
+                      ->whereTime('hora_fin', '>', $horaTurnoStr);
+                })
+                ->exists();
+
+            if ($fechaDB) {
+                $turnoSalvado = true;
+            }
+
+            if (!$turnoSalvado) {
+                $turno->estado = 'cancelado';
+                $turno->observaciones = "El profesional ha modificado sus horarios y este turno ya no es válido.";
+                $turno->save();
+                
+                // Enviar Mail
+                if ($turno->paciente && $turno->paciente->usuario && $turno->paciente->usuario->email) {
+                    try {
+                        Mail::to($turno->paciente->usuario->email)
+                            ->queue(new TurnoCanceladoMailable($turno, $turno->observaciones));
+                    } catch (\Exception $e) {}
+                }
+
+                $contadorCancelados++;
+            }
+        }
+
+        return $contadorCancelados;
     }
 }

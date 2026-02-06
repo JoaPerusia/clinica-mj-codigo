@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\Rol;
 use Illuminate\Http\Request;
 use App\Models\ObraSocial;
+use App\Models\MedicoHorarioFecha;
 
 class MedicoController extends Controller
 {
@@ -70,7 +71,16 @@ class MedicoController extends Controller
         $medico = Medico::with('especialidades', 'horariosTrabajo', 'usuario')->findOrFail($id);
         $bloqueos = $medico->bloqueos()->orderBy('fecha_inicio', 'desc')->get();
         $especialidades = Especialidad::all();
-        $diasSemana = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+        
+        $diasSemana = [
+            1 => 'Lunes',
+            2 => 'Martes',
+            3 => 'Miércoles',
+            4 => 'Jueves',
+            5 => 'Viernes',
+            6 => 'Sábado',
+            // 0 => 'Domingo' (Descomentar si trabajan domingos)
+        ];
         
         return view('medicos.edit', compact('medico', 'especialidades', 'diasSemana', 'bloqueos'));
     }
@@ -143,5 +153,23 @@ class MedicoController extends Controller
         $medico->obrasSociales()->sync($syncData);
 
         return redirect()->route('admin.medicos.index')->with('success', 'Configuración de atención actualizada correctamente.');
+    }
+
+    public function destroyHorarioFecha($id)
+    {
+        try {
+            $cancelados = $this->medicoService->deleteFechaPuntual($id);
+            
+            $mensaje = 'Fecha de atención eliminada correctamente.';
+            
+            if ($cancelados > 0) {
+                $mensaje .= " ATENCIÓN: Se cancelaron automáticamente {$cancelados} turno(s) pendientes en esa fecha.";
+            }
+            
+            return back()->with('success', $mensaje);
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error al eliminar la fecha: ' . $e->getMessage());
+        }
     }
 }

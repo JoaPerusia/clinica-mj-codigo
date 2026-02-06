@@ -57,4 +57,9 @@ class Medico extends Model
                     ->withPivot('instrucciones')
                     ->withTimestamps();
     }
+
+    public function horariosFechas()
+    {
+        return $this->hasMany(MedicoHorarioFecha::class, 'id_medico');
+    }
 }

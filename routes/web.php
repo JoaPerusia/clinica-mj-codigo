@@ -55,6 +55,7 @@ Route::middleware(['auth', 'role:Administrador'])->prefix('admin')->name('admin.
     
     Route::get('/medicos/{medico}/precios', [MedicoController::class, 'editPrecios'])->name('medicos.precios');
     Route::put('/medicos/{medico}/precios', [MedicoController::class, 'updatePrecios'])->name('medicos.updatePrecios');
+    Route::delete('/medicos/horario-fecha/{id}', [MedicoController::class, 'destroyHorarioFecha'])->name('medicos.horario-fecha.destroy');
     
     // Resources completos
     Route::resource('medicos', MedicoController::class);
