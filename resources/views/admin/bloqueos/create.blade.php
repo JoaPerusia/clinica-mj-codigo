@@ -27,7 +27,7 @@
                     
                     {{-- Seleccionar Médico --}}
                     <div class="form-group mb-4">
-                        <label for="medico_input" class="form-label block font-medium text-gray-700">Médico:</label>
+                        <label for="medico_input" class="form-label">Médico:</label>
                         
                         {{-- Input visible para buscar --}}
                         <input type="text"

@@ -75,7 +75,7 @@
                                     <th class="table-header">Teléfono</th>
                                     <th class="table-header">Obra Social</th>
                                     <th class="table-header">Usuario Asociado</th>
-                                    <th class="table-header">Acciones</th>
+                                    <th class="table-header"></th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -86,7 +86,7 @@
                                     <td class="table-data">{{ \Carbon\Carbon::parse($paciente->fecha_nacimiento)->format('d/m/Y') }}</td> 
                                     <td class="table-data">{{ $paciente->telefono }}</td> 
                                     <td class="table-data">{{ $paciente->obraSocial ? $paciente->obraSocial->nombre : 'Sin Obra Social' }}</td>
-                                    <td class="table-data">{{ $paciente->usuario ? $paciente->usuario->nombre . ' (' . $paciente->usuario->id_usuario . ')' : 'N/A' }}</td>
+                                    <td class="table-data">{{ $paciente->usuario ? $paciente->usuario->nombre . ' ' . $paciente->usuario->apellido . ' (' . $paciente->usuario->id_usuario . ')' : 'N/A' }}</td>
                                     <td class="table-actions"> 
                                         @php
                                             $canEdit = auth()->user()->hasRolActivo($Rol::ADMINISTRADOR) || (auth()->user()->hasRolActivo($Rol::PACIENTE) && $paciente->id_usuario == auth()->user()->id_usuario);
@@ -101,11 +101,21 @@
                                         @endphp
 
                                         @if($canEdit)
-                                            <a href="{{ $editRoute }}" class="btn-info table-action-button text-sm px-3 py-1 mr-1">Editar</a>
-                                            <form action="{{ $destroyRoute }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de eliminar este paciente?');">
-                                                @csrf @method('DELETE')
-                                                <button type="submit" class="btn-danger text-sm px-3 py-1">Eliminar</button>
-                                            </form>
+                                            <div class="flex justify-center items-center space-x-3">
+                                                {{-- Botón Editar --}}
+                                                <a href="{{ $editRoute }}" title="Editar Paciente">
+                                                    <x-action-icon accion="editar" />
+                                                </a>
+
+                                                {{-- Botón Eliminar --}}
+                                                <form action="{{ $destroyRoute }}" method="POST" class="inline" onsubmit="return confirm('¿Estás seguro de eliminar este paciente?');">
+                                                    @csrf 
+                                                    @method('DELETE')
+                                                    <button type="submit" class="pt-1" title="Eliminar Paciente">
+                                                        <x-action-icon accion="eliminar" />
+                                                    </button>
+                                                </form>
+                                            </div>
                                         @endif
                                     </td>
                                 </tr>

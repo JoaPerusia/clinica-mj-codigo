@@ -37,7 +37,7 @@
                                 <tr>
                                     <th class="table-header">ID</th> 
                                     <th class="table-header">Nombre</th>
-                                    <th class="table-header">Acciones</th>
+                                    <th class="table-header"></th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -45,12 +45,23 @@
                                     <tr>
                                         <td class="table-data">{{ $especialidad->id_especialidad }}</td> 
                                         <td class="table-data">{{ $especialidad->nombre_especialidad }}</td>
-                                        <td class="table-actions"> 
-                                            <a href="{{ route('admin.especialidades.edit', $especialidad->id_especialidad) }}" class="btn-info table-action-button text-sm px-3 py-1 mr-1">Editar</a>
-                                            <form action="{{ route('admin.especialidades.destroy', $especialidad->id_especialidad) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de que quieres eliminar esta especialidad?')">
-                                                @csrf @method('DELETE')
-                                                <button type="submit" class="btn-danger text-sm px-3 py-1">Eliminar</button>
-                                            </form>
+                                        <td class="whitespace-nowrap px-3 py-4 text-sm font-medium">
+                                            <div class="flex justify-start items-center space-x-3">
+                                                {{-- Botón Editar --}}
+                                                <a href="{{ route('admin.especialidades.edit', $especialidad->id_especialidad) }}" title="Editar Especialidad">
+                                                    <x-action-icon accion="editar" />
+                                                </a>
+
+                                                {{-- Botón Eliminar --}}
+                                                <form action="{{ route('admin.especialidades.destroy', $especialidad->id_especialidad) }}" method="POST" 
+                                                    onsubmit="return confirm('¿Seguro que deseas eliminar esta especialidad?');" class="inline">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="pt-1" title="Eliminar Especialidad">
+                                                        <x-action-icon accion="eliminar" />
+                                                    </button>
+                                                </form>
+                                            </div>
                                         </td>
                                     </tr>
                                 @endforeach
