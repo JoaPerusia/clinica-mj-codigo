@@ -114,26 +114,21 @@ class MedicoService
     }
 
     /**
-     * Procesa y guarda las fechas puntuales ingresadas por lote.
-     * Método auxiliar privado para mantener la limpieza del servicio.
+     * Procesa y guarda las nuevas fechas puntuales.
      */
     private function syncFechasPuntuales(Medico $medico, array $data)
     {
-        $fechas = explode(', ', $data['fechas_nuevas']);
-
-        foreach ($fechas as $fecha) {
-            if (!strtotime($fecha)) continue;
-
-            MedicoHorarioFecha::firstOrCreate(
-                [
-                    'id_medico' => $medico->id_medico,
-                    'fecha' => $fecha,
-                    'hora_inicio' => $data['hora_inicio_fecha'],
-                ],
-                [
-                    'hora_fin' => $data['hora_fin_fecha']
-                ]
-            );
+        // Ya no hacemos explode, recorremos el array directamente
+        if (isset($data['fechas_nuevas']) && is_array($data['fechas_nuevas'])) {
+            foreach ($data['fechas_nuevas'] as $fechaData) {
+                
+                MedicoHorarioFecha::create([
+                    'id_medico'   => $medico->id_medico,
+                    'fecha'       => $fechaData['fecha'],
+                    'hora_inicio' => $fechaData['hora_inicio'],
+                    'hora_fin'    => $fechaData['hora_fin']
+                ]);
+            }
         }
     }
 
@@ -239,9 +234,9 @@ class MedicoService
     }
 
     /**
-     * Verifica conflictos considerando Horarios Semanales Y Fechas Puntuales.
+     * Verifica conflictos considerando Horarios Semanales Y Fechas Puntuales (Array).
      */
-    private function gestionarConflictosTurnos(Medico $medico, array $nuevosHorarios, array $idsEliminar, ?string $fechasNuevasStr)
+    private function gestionarConflictosTurnos(Medico $medico, array $nuevosHorarios, array $idsEliminar, ?array $fechasNuevas)
     {
         // 1. Buscamos TODOS los turnos futuros pendientes
         $turnosPendientes = Turno::where('id_medico', $medico->id_medico)
@@ -251,66 +246,71 @@ class MedicoService
 
         $contadorCancelados = 0;
 
-        // Recuperamos los horarios NUEVOS del request para validar estrictamente
-        $horaInicioNueva = request('hora_inicio_fecha');
-        $horaFinNueva = request('hora_fin_fecha');
-        
-        $fechasNuevasArray = [];
-        if ($fechasNuevasStr) {
-            $rawFechas = explode(', ', $fechasNuevasStr);
-            foreach($rawFechas as $f) {
-                // Guardamos solo fechas válidas
-                if(strtotime($f)) $fechasNuevasArray[] = \Carbon\Carbon::parse($f)->format('Y-m-d');
+        // Procesamos el array de fechas nuevas para búsqueda rápida
+        $mapaFechasNuevas = [];
+        if ($fechasNuevas && is_array($fechasNuevas)) {
+            foreach($fechasNuevas as $fn) {
+                $fechaKey = $fn['fecha']; // YYYY-MM-DD
+                if(!isset($mapaFechasNuevas[$fechaKey])) {
+                    $mapaFechasNuevas[$fechaKey] = [];
+                }
+                $mapaFechasNuevas[$fechaKey][] = [
+                    'inicio' => $fn['hora_inicio'],
+                    'fin'    => $fn['hora_fin']
+                ];
             }
         }
 
         foreach ($turnosPendientes as $turno) {
             $fechaTurno = \Carbon\Carbon::parse($turno->fecha);
             $horaTurno = \Carbon\Carbon::parse($turno->hora);
-            $horaTurnoStr = $horaTurno->format('H:i:s');
+            $horaTurnoStr = $horaTurno->format('H:i');
             $diaSemana = $fechaTurno->dayOfWeek;
 
             $turnoSalvado = false;
 
-            // --- CHECK 1: Horario Semanal (Lunes, Martes...) ---
+            // --- CHECK 1: Horario Semanal ---
             foreach ($nuevosHorarios as $horario) {
                 if ($horario['dia_semana'] == $diaSemana) {
-                    $inicio = \Carbon\Carbon::parse($horario['hora_inicio']);
-                    $fin = \Carbon\Carbon::parse($horario['hora_fin']);
+                    $inicio = \Carbon\Carbon::parse($horario['hora_inicio'])->format('H:i');
+                    $fin = \Carbon\Carbon::parse($horario['hora_fin'])->format('H:i');
                     
-                    // Comparamos horas estrictamente
-                    if ($horaTurno->format('H:i') >= $inicio->format('H:i') && 
-                        $horaTurno->format('H:i') < $fin->format('H:i')) {
+                    if ($horaTurnoStr >= $inicio && $horaTurnoStr < $fin) {
                         $turnoSalvado = true;
                         break; 
                     }
                 }
             }
+            // Si el turno entra en horario semanal, pasamos al siguiente turno
             if ($turnoSalvado) continue; 
 
-            // --- CHECK 2: Fechas Puntuales NUEVAS (Las que estás agregando ahora) ---
-            if (in_array($fechaTurno->format('Y-m-d'), $fechasNuevasArray)) {
-                // Si agregamos fecha nueva, verificamos que el turno entre en el NUEVO horario
-                if ($horaInicioNueva && $horaFinNueva) {
-                    $inicio = \Carbon\Carbon::parse($horaInicioNueva);
-                    $fin = \Carbon\Carbon::parse($horaFinNueva);
-                    
-                    if ($horaTurno->format('H:i') >= $inicio->format('H:i') && 
-                        $horaTurno->format('H:i') < $fin->format('H:i')) {
+
+            // --- CHECK 2: Fechas Puntuales NUEVAS ---
+            $fechaKey = $fechaTurno->format('Y-m-d');
+            
+            if (isset($mapaFechasNuevas[$fechaKey])) {
+                // Revisamos los rangos horarios de esa fecha nueva
+                foreach ($mapaFechasNuevas[$fechaKey] as $rango) {
+                    $inicio = $rango['inicio'];
+                    $fin = $rango['fin'];
+
+                    if ($horaTurnoStr >= $inicio && $horaTurnoStr < $fin) {
                         $turnoSalvado = true;
+                        break;
                     }
                 }
             }
             if ($turnoSalvado) continue;
 
+
             // --- CHECK 3: Fechas Puntuales EXISTENTES (Base de Datos) ---
-            // Buscamos si hay una fecha en BD que cubra este turno, EXCLUYENDO las que se van a borrar
             $fechaDB = MedicoHorarioFecha::where('id_medico', $medico->id_medico)
-                ->where('fecha', $fechaTurno->format('Y-m-d'))
+                ->where('fecha', $fechaKey)
                 ->whereNotIn('id', $idsEliminar)
                 ->where(function($q) use ($horaTurnoStr) {
-                    $q->whereTime('hora_inicio', '<=', $horaTurnoStr)
-                      ->whereTime('hora_fin', '>', $horaTurnoStr);
+                     // Comparación de hora simple en BD
+                     $q->where('hora_inicio', '<=', $horaTurnoStr)
+                       ->where('hora_fin', '>', $horaTurnoStr);
                 })
                 ->exists();
 
@@ -318,12 +318,14 @@ class MedicoService
                 $turnoSalvado = true;
             }
 
+            // --- RESULTADO FINAL ---
             if (!$turnoSalvado) {
+                // Cancelar turno
                 $turno->estado = 'cancelado';
-                $turno->observaciones = "El profesional ha modificado sus horarios y este turno ya no es válido.";
+                $turno->observaciones = "Cambio de horarios del profesional.";
                 $turno->save();
                 
-                // Enviar Mail
+                // Enviar Mail (Simplificado)
                 if ($turno->paciente && $turno->paciente->usuario && $turno->paciente->usuario->email) {
                     try {
                         Mail::to($turno->paciente->usuario->email)
