@@ -26,8 +26,8 @@ class MedicoController extends Controller
     {
         $dni_filtro = $request->input('dni_filtro');
         
-        $query = Medico::with('especialidades', 'horariosTrabajo', 'usuario');
-
+        $query = Medico::with('especialidades', 'horariosTrabajo', 'usuario', 'horariosFechas');
+        
         if (!empty($dni_filtro)) {
             $query->whereHas('usuario', function ($q) use ($dni_filtro) {
                 $q->where('dni', 'like', "%{$dni_filtro}%")
@@ -44,12 +44,20 @@ class MedicoController extends Controller
     public function create()
     {
         $especialidades = Especialidad::all();
-        // Usuarios 'Paciente' candidatos a ser médico
-        $usuarios = User::whereHas('roles', function ($q) {
-            $q->where('rol', Rol::PACIENTE);
-        })->get();
         
-        $diasSemana = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
+        $usuarios = User::whereHas('roles', function ($q) {
+            $q->where('rol', Rol::PACIENTE); 
+        })->get();
+
+        $diasSemana = [
+            1 => 'Lunes',
+            2 => 'Martes',
+            3 => 'Miércoles',
+            4 => 'Jueves',
+            5 => 'Viernes',
+            6 => 'Sábado',
+            // 0 => 'Domingo' (Opcional)
+        ];
         
         return view('medicos.create', compact('especialidades', 'usuarios', 'diasSemana'));
     }

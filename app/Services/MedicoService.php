@@ -63,6 +63,17 @@ class MedicoService
                 }
             }
 
+            // --- 4. GUARDAR FECHAS PUNTUALES
+            if (isset($data['fechas_nuevas']) && is_array($data['fechas_nuevas'])) {
+                foreach ($data['fechas_nuevas'] as $fechaData) {
+                    $medico->horariosFechas()->create([
+                        'fecha'       => $fechaData['fecha'],
+                        'hora_inicio' => $fechaData['hora_inicio'],
+                        'hora_fin'    => $fechaData['hora_fin'],
+                    ]);
+                }
+            }
+
             return $medico;
         });
     }

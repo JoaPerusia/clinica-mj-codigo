@@ -72,42 +72,158 @@
                         -->
                     </div>
 
-                    {{-- Horarios de Trabajo --}}
-                    <div class="form-group">
-                        <h2 class="font-semibold text-lg text-gray-800 dark:text-gray-200">Horarios de Trabajo:</h2>
-                        @foreach($diasSemana as $key => $dia)
-                            <div class="day-schedule-container border-t pt-4 mt-4 first:border-t-0 first:pt-0 first:mt-0">
-                                <div class="flex items-center justify-between">
-                                    <h4 class="font-semibold text-sm text-gray-700 dark:text-gray-300">{{ ucfirst($dia) }}</h4>
-                                    <button 
-                                        type="button" 
-                                        class="inline-flex items-center px-3 py-1 text-sm font-semibold rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 mt-2 add-schedule-btn" 
-                                        data-day-number="{{ $key }}"
-                                        data-day-name="{{ $dia }}"
-                                    >
-                                        + Agregar Horario
+                    {{-- SECCIÓN: HORARIOS SEMANALES (GRILLA) --}}
+                    <div class="mb-8">
+                        <h3 class="text-lg font-medium leading-6 text-gray-900 dark:text-white mb-4">Horarios Semanales</h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            
+                            @foreach($diasSemana as $dia => $nombreDia)
+                                
+                                <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow border border-gray-200 dark:border-gray-700">
+                                    <h4 class="font-bold text-gray-800 dark:text-gray-200 border-b pb-2 mb-3 uppercase text-sm">
+                                        {{ $nombreDia }}
+                                    </h4>
+
+                                    <div id="horarios-container-{{ $dia }}" class="space-y-3">
+                                        {{-- Lógica para repoblar si hay error de validación (OLD DATA) --}}
+                                        @if(old('horarios'))
+                                            @foreach(old('horarios') as $index => $horario)
+                                                @if(isset($horario['dia_semana']) && $horario['dia_semana'] == $dia)
+                                                    <div class="flex items-end justify-between gap-4 horario-row bg-gray-50 dark:bg-gray-700/50 p-3 rounded mb-2">
+                                                        {{-- Contenedor Inputs --}}
+                                                        <div class="flex items-center gap-4 flex-1">
+                                                            {{-- Input Inicio --}}
+                                                            <div class="flex flex-col flex-1">
+                                                                <span class="text-[10px] uppercase text-gray-300 font-bold mb-1">Desde</span>
+                                                                <input type="time" name="horarios[{{ $dia }}][{{ $index }}][hora_inicio]" 
+                                                                    value="{{ $horario['hora_inicio'] }}" 
+                                                                    class="form-input w-full py-2 px-3 text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm">
+                                                            </div>
+                                                            
+                                                            {{-- Input Fin --}}
+                                                            <div class="flex flex-col flex-1">
+                                                                <span class="text-[10px] uppercase text-gray-300 font-bold mb-1">Hasta</span>
+                                                                <input type="time" name="horarios[{{ $dia }}][{{ $index }}][hora_fin]" 
+                                                                    value="{{ $horario['hora_fin'] }}" 
+                                                                    class="form-input w-full py-2 px-3 text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm">
+                                                            </div>
+
+                                                            {{-- INPUT HIDDEN --}}
+                                                            <input type="hidden" name="horarios[{{ $dia }}][{{ $index }}][dia_semana]" value="{{ $dia }}">
+                                                        </div>
+
+                                                        {{-- Botón Eliminar --}}
+                                                        <button type="button" class="p-1 rounded-full transition mb-0.5" onclick="eliminarHorario(this)">
+                                                            <x-action-icon accion="eliminar" />
+                                                        </button>
+                                                    </div>
+                                                @endif
+                                            @endforeach
+                                        @endif
+                                    </div>
+
+                                    <button type="button" 
+                                            onclick="agregarHorario({{ $dia }})"
+                                            class="mt-3 text-xs flex items-center text-blue-600 dark:text-blue-400 hover:underline font-semibold uppercase tracking-wide">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                        </svg>
+                                        Agregar Horario
                                     </button>
                                 </div>
-                                <div class="schedule-inputs-container">
-                                    {{-- Aquí se agregarán los campos dinámicamente --}}
-                                    {{-- Lógica para repoblar si hay un error de validación --}}
-                                    @if(old('horarios'))
-                                        @foreach(old('horarios') as $horarioKey => $horario)
-                                            @if($horario['dia_semana'] == $key)
-                                                <div class="flex items-center space-x-2 mt-2 schedule-input-group">
-                                                    <input type="time" name="horarios[{{ $key }}][{{ $horarioKey }}][hora_inicio]" value="{{ $horario['hora_inicio'] }}" class="form-input">
-                                                    <span class="text-gray-500">-</span>
-                                                    <input type="time" name="horarios[{{ $key }}][{{ $horarioKey }}][hora_fin]" value="{{ $horario['hora_fin'] }}" class="form-input">
-                                                    <input type="hidden" name="horarios[{{ $key }}][{{ $horarioKey }}][dia_semana]" value="{{ $horario['dia_semana'] }}">
-                                                    <button type="button" class="btn-danger remove-schedule-btn w-6 h-6 p-1 flex items-center justify-center rounded-md">X</button>
-                                                </div>
-                                            @endif
-                                        @endforeach
-                                    @endif
-                                </div>
-                            </div>
-                        @endforeach
+                            @endforeach
+                        </div>
                     </div>
+
+                    <hr class="my-8 border-gray-300 dark:border-gray-600">
+
+                        {{-- SECCIÓN: FECHAS PUNTUALES / IRREGULARES --}}
+                        <div class="form-group mb-8">
+                            <div class="flex items-center justify-between mb-4">
+                                <h2 class="font-semibold text-lg text-gray-800 dark:text-gray-200">
+                                    📅 Fechas Puntuales / Irregulares
+                                </h2>
+                            </div>
+
+                            {{-- 1. FORMULARIO DE CARGA RÁPIDA --}}
+                            <div class="bg-blue-50 dark:bg-gray-700 p-4 rounded-lg border border-blue-100 dark:border-gray-600 mb-6">
+                                <h3 class="text-sm font-bold text-blue-800 dark:text-blue-200 mb-3 uppercase">Agregar Nuevas Fechas</h3>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                                    
+                                    {{-- Calendario Multiple --}}
+                                    <div class="md:col-span-5">
+                                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Seleccionar Fechas (Múltiples)</label>
+                                        <input type="text" id="selector_fechas_lote" 
+                                            class="form-input w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 rounded-md shadow-sm placeholder-gray-500 dark:placeholder-gray-400" 
+                                            placeholder="Clic para elegir varios días...">
+                                    </div>
+
+                                    {{-- Hora Inicio --}}
+                                    <div class="md:col-span-2">
+                                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Hora Inicio</label>
+                                        <input type="time" id="hora_inicio_lote" 
+                                            class="form-input w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 rounded-md shadow-sm">
+                                    </div>
+
+                                    {{-- Hora Fin --}}
+                                    <div class="md:col-span-2">
+                                        <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Hora Fin</label>
+                                        <input type="time" id="hora_fin_lote" 
+                                            class="form-input w-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 focus:border-blue-500 focus:ring-blue-500 rounded-md shadow-sm">
+                                    </div>
+
+                                    {{-- Botón Agregar --}}
+                                    <div class="md:col-span-3">
+                                        <button type="button" onclick="procesarLoteFechas()" 
+                                                class="w-full inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none shadow-sm transition">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                            </svg>
+                                            Agregar
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <p class="text-xs text-blue-600/70 dark:text-blue-300 mt-2">
+                                    * Selecciona varios días en el calendario, define el horario y pulsa "Agregar" para crear el grupo.
+                                </p>
+                            </div>
+
+                            {{-- 2. LISTADO DINÁMICO (Aquí caen las fechas generadas) --}}
+                            <div id="contenedor-fechas-especiales" class="space-y-3 max-h-60 overflow-y-auto pr-2 scrollbar-fino">
+                                {{-- Si falla la validación, volvemos a pintar los que ya estaban --}}
+                                @if(old('fechas_especiales'))
+                                    @foreach(old('fechas_especiales') as $key => $fechaData)
+                                        <div class="flex items-center justify-between gap-4 fecha-row bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700 shadow-sm">
+                                            <div class="flex items-center gap-4 flex-1">
+                                                <div class="w-32">
+                                                    <span class="text-xs uppercase text-blue-600 dark:text-blue-400 font-bold block">Fecha</span>
+                                                    <span class="text-sm font-medium dark:text-white">{{ $fechaData['fecha'] }}</span>
+                                                    <input type="hidden" name="fechas_especiales[{{ $key }}][fecha]" value="{{ $fechaData['fecha'] }}">
+                                                </div>
+                                                <div class="flex flex-col flex-1">
+                                                    <span class="text-[10px] uppercase text-gray-300 font-bold mb-1">Desde</span>
+                                                    <input type="time" name="fechas_especiales[{{ $key }}][hora_inicio]" value="{{ $fechaData['hora_inicio'] }}" required
+                                                        class="form-input w-full py-1 px-2 text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm">
+                                                </div>
+                                                <div class="flex flex-col flex-1">
+                                                    <span class="text-[10px] uppercase text-gray-300 font-bold mb-1">Hasta</span>
+                                                    <input type="time" name="fechas_especiales[{{ $key }}][hora_fin]" value="{{ $fechaData['hora_fin'] }}" required
+                                                        class="form-input w-full py-1 px-2 text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm">
+                                                </div>
+                                            </div>
+                                            <button type="button" class="text-red-500 hover:text-red-700 transition p-1" onclick="this.closest('.fecha-row').remove()">
+                                                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    @endforeach
+                                @endif
+                            </div>
+                        </div>
 
                     {{-- Campo de Duración del Turno --}}
                     <div class="form-group">
@@ -122,7 +238,7 @@
                                max="120" 
                                step="5"
                                placeholder="Ej: 30">
-                        <p class="text-xs text-gray-500 mt-1 ml-1">Tiempo estándar para cada consulta (Ej: 15, 20, 30, 60).</p>
+                        <p class="text-xs text-gray-400 mt-1 ml-1">Tiempo estándar para cada consulta (Ej: 15, 20, 30, 60).</p>
                         @error('tiempo_turno')
                             <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                         @enderror
@@ -136,95 +252,201 @@
         </div>
     </div>
     
+@endsection
+
+@push('scripts')
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
+
     <script>
+        // 1. DEFINIR FUNCIÓN GLOBAL (Para el botón)
+        window.procesarLoteFechas = function() {
+            // Obtener valores
+            const inputFechas = document.getElementById('selector_fechas_lote');
+            const inputInicio = document.getElementById('hora_inicio_lote');
+            const inputFin = document.getElementById('hora_fin_lote');
+
+            if (!inputFechas || !inputInicio || !inputFin) {
+                console.error("Error: No se encuentran los inputs del formulario de fechas.");
+                return;
+            }
+
+            const fechasVal = inputFechas.value;
+            const horaInicio = inputInicio.value;
+            const horaFin = inputFin.value;
+
+            // Validaciones
+            if (!fechasVal) {
+                alert('⚠️ Por favor, selecciona al menos una fecha en el calendario.');
+                return;
+            }
+            if (!horaInicio || !horaFin) {
+                alert('⚠️ Por favor, ingresa la hora de inicio y fin.');
+                return;
+            }
+
+            // Procesar
+            const fechasArray = fechasVal.split(', ');
+            fechasArray.forEach(fecha => {
+                agregarFilaFechaVisual(fecha, horaInicio, horaFin);
+            });
+
+            // Limpiar campos
+            if (inputFechas._flatpickr) {
+                inputFechas._flatpickr.clear();
+            }
+            inputInicio.value = '';
+            inputFin.value = '';
+        };
+
+        // Función auxiliar para dibujar la fila
+        function agregarFilaFechaVisual(fecha, inicio, fin) {
+            const container = document.getElementById('contenedor-fechas-especiales');
+            if (!container) return;
+
+            const index = Date.now() + Math.floor(Math.random() * 1000); 
+            const parts = fecha.split('-');
+            const fechaLegible = `${parts[2]}/${parts[1]}/${parts[0]}`; // DD/MM/YYYY
+
+            const html = `
+                <div class="flex items-center justify-between gap-4 fecha-row bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-700 shadow-sm animate-fade-in-down mt-2">
+                    <div class="flex items-center gap-4 flex-1">
+                        {{-- Fecha --}}
+                        <div class="w-32">
+                            <span class="text-xs uppercase text-blue-600 dark:text-blue-400 font-bold block">Fecha</span>
+                            <span class="text-sm font-medium dark:text-white">${fechaLegible}</span>
+                            <input type="hidden" name="fechas_nuevas[${index}][fecha]" value="${fecha}">
+                        </div>
+
+                        {{-- Inicio --}}
+                        <div class="flex flex-col flex-1">
+                            <span class="text-[10px] uppercase text-gray-300 font-bold mb-1">Desde</span>
+                            <input type="time" name="fechas_nuevas[${index}][hora_inicio]" value="${inicio}" required
+                                   class="form-input w-full py-1 px-2 text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm">
+                        </div>
+
+                        {{-- Fin --}}
+                        <div class="flex flex-col flex-1">
+                            <span class="text-[10px] uppercase text-gray-300 font-bold mb-1">Hasta</span>
+                            <input type="time" name="fechas_nuevas[${index}][hora_fin]" value="${fin}" required
+                                   class="form-input w-full py-1 px-2 text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm">
+                        </div>
+                    </div>
+
+                    {{-- Eliminar --}}
+                    <button type="button" class="text-red-500 hover:text-red-700 transition p-1" onclick="this.closest('.fecha-row').remove()">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </button>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', html);
+        }
+
+        // 2. INICIALIZACIONES AL CARGAR EL DOM
         document.addEventListener('DOMContentLoaded', function () {
+            
+            // A) Inicializar Flatpickr (Calendario)
+            if (typeof flatpickr !== 'undefined') {
+                flatpickr("#selector_fechas_lote", {
+                    mode: "multiple", 
+                    dateFormat: "Y-m-d", 
+                    conjunction: ", ", 
+                    locale: "es", 
+                    minDate: "today", 
+                    disableMobile: "true" 
+                });
+            } else {
+                console.error("Flatpickr no se cargó correctamente.");
+            }
+
+            // B) Lógica de Usuarios (Buscador)
             const usuarioInput = document.getElementById('usuario_input');
             const usuariosList = document.getElementById('usuarios_list');
             const idUsuarioHidden = document.getElementById('id_usuario_hidden');
 
-            usuarioInput.addEventListener('input', function() {
-                // Encuentra la opción seleccionada en la datalist
-                const selectedOption = usuariosList.querySelector(`option[value="${this.value}"]`);
-                
-                // Si se encuentra una opción, actualiza el valor del campo oculto
-                if (selectedOption) {
-                    idUsuarioHidden.value = selectedOption.dataset.id;
-                } else {
-                    // Si el texto no coincide con una opción, vacía el campo oculto
-                    idUsuarioHidden.value = '';
+            if (usuarioInput && usuariosList && idUsuarioHidden) {
+                function validarUsuario() {
+                    const val = usuarioInput.value;
+                    const opts = usuariosList.options;
+                    let match = false;
+                    for (let i = 0; i < opts.length; i++) {
+                        if (opts[i].value === val) {
+                            idUsuarioHidden.value = opts[i].getAttribute('data-id');
+                            match = true;
+                            break;
+                        }
+                    }
+                    if (match) {
+                        usuarioInput.classList.add('border-green-500', 'ring-green-500');
+                        usuarioInput.classList.remove('border-red-500', 'ring-red-500');
+                    } else {
+                        idUsuarioHidden.value = '';
+                        if(val.length > 0) {
+                            usuarioInput.classList.add('border-red-500', 'ring-red-500');
+                            usuarioInput.classList.remove('border-green-500', 'ring-green-500');
+                        }
+                    }
                 }
-            });
-        });
-    </script>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const especialidadesContainer = document.getElementById('especialidades-container');
-            const addSpecialtyBtn = document.getElementById('add-specialty-btn');
-
-            // Función para crear un nuevo campo de especialidad
-            function createNewSpecialtySelect() {
-                const newGroup = document.createElement('div');
-                newGroup.classList.add('flex', 'items-center', 'space-x-2', 'mt-2', 'specialty-select-group');
-                newGroup.innerHTML = `
-                    <select name="especialidades[]" class="form-input w-full" required>
-                        <option value="">-- Seleccionar especialidad --</option>
-                        @foreach($especialidades as $especialidad)
-                            <option value="{{ $especialidad->id_especialidad }}">
-                                {{ $especialidad->nombre_especialidad }}
-                            </option>
-                        @endforeach
-                    </select>
-                    <button type="button" class="btn-danger remove-specialty-btn w-6 h-6 p-1 flex items-center justify-center rounded-md">X</button>
-                `;
-                especialidadesContainer.appendChild(newGroup);
+                usuarioInput.addEventListener('input', validarUsuario);
+                usuarioInput.addEventListener('change', validarUsuario);
             }
 
-            // Agregar un nuevo campo al hacer clic en el botón
-            addSpecialtyBtn.addEventListener('click', function() {
-                createNewSpecialtySelect();
-            });
-
-            // Delegación de eventos para manejar la eliminación de campos dinámicos
-            especialidadesContainer.addEventListener('click', function(e) {
-                if (e.target.classList.contains('remove-specialty-btn')) {
-                    e.target.closest('.specialty-select-group').remove();
-                }
-            });
-        });
-    </script>
-
-    {{-- Scripts para la lógica dinámica de horarios --}}
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Lógica para agregar campos de horario
-            document.querySelectorAll('.add-schedule-btn').forEach(button => {
-                button.addEventListener('click', function() {
-                    const dayNumber = this.dataset.dayNumber;
-                    const dayName = this.dataset.dayName; // Nuevo: Obtenemos el nombre del día
-                    const container = this.closest('.day-schedule-container').querySelector('.schedule-inputs-container');
-                    const index = container.querySelectorAll('.schedule-input-group').length;
-
-                    const newGroup = document.createElement('div');
-                    newGroup.classList.add('flex', 'items-center', 'space-x-2', 'mt-2', 'schedule-input-group');
-                    newGroup.innerHTML = `
-                        <input type="time" name="horarios[${dayNumber}][${index}][hora_inicio]" class="form-input">
-                        <span class="text-gray-500">-</span>
-                        <input type="time" name="horarios[${dayNumber}][${index}][hora_fin]" class="form-input">
-                        <input type="hidden" name="horarios[${dayNumber}][${index}][dia_semana]" value="${dayNumber}">
-                        <button type="button" class="btn-danger remove-schedule-btn w-6 h-6 p-1 flex items-center justify-center rounded-md">X</button>
-                    `;
-                    container.appendChild(newGroup);
+            // C) Botón "+" Especialidades
+            const btnAddSpecialty = document.getElementById('add-specialty-btn');
+            if (btnAddSpecialty) {
+                btnAddSpecialty.addEventListener('click', function() {
+                    const container = document.getElementById('especialidades-container');
+                    const firstGroup = container.querySelector('.specialty-select-group');
+                    if(firstGroup) {
+                        const clone = firstGroup.cloneNode(true);
+                        clone.querySelector('select').value = "";
+                        
+                        const btn = clone.querySelector('button');
+                        btn.textContent = "X";
+                        btn.className = "bg-red-100 text-red-600 hover:bg-red-200 p-2 rounded-md font-bold text-sm transition ml-2";
+                        btn.onclick = function() { clone.remove(); };
+                        
+                        container.appendChild(clone);
+                    }
                 });
-            });
-
-            // Lógica para eliminar campos de horario
-            document.addEventListener('click', function(e) {
-                if (e.target.classList.contains('remove-schedule-btn')) {
-                    const groupToRemove = e.target.closest('.schedule-input-group');
-                    groupToRemove.remove();
-                }
-            });
+            }
         });
+
+        // 3. LÓGICA DE HORARIOS SEMANALES (Global)
+        window.agregarHorario = function(dia) {
+            const container = document.getElementById(`horarios-container-${dia}`);
+            const index = Date.now() + Math.floor(Math.random() * 1000); 
+
+            const nuevoHtml = `
+                <div class="flex items-end justify-between gap-4 horario-row bg-gray-50 dark:bg-gray-700/50 p-3 rounded animate-fade-in-down mt-2">
+                    <div class="flex items-center gap-4 flex-1">
+                        <div class="flex flex-col flex-1">
+                            <span class="text-[10px] uppercase text-gray-300 font-bold mb-1">Desde</span>
+                            <input type="time" name="horarios[${dia}][${index}][hora_inicio]" required
+                                   class="form-input w-full py-2 px-3 text-sm rounded-md shadow-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                        </div>
+                        <div class="flex flex-col flex-1">
+                            <span class="text-[10px] uppercase text-gray-300 font-bold mb-1">Hasta</span>
+                            <input type="time" name="horarios[${dia}][${index}][hora_fin]" required
+                                   class="form-input w-full py-2 px-3 text-sm rounded-md shadow-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                        </div>
+                        <input type="hidden" name="horarios[${dia}][${index}][dia_semana]" value="${dia}">
+                    </div>
+                    <button type="button" class="text-red-500 hover:text-red-700 transition p-1" onclick="this.closest('.horario-row').remove()">
+                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </button>
+                </div>`;
+            container.insertAdjacentHTML('beforeend', nuevoHtml);
+        }
     </script>
-@endsection
+    
+    <style>
+        .animate-fade-in-down { animation: fadeInDown 0.3s ease-out forwards; }
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+@endpush

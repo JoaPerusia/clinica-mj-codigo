@@ -24,6 +24,10 @@ class StoreMedicoRequest extends FormRequest
             'horarios.*.*.dia_semana'  => 'required|string', 
             'horarios.*.*.hora_inicio' => 'required|date_format:H:i',
             'horarios.*.*.hora_fin'    => 'required|date_format:H:i|after:horarios.*.*.hora_inicio',
+            'fechas_nuevas' => ['nullable', 'array'],
+            'fechas_nuevas.*.fecha'       => ['required', 'date'],
+            'fechas_nuevas.*.hora_inicio' => ['required', 'date_format:H:i'],
+            'fechas_nuevas.*.hora_fin'    => ['required', 'date_format:H:i', 'after:fechas_nuevas.*.hora_inicio'],
         ];
     }
 }

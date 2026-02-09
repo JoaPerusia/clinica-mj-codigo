@@ -104,7 +104,7 @@
                                                 <div class="flex items-center gap-4 flex-1">
                                                     {{-- Input Inicio (Crece con flex-1) --}}
                                                     <div class="flex flex-col flex-1">
-                                                        <span class="text-[10px] uppercase text-gray-500 font-bold mb-1">Desde</span>
+                                                        <span class="text-[10px] uppercase text-gray-300 font-bold mb-1">Desde</span>
                                                         <input type="time" name="horarios[{{ $dia }}][{{ $index }}][hora_inicio]" 
                                                             value="{{ \Carbon\Carbon::parse($horario->hora_inicio)->format('H:i') }}" 
                                                             class="form-input w-full py-2 px-3 text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm">
@@ -112,7 +112,7 @@
                                                     
                                                     {{-- Input Fin (Crece con flex-1) --}}
                                                     <div class="flex flex-col flex-1">
-                                                        <span class="text-[10px] uppercase text-gray-500 font-bold mb-1">Hasta</span>
+                                                        <span class="text-[10px] uppercase text-gray-300 font-bold mb-1">Hasta</span>
                                                         <input type="time" name="horarios[{{ $dia }}][{{ $index }}][hora_fin]" 
                                                             value="{{ \Carbon\Carbon::parse($horario->hora_fin)->format('H:i') }}" 
                                                             class="form-input w-full py-2 px-3 text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm">
@@ -215,7 +215,7 @@
                                     </div>
                                 </div>
                             @else
-                                <p class="text-sm text-gray-500 italic mt-2">No hay fechas puntuales cargadas.</p>
+                                <p class="text-sm text-gray-400 italic mt-2">No hay fechas puntuales cargadas.</p>
                             @endif
                         </div>
 
@@ -231,7 +231,7 @@
                                 min="5" 
                                 max="120" 
                                 step="5">
-                            <p class="text-xs text-gray-500 mt-1 ml-1">Tiempo estándar para cada consulta.</p>
+                            <p class="text-xs text-gray-400 mt-1 ml-1">Tiempo estándar para cada consulta.</p>
                             @error('tiempo_turno')
                                 <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                             @enderror
@@ -307,14 +307,14 @@
                 <div class="flex items-center gap-4 flex-1">
                     {{-- Input Inicio --}}
                     <div class="flex flex-col flex-1">
-                        <span class="text-[10px] uppercase text-gray-500 font-bold mb-1">Desde</span>
+                        <span class="text-[10px] uppercase text-gray-300 font-bold mb-1">Desde</span>
                         <input type="time" name="horarios[${dia}][${index}][hora_inicio]" required
                             class="form-input w-full py-2 px-3 text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm">
                     </div>
                     
                     {{-- Input Fin --}}
                     <div class="flex flex-col flex-1">
-                        <span class="text-[10px] uppercase text-gray-500 font-bold mb-1">Hasta</span>
+                        <span class="text-[10px] uppercase text-gray-300 font-bold mb-1">Hasta</span>
                         <input type="time" name="horarios[${dia}][${index}][hora_fin]" required
                             class="form-input w-full py-2 px-3 text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm">
                     </div>
