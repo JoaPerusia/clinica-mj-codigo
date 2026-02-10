@@ -363,16 +363,6 @@ class TurnoController extends Controller
             return redirect()->route('paciente.turnos.index')->with('success', 'Turno cancelado con éxito.');
         }
 
-        // Médico puede cancelar sus propios turnos (si se decide permitir)
-        // Según nuestra discusión, el médico NO debería cancelar directamente, solo editar estado.
-        // Si quieres que el médico pueda cancelar, descomenta y ajusta esta lógica.
-        /*
-        if ($user->hasRole(Rol::MEDICO) && $turno->medico && $turno->medico->id_usuario == $user->id_usuario) {
-            $turno->update(['estado' => Turno::CANCELADO]);
-            return redirect()->route('medico.turnos.index')->with('success', 'Tu turno ha sido cancelado con éxito.');
-        }
-        */
-
         // Si el usuario es médico y no tiene permiso para cancelar, o si es un rol no manejado
         if ($user->hasRole(Rol::MEDICO)) {
              return redirect()->route('medico.turnos.index')->with('error', 'No tienes permiso para cancelar este turno. Solo puedes cambiar su estado.');

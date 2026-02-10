@@ -104,17 +104,15 @@
                         </p>
                     </div>
 
-                    {{-- 4. Fecha (AHORA CON FLATPICKR PERO CON TU ESTILO) --}}
+                    {{-- 4. Fecha --}}
                     <div class="form-group">
                         <label for="fecha" class="form-label">Fecha:</label>
                         
-                        {{-- Input text para Flatpickr usando TU clase form-input --}}
                         <input type="text" id="fecha" name="fecha" 
                                class="form-input cursor-pointer"
                                placeholder="Selecciona una fecha..." 
                                disabled required>
                         
-                        {{-- Referencia de Colores (Estilo simple para que no choque) --}}
                         <div id="referencia-colores" class="mt-2 flex items-center text-xs text-gray-600 hidden">
                             <div class="flex items-center mr-4">
                                 <span class="w-3 h-3 rounded-full bg-green-200 border border-green-400 mr-1"></span>

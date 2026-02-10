@@ -225,6 +225,8 @@
                             </div>
                         </div>
 
+                <hr class="my-8 border-gray-300 dark:border-gray-600">
+
                     {{-- Campo de Duración del Turno --}}
                     <div class="form-group">
                         <label for="tiempo_turno" class="form-label">Duración del Turno (minutos):</label>
