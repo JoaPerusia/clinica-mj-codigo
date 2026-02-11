@@ -64,12 +64,6 @@
                                 </select>
                             </div>
                         </div>
-                        
-                        <!--
-                        <button type="button" id="add-specialty-btn" class="inline-flex items-center px-3 py-1 text-sm font-semibold rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 mt-2">
-                            + Agregar Especialidad
-                        </button>
-                        -->
                     </div>
 
                     {{-- SECCIÓN: HORARIOS SEMANALES (GRILLA) --}}
@@ -262,9 +256,8 @@
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
 
     <script>
-        // 1. DEFINIR FUNCIÓN GLOBAL (Para el botón)
+        // 1. LÓGICA DE FECHAS (AGREGAR NUEVAS)
         window.procesarLoteFechas = function() {
-            // Obtener valores
             const inputFechas = document.getElementById('selector_fechas_lote');
             const inputInicio = document.getElementById('hora_inicio_lote');
             const inputFin = document.getElementById('hora_fin_lote');
@@ -280,12 +273,15 @@
 
             // Validaciones
             if (!fechasVal) {
-                alert('⚠️ Por favor, selecciona al menos una fecha en el calendario.');
-                return;
+                Swal.fire({icon: 'warning', title: 'Atención', text: 'Debes seleccionar al menos un día en el calendario.', confirmButtonColor: '#3b82f6'
+                });                
+            return;
             }
+            
             if (!horaInicio || !horaFin) {
-                alert('⚠️ Por favor, ingresa la hora de inicio y fin.');
-                return;
+                Swal.fire({icon: 'warning', title: 'Atención', text: 'Por favor, ingresa la hora de inicio y fin.', confirmButtonColor: '#3b82f6'
+                });                
+            return;
             }
 
             // Procesar
@@ -394,26 +390,6 @@
                 }
                 usuarioInput.addEventListener('input', validarUsuario);
                 usuarioInput.addEventListener('change', validarUsuario);
-            }
-
-            // C) Botón "+" Especialidades
-            const btnAddSpecialty = document.getElementById('add-specialty-btn');
-            if (btnAddSpecialty) {
-                btnAddSpecialty.addEventListener('click', function() {
-                    const container = document.getElementById('especialidades-container');
-                    const firstGroup = container.querySelector('.specialty-select-group');
-                    if(firstGroup) {
-                        const clone = firstGroup.cloneNode(true);
-                        clone.querySelector('select').value = "";
-                        
-                        const btn = clone.querySelector('button');
-                        btn.textContent = "X";
-                        btn.className = "bg-red-100 text-red-600 hover:bg-red-200 p-2 rounded-md font-bold text-sm transition ml-2";
-                        btn.onclick = function() { clone.remove(); };
-                        
-                        container.appendChild(clone);
-                    }
-                });
             }
         });
 

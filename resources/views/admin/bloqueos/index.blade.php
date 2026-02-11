@@ -88,7 +88,7 @@
 
                                             <div class="flex justify-center items-center">
                                                 @if ($fechaHoraFin->isFuture())
-                                                    <form action="{{ route('admin.bloqueos.destroy', $bloqueo->id_bloqueo) }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de que deseas cancelar este bloqueo?');">
+                                                    <form action="{{ route('admin.bloqueos.destroy', $bloqueo->id_bloqueo) }}" method="POST" class="inline-block confirm-delete">
                                                         @csrf
                                                         @method('DELETE')
                                                         

@@ -53,8 +53,7 @@
                                                 </a>
 
                                                 {{-- Botón Eliminar --}}
-                                                <form action="{{ route('admin.especialidades.destroy', $especialidad->id_especialidad) }}" method="POST" 
-                                                    onsubmit="return confirm('¿Seguro que deseas eliminar esta especialidad?');" class="inline">
+                                                <form action="{{ route('admin.especialidades.destroy', $especialidad->id_especialidad) }}" method="POST" class="inline confirm-delete">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="pt-1" title="Eliminar Especialidad">

@@ -73,11 +73,6 @@
                                 </div>
                             @endforelse
                         </div>
-                        <!--
-                        <button type="button" id="add-specialty-btn" class="inline-flex items-center px-3 py-1 text-sm font-semibold rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 mt-2">
-                            + Agregar Especialidad
-                        </button>
-                        -->
                     </div>
 
                     {{-- SECCIÓN: HORARIOS SEMANALES (GRILLA) --}}
@@ -323,30 +318,22 @@
     <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
 
     <script>
+        // 1. ELIMINAR FECHAS
         let idsParaEliminar = [];
 
-        // 1. ELIMINAR FECHAS (LÓGICA INSTANTÁNEA)
         window.marcarFechaParaEliminar = function(id) {
-            // 1. Agregamos el ID al array de eliminación
             idsParaEliminar.push(id);
-            
-            // 2. Actualizamos el input hidden 
             const inputEliminar = document.getElementById('fechas_eliminar');
-            if (inputEliminar) {
-                inputEliminar.value = idsParaEliminar.join(',');
-            } else {
-                console.error("Error: No se encontró el input 'fechas_eliminar'");
-            }
+            if (inputEliminar) inputEliminar.value = idsParaEliminar.join(',');
             
-            // 3. Eliminamos la fila visualmente 
             const fila = document.getElementById('fila-fecha-bd-' + id);
             if (fila) {
-                fila.classList.add('opacity-0', 'transform', 'scale-95'); 
-                setTimeout(() => fila.remove(), 200); 
+                fila.classList.add('opacity-0', 'transform', 'scale-95');
+                setTimeout(() => fila.remove(), 200);
             }
         };
 
-        // 2. AGREGAR NUEVAS FECHAS (LOTE)
+        // 2. PROCESAR LOTE DE FECHAS
         window.procesarLoteFechas = function() {
             const inputFechas = document.getElementById('selector_fechas_lote');
             const inputInicio = document.getElementById('hora_inicio_lote');
@@ -358,12 +345,13 @@
             const horaInicio = inputInicio.value;
             const horaFin = inputFin.value;
 
+            // AQUÍ USAMOS LA ALERTA MANUALMENTE SI FALTAN DATOS
             if (!fechasVal) {
-                alert('⚠️ Selecciona al menos una fecha.');
+                Swal.fire({ icon: 'warning', title: 'Atención', text: 'Selecciona al menos una fecha.' });
                 return;
             }
             if (!horaInicio || !horaFin) {
-                alert('⚠️ Define hora de inicio y fin.');
+                Swal.fire({ icon: 'warning', title: 'Faltan datos', text: 'Ingresa hora de inicio y fin.' });
                 return;
             }
 
@@ -392,12 +380,12 @@
                             <input type="hidden" name="fechas_nuevas[${index}][fecha]" value="${fecha}">
                         </div>
                         <div class="flex flex-col flex-1">
-                            <span class="text-[10px] uppercase text-gray-300 font-bold mb-1">Desde</span>
+                            <span class="text-[10px] uppercase text-gray-500 font-bold mb-1">Desde</span>
                             <input type="time" name="fechas_nuevas[${index}][hora_inicio]" value="${inicio}" required
                                 class="form-input w-full py-1 px-2 text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm">
                         </div>
                         <div class="flex flex-col flex-1">
-                            <span class="text-[10px] uppercase text-gray-300 font-bold mb-1">Hasta</span>
+                            <span class="text-[10px] uppercase text-gray-500 font-bold mb-1">Hasta</span>
                             <input type="time" name="fechas_nuevas[${index}][hora_fin]" value="${fin}" required
                                 class="form-input w-full py-1 px-2 text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm">
                         </div>
@@ -412,83 +400,15 @@
             container.insertAdjacentHTML('beforeend', html);
         }
 
-        // 3. HORARIOS SEMANALES
-        window.agregarHorario = function(dia) {
-            const container = document.getElementById(`horarios-container-${dia}`);
-            const index = Date.now() + Math.floor(Math.random() * 1000); 
-
-            const nuevoHtml = `
-                <div class="flex items-end justify-between gap-4 horario-row bg-gray-50 dark:bg-gray-700/50 p-3 rounded animate-fade-in-down mt-2">
-                    <div class="flex items-center gap-4 flex-1">
-                        <div class="flex flex-col flex-1">
-                            <span class="text-[10px] uppercase text-gray-300 font-bold mb-1">Desde</span>
-                            <input type="time" name="horarios[${dia}][${index}][hora_inicio]" required
-                                class="form-input w-full py-2 px-3 text-sm rounded-md shadow-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                        </div>
-                        <div class="flex flex-col flex-1">
-                            <span class="text-[10px] uppercase text-gray-300 font-bold mb-1">Hasta</span>
-                            <input type="time" name="horarios[${dia}][${index}][hora_fin]" required
-                                class="form-input w-full py-2 px-3 text-sm rounded-md shadow-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
-                        </div>
-                        <input type="hidden" name="horarios[${dia}][${index}][dia_semana]" value="${dia}">
-                    </div>
-                    <button type="button" class="p-1 rounded-full transition mb-0.5" onclick="this.closest('.horario-row').remove()">
-                        <svg class="w-7 h-7 text-red-500 hover:text-red-700 cursor-pointer" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </button>
-                </div>`;
-            container.insertAdjacentHTML('beforeend', nuevoHtml);
-        }
-
-        // 4. INICIALIZACIÓN
+        // 3. INICIALIZACIÓN
         document.addEventListener('DOMContentLoaded', function () {
             if(document.getElementById("selector_fechas_lote")) {
                 flatpickr("#selector_fechas_lote", {
-                    mode: "multiple", 
-                    dateFormat: "Y-m-d", 
-                    locale: "es", 
-                    conjunction: ", ", 
-                    minDate: "today", 
-                    disableMobile: "true" 
+                    mode: "multiple", dateFormat: "Y-m-d", locale: "es", conjunction: ", ", minDate: "today", disableMobile: "true" 
                 });
-            }
-
-            // Lógica de especialidades 
-            const especialidadesContainer = document.getElementById('especialidades-container');
-            const addSpecialtyBtn = document.getElementById('add-specialty-btn');
-
-            if (especialidadesContainer) {
-                especialidadesContainer.addEventListener('click', function(e) {
-                    if (e.target.classList.contains('remove-specialty-btn') || e.target.closest('.remove-specialty-btn')) {
-                        const btn = e.target.classList.contains('remove-specialty-btn') ? e.target : e.target.closest('.remove-specialty-btn');
-                        btn.closest('.specialty-select-group').remove();
-                    }
-                });
-
-                if(addSpecialtyBtn) {
-                     addSpecialtyBtn.addEventListener('click', function() {
-                        const firstGroup = especialidadesContainer.querySelector('.specialty-select-group');
-                        if(firstGroup) {
-                            const clone = firstGroup.cloneNode(true);
-                            clone.querySelector('select').value = "";
-                            let removeBtn = clone.querySelector('.remove-specialty-btn');
-                            if(!removeBtn) {
-                                const actionBtn = clone.querySelector('button');
-                                if(actionBtn) {
-                                    actionBtn.className = "btn-danger remove-specialty-btn w-6 h-6 p-1 flex items-center justify-center rounded-md ml-2";
-                                    actionBtn.textContent = "X";
-                                    actionBtn.removeAttribute('id'); 
-                                }
-                            }
-                            especialidadesContainer.appendChild(clone);
-                        }
-                     });
-                }
             }
         });
     </script>
-    
     <style>
         .animate-fade-in-down { animation: fadeInDown 0.3s ease-out forwards; }
         @keyframes fadeInDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }

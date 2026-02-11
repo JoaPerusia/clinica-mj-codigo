@@ -108,7 +108,7 @@
                                                 </a>
 
                                                 {{-- Botón Eliminar --}}
-                                                <form action="{{ $destroyRoute }}" method="POST" class="inline" onsubmit="return confirm('¿Estás seguro de eliminar este paciente?');">
+                                                <form action="{{ $destroyRoute }}" method="POST" class="inline confirm-delete">
                                                     @csrf 
                                                     @method('DELETE')
                                                     <button type="submit" class="pt-1" title="Eliminar Paciente">

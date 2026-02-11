@@ -68,7 +68,7 @@
                             : route('paciente.turnos.cambiar-estado', $turno->id_turno);
                     @endphp
 
-                    <form action="{{ $rutaCancelar }}" method="POST" class="inline-block" onsubmit="return confirm('¿Estás seguro de cancelar este turno?');">
+                    <form action="{{ $rutaCancelar }}" method="POST" class="inline-block confirm-delete">
                         @csrf 
                         @method('PATCH')
                         <input type="hidden" name="estado" value="{{ $Turno::CANCELADO }}">

@@ -121,8 +121,7 @@
                                                 <x-action-icon accion="editar" />
                                             </a>
 
-                                            <form action="{{ route('admin.medicos.destroy', $medico->id_medico) }}" method="POST" 
-                                                onsubmit="return confirm('¿Seguro que deseas eliminar este médico?');" class="inline">
+                                            <form action="{{ route('admin.medicos.destroy', $medico->id_medico) }}" method="POST" class="inline confirm-delete">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="pt-1" title="Eliminar Médico">
