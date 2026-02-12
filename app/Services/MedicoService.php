@@ -158,6 +158,7 @@ class MedicoService
                 
                 // Definimos el mensaje que le llegará al paciente
                 $motivoParaEmail = "El profesional ha eliminado su disponibilidad para la fecha " . \Carbon\Carbon::parse($fechaPuntual->fecha)->format('d/m/Y') . ".";
+                $notificador = app(\App\Services\NotificacionService::class);
 
                 foreach ($turnosAfectados as $turno) {
                     // A. Actualizar estado en BD
@@ -166,16 +167,7 @@ class MedicoService
                     $turno->save();
 
                     // B. Enviar Email
-                    if ($turno->paciente && $turno->paciente->usuario && $turno->paciente->usuario->email) {
-                        try {
-                            // Usamos queue() ya que tu Mailable tiene "use Queueable"
-                            // Le pasamos el $turno y el $motivo tal como espera tu constructor
-                            Mail::to($turno->paciente->usuario->email)
-                                ->queue(new TurnoCanceladoMailable($turno, $motivoParaEmail));
-                        } catch (\Exception $e) {
-                            \Log::error("Error enviando mail cancelación turno {$turno->id_turno}: " . $e->getMessage());
-                        }
-                    }
+                    $notificador->notificarCancelacion($turno, $motivoParaEmail);
                 }
             }
 
@@ -261,6 +253,8 @@ class MedicoService
             }
         }
 
+        $notificador = app(\App\Services\NotificacionService::class);
+
         foreach ($turnosPendientes as $turno) {
             $fechaTurno = \Carbon\Carbon::parse($turno->fecha);
             $horaTurno = \Carbon\Carbon::parse($turno->hora);
@@ -325,13 +319,8 @@ class MedicoService
                 $turno->observaciones = "Cambio de horarios del profesional.";
                 $turno->save();
                 
-                // Enviar Mail (Simplificado)
-                if ($turno->paciente && $turno->paciente->usuario && $turno->paciente->usuario->email) {
-                    try {
-                        Mail::to($turno->paciente->usuario->email)
-                            ->queue(new TurnoCanceladoMailable($turno, $turno->observaciones));
-                    } catch (\Exception $e) {}
-                }
+                // Enviar Mail
+                $notificador->notificarCancelacion($turno, $turno->observaciones);
 
                 $contadorCancelados++;
             }

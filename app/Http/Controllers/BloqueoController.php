@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Mail;
 use App\Notifications\TurnoCancelado;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
+use App\Services\NotificacionService;
 
 class BloqueoController extends Controller
 {
@@ -61,12 +62,10 @@ class BloqueoController extends Controller
     /**
      * Almacena un nuevo bloqueo en la base de datos.
      */
-    public function store(StoreBloqueoRequest $request) // <--- Usamos el nuevo Request
+    public function store(StoreBloqueoRequest $request, NotificacionService $notificador)
     {
         DB::beginTransaction();
         try {
-            // Validaciones eliminadas: Ya se encargó StoreBloqueoRequest
-
             // Crear el nuevo bloqueo
             $bloqueo = Bloqueo::create([
                 'id_medico'    => $request->id_medico,
@@ -95,19 +94,11 @@ class BloqueoController extends Controller
             $turnosAfectadosCount = $turnosACancelar->count();
 
             foreach ($turnosACancelar as $turno) {
-                $turno->estado = Turno::CANCELADO; // Aseguramos minúscula si ese es tu estándar
+                $turno->estado = Turno::CANCELADO;
                 $turno->save();
                 
-                // Enviar notificación (Mantenemos tu lógica de email)
-                try {
-                    if (!$turno->relationLoaded(Rol::PACIENTE)) {
-                        $turno->load('paciente.usuario');
-                    }
-                    Mail::to($turno->paciente->usuario->email)
-                        ->send(new TurnoCanceladoMailable($turno, $bloqueo->motivo));
-                } catch (\Exception $e) {
-                    // Log::error(...)
-                }
+                // Enviar notificación (email)
+                $notificador->notificarCancelacion($turno, $bloqueo->motivo);
             }
 
             DB::commit();

@@ -25,6 +25,7 @@
             <p><strong>Detalles del Turno Cancelado:</strong></p>
             <ul>
                 <li><strong>Médico:</strong> {{ $turno->medico->usuario->nombre }} {{ $turno->medico->usuario->apellido }}</li>
+                <li><strong>Especialidad:</strong> {{ $turno->medico->especialidades->first()->nombre_especialidad ?? 'Consulta General' }}</li>
                 <li><strong>Fecha:</strong> {{ \Carbon\Carbon::parse($turno->fecha)->format('d/m/Y') }}</li>
                 <li><strong>Hora:</strong> {{ \Carbon\Carbon::parse($turno->hora)->format('H:i') }}</li>
             </ul>
